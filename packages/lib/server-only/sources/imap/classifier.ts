@@ -65,8 +65,12 @@ export const classifyMail = (features: MailFeatures): ClassificationVerdict => {
 };
 
 // Erkennt sowohl „12,99 €" / „12.99 EUR" als auch „$12.99" / „USD 12.99".
+// `g`-Flag: matchAll iteriert alle Treffer. Wir wählen den größten — typische
+// Rechnungs-Mails listen Netto und MwSt einzeln auf, der Brutto-Gesamtbetrag
+// ist der höchste. „Erster Match gewinnt" extrahierte vorher oft den Netto-
+// oder Teilbetrag, was die CSV für den Steuerberater unbrauchbar macht.
 const AMOUNT_RX =
-  /(?:(?<cur1>€|EUR|USD|\$)\s*(?<num1>\d{1,3}(?:[.,\s]\d{3})*[.,]\d{2}))|(?:(?<num2>\d{1,3}(?:[.,\s]\d{3})*[.,]\d{2})\s*(?<cur2>€|EUR|USD|\$))/i;
+  /(?:(?<cur1>€|EUR|USD|\$)\s*(?<num1>\d{1,3}(?:[.,\s]\d{3})*[.,]\d{2}))|(?:(?<num2>\d{1,3}(?:[.,\s]\d{3})*[.,]\d{2})\s*(?<cur2>€|EUR|USD|\$))/gi;
 
 const INVOICE_NR_RX =
   /(?:rechnungs?\s*-?\s*nr\.?|invoice\s*(?:no|number|#)|beleg\s*nr\.?|order\s*#?|auftrag\s*#?)\s*[:#]?\s*(?<nr>[A-Z0-9][A-Z0-9\-_/]{3,30})/i;
@@ -78,13 +82,35 @@ const normalizeCurrency = (cur: string): string => {
   return upper;
 };
 
+// „1.234,56" / „1,234.56" / „1 234,56" robust auf Number bringen, ohne die
+// Originaldarstellung zu verlieren. Heuristik: das letzte Trennzeichen ist
+// das Dezimal-Trennzeichen (immer 2 Nachkommastellen via Regex), alle vorher
+// sind Tausender-Trennzeichen.
+const parseAmountToNumber = (raw: string): number => {
+  const cleaned = raw.replace(/\s/g, '');
+  const lastDot = cleaned.lastIndexOf('.');
+  const lastComma = cleaned.lastIndexOf(',');
+  const decimalIdx = Math.max(lastDot, lastComma);
+  if (decimalIdx < 0) return Number(cleaned);
+  const intPart = cleaned.slice(0, decimalIdx).replace(/[.,\s]/g, '');
+  const decPart = cleaned.slice(decimalIdx + 1);
+  return Number(`${intPart}.${decPart}`);
+};
+
 export const extractAmount = (text: string): string | null => {
-  const match = AMOUNT_RX.exec(text);
-  if (!match || !match.groups) return null;
-  const num = match.groups.num1 ?? match.groups.num2;
-  const cur = match.groups.cur1 ?? match.groups.cur2;
-  if (!num || !cur) return null;
-  return `${num} ${normalizeCurrency(cur)}`.trim();
+  let best: { display: string; value: number } | null = null;
+  for (const match of text.matchAll(AMOUNT_RX)) {
+    if (!match.groups) continue;
+    const num = match.groups.num1 ?? match.groups.num2;
+    const cur = match.groups.cur1 ?? match.groups.cur2;
+    if (!num || !cur) continue;
+    const value = parseAmountToNumber(num);
+    if (!Number.isFinite(value)) continue;
+    if (!best || value > best.value) {
+      best = { display: `${num} ${normalizeCurrency(cur)}`.trim(), value };
+    }
+  }
+  return best?.display ?? null;
 };
 
 export const extractInvoiceNumber = (text: string): string | null => {

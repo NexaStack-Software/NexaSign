@@ -57,6 +57,8 @@ export type DiscoveryDocument = {
   signingEnvelopeId?: string | null;
   /** Ob aus diesem Fund ein Signatur-Dokument erzeugt werden kann. */
   canCreateSigningDocument?: boolean;
+  /** Quelle, aus der der Beleg stammt (null bei lokalen Uploads). */
+  sourceLabel?: string | null;
 };
 
 export type DiscoveryListStatusFilter = DiscoveryDocumentStatus | 'all';

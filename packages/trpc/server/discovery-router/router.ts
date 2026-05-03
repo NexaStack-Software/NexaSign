@@ -8,7 +8,7 @@ import { AppError, AppErrorCode } from '@nexasign/lib/errors/app-error';
 import { getDiscoveryReader, isDiscoveryConfigured } from '@nexasign/lib/server-only/discovery';
 import { createEnvelope } from '@nexasign/lib/server-only/envelope/create-envelope';
 import { getAbsoluteArchivePath } from '@nexasign/lib/server-only/sources/archive';
-import { resyncSingleDocument } from '@nexasign/lib/server-only/sources/imap';
+import { lookupPortalUrl, resyncSingleDocument } from '@nexasign/lib/server-only/sources/imap';
 import { putNormalizedPdfFileServerSide } from '@nexasign/lib/universal/upload/put-file.server';
 import { prisma } from '@nexasign/prisma';
 
@@ -18,12 +18,15 @@ import {
   ZCreateSigningDocumentResponseSchema,
   ZFindDiscoveryDocumentsRequestSchema,
   ZFindDiscoveryDocumentsResponseSchema,
+  ZGetActiveSyncRunsResponseSchema,
   ZGetDiscoveryDocumentRequestSchema,
   ZGetDiscoveryDocumentResponseSchema,
   ZGetDocumentDetailRequestSchema,
   ZGetDocumentDetailResponseSchema,
   ZResyncSingleDocumentRequestSchema,
   ZResyncSingleDocumentResponseSchema,
+  ZUpdateDetectedFieldsRequestSchema,
+  ZUpdateDetectedFieldsResponseSchema,
   ZUpdateDiscoveryDocumentStatusRequestSchema,
   ZUpdateDiscoveryDocumentStatusResponseSchema,
 } from './schema';
@@ -117,6 +120,15 @@ export const discoveryRouter = router({
           label: true,
           lastSyncAt: true,
           lastSyncStatus: true,
+          // Letzter erfolgreich abgeschlossener SyncRun je Quelle — sein rangeTo
+          // ist das natürliche Start-Datum für den nächsten Lauf (inkrementelle
+          // Sync-Semantik). Index `[sourceId, startedAt desc]` deckt das ab.
+          syncRuns: {
+            where: { status: 'SUCCESS' },
+            orderBy: { startedAt: 'desc' },
+            take: 1,
+            select: { rangeTo: true },
+          },
         },
       });
 
@@ -126,6 +138,7 @@ export const discoveryRouter = router({
         label: source.label,
         lastSyncAt: source.lastSyncAt,
         lastSyncStatus: source.lastSyncStatus,
+        lastSuccessfulSyncRangeTo: source.syncRuns[0]?.rangeTo ?? null,
       }));
 
       if (!configured) {
@@ -317,6 +330,19 @@ export const discoveryRouter = router({
           ? `https://mail.google.com/mail/u/0/#search/${encodeURIComponent(doc.title)}`
           : null;
 
+      // Portal-URL aus Sender-Domain ableiten — `correspondent` kann ein
+      // freier String sein („Hetzner Online GmbH <noreply@hetzner.com>",
+      // „noreply@hetzner.com" oder nur der Name). Wir extrahieren die Domain
+      // aus dem ersten @…-Token, das wir finden, und mappen sie auf eine
+      // bekannte Anbieter-Portal-URL. Wenn nichts passt → null, Frontend
+      // zeigt dann nur den Roh-Hint wie bisher.
+      const senderDomain = (() => {
+        const text = doc.correspondent ?? '';
+        const match = text.match(/@([\w.-]+\.\w{2,})/i);
+        return match?.[1]?.toLowerCase() ?? null;
+      })();
+      const portal = senderDomain ? lookupPortalUrl(senderDomain) : null;
+
       // attachmentCount/hasArchive werden vom Listen-Schema verlangt; in der
       // Detail-Antwort spiegeln wir sie aus den realen Artifacts wider.
       const attachmentCount = doc.artifacts.filter((a) => a.kind === 'ATTACHMENT').length;
@@ -340,6 +366,8 @@ export const discoveryRouter = router({
           detectedAmount: doc.detectedAmount,
           detectedInvoiceNumber: doc.detectedInvoiceNumber,
           portalHint: doc.portalHint,
+          portalUrl: portal?.url ?? null,
+          portalUrlLabel: portal?.label ?? null,
           messageIdHash: doc.messageIdHash,
           providerSource: doc.providerSource,
           providerNativeId: doc.providerNativeId,
@@ -520,6 +548,151 @@ export const discoveryRouter = router({
         documentId: input.id,
         userId: user.id,
         teamId,
+      });
+    }),
+
+  /**
+   * Manuelle Korrektur der vom Klassifikator erkannten Felder. Persona-Anker:
+   * Steuerberater verlangt belastbare CSV — wenn die Heuristik daneben liegt
+   * (Netto statt Brutto, abgekürzter Anbieter), muss der Nutzer korrigieren
+   * können. Sobald der Beleg `acceptedAt` hat, greift WORM und der Mutator
+   * weist Edits ab.
+   *
+   * Auth-Modell wie updateStatus: Team-Member darf eigene IMAP-Belege oder
+   * lokale Uploads ändern; fremde IMAP-Belege bleiben unsichtbar/unmutierbar.
+   */
+  updateDetectedFields: authenticatedProcedure
+    .input(ZUpdateDetectedFieldsRequestSchema)
+    .output(ZUpdateDetectedFieldsResponseSchema)
+    .mutation(async ({ input, ctx }) => {
+      const { teamId, user } = ctx;
+      if (!teamId) {
+        throw new AppError(AppErrorCode.UNAUTHORIZED, {
+          message: 'Aktion braucht einen Team-Kontext.',
+        });
+      }
+      const doc = await prisma.discoveryDocument.findFirst({
+        where: {
+          id: input.id,
+          teamId,
+          OR: [{ providerSource: 'local' }, { uploadedById: user.id }],
+        },
+        select: {
+          id: true,
+          acceptedAt: true,
+          providerSource: true,
+        },
+      });
+      if (!doc) {
+        throw new AppError(AppErrorCode.NOT_FOUND, {
+          message: 'Dokument nicht gefunden oder nicht änderbar.',
+        });
+      }
+      if (doc.acceptedAt) {
+        throw new AppError(AppErrorCode.UNAUTHORIZED, {
+          message:
+            'Dieses Dokument ist als Geschäftsbeleg akzeptiert und unterliegt der ' +
+            '10-jährigen Aufbewahrung (§ 147 AO / § 257 HGB). Erkannte Felder ' +
+            'können nach Akzeptieren nicht mehr geändert werden.',
+        });
+      }
+      const data: Record<string, string | null> = {};
+      const normalize = (v: string | null | undefined): string | null | undefined => {
+        if (v === undefined) return undefined;
+        if (v === null) return null;
+        const trimmed = v.trim();
+        return trimmed === '' ? null : trimmed;
+      };
+      const amount = normalize(input.detectedAmount);
+      const invoiceNumber = normalize(input.detectedInvoiceNumber);
+      const correspondent = normalize(input.correspondent);
+      if (amount !== undefined) data.detectedAmount = amount;
+      if (invoiceNumber !== undefined) data.detectedInvoiceNumber = invoiceNumber;
+      if (correspondent !== undefined) data.correspondent = correspondent;
+
+      const updated = await prisma.$transaction(async (tx) => {
+        const result = await tx.discoveryDocument.update({
+          where: { id: doc.id },
+          data,
+          select: {
+            detectedAmount: true,
+            detectedInvoiceNumber: true,
+            correspondent: true,
+          },
+        });
+        await tx.discoveryAuditLog.create({
+          data: {
+            event: 'DISCOVERY_DOCUMENT_UPDATED',
+            discoveryDocumentId: doc.id,
+            userId: user.id,
+            teamId,
+            metadata: {
+              fields: Object.keys(data),
+              providerSource: doc.providerSource,
+            },
+          },
+        });
+        return result;
+      });
+
+      return {
+        ok: true,
+        detectedAmount: updated.detectedAmount,
+        detectedInvoiceNumber: updated.detectedInvoiceNumber,
+        correspondent: updated.correspondent,
+      };
+    }),
+
+  /**
+   * Aktive Sync-Runs für die Hauptseite. Ein einzelner schmaler SELECT —
+   * Frontend pollt das alle 3 s nur dann, wenn die letzte Antwort nicht-leer
+   * war. Damit zeigt „Dokumente finden" einen lebendigen Fortschritt
+   * (X Mails geprüft) statt einen statischen „letzter Sync"-Zeitstempel,
+   * ohne den teuren Discovery-Reader zu spammen.
+   */
+  getActiveSyncRuns: authenticatedProcedure
+    .output(ZGetActiveSyncRunsResponseSchema)
+    .query(async ({ ctx }) => {
+      const { teamId, user } = ctx;
+      if (!teamId) return [];
+      const runs = await prisma.syncRun.findMany({
+        where: {
+          status: { in: ['PENDING', 'RUNNING'] },
+          source: {
+            userId: user.id,
+            teamId,
+          },
+        },
+        orderBy: { startedAt: 'desc' },
+        select: {
+          id: true,
+          sourceId: true,
+          status: true,
+          rangeFrom: true,
+          rangeTo: true,
+          mailsChecked: true,
+          documentsAuto: true,
+          documentsManual: true,
+          startedAt: true,
+          source: { select: { label: true } },
+        },
+      });
+      return runs.flatMap((r) => {
+        if (r.status !== 'PENDING' && r.status !== 'RUNNING') return [];
+        return [
+          {
+            id: r.id,
+            sourceId: r.sourceId,
+            sourceLabel: r.source.label,
+            status: r.status,
+            rangeFrom: r.rangeFrom,
+            rangeTo: r.rangeTo,
+            mailsChecked: r.mailsChecked,
+            documentsAuto: r.documentsAuto,
+            documentsManual: r.documentsManual,
+            startedAt: r.startedAt,
+          },
+        ];
       });
     }),
 });

@@ -89,6 +89,18 @@ describe('extractAmount', () => {
   it('null wenn nichts matched', () => {
     expect(extractAmount('Hallo Welt')).toBe(null);
   });
+
+  it('waehlt den groessten Betrag (typisch Brutto-Gesamtbetrag)', () => {
+    // Reale Hetzner-/Stripe-/Telekom-Mails listen Netto + MwSt + Gesamt
+    // separat. Der Steuerberater braucht den Gesamtbetrag, nicht den Netto.
+    const body = 'Netto: 19,99 EUR\nMwSt: 3,80 EUR\nGesamt: 23,79 EUR';
+    expect(extractAmount(body)).toBe('23,79 EUR');
+  });
+
+  it('respektiert Tausender-Punkte beim Vergleich', () => {
+    const body = 'Anzahlung: 250,00 EUR\nGesamt: 1.234,50 EUR';
+    expect(extractAmount(body)).toBe('1.234,50 EUR');
+  });
 });
 
 describe('extractInvoiceNumber', () => {

@@ -18,10 +18,7 @@ import {
 import { Link, useNavigate, useParams } from 'react-router';
 
 import { trpc } from '@nexasign/trpc/react';
-import type {
-  TSyncRun,
-  TSyncRunStatus,
-} from '@nexasign/trpc/server/sources-router/schema';
+import type { TSyncRun, TSyncRunStatus } from '@nexasign/trpc/server/sources-router/schema';
 import { Button } from '@nexasign/ui/primitives/button';
 import { Card } from '@nexasign/ui/primitives/card';
 import {
@@ -54,7 +51,11 @@ const formatDateTime = (date: Date | null, locale: string): string => {
 };
 
 const formatDateRange = (from: Date, to: Date, locale: string): string => {
-  const fmt = new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const fmt = new Intl.DateTimeFormat(locale, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
   return `${fmt.format(from)} – ${fmt.format(to)}`;
 };
 
@@ -382,7 +383,7 @@ export default function SettingsSourceDetail() {
           </div>
           <div>
             <Label htmlFor="sync-to">
-              <Trans>Bis (exklusiv)</Trans>
+              <Trans>Bis</Trans>
             </Label>
             <Input id="sync-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
@@ -405,13 +406,18 @@ export default function SettingsSourceDetail() {
 
           <Button
             disabled={!canStartRun}
-            onClick={() =>
+            onClick={() => {
+              // Backend behandelt `to` als exklusive obere Grenze. Im UI heißt
+              // das Feld „Bis" (inklusiv), daher hier +1 Tag draufrechnen — sonst
+              // würde der gewählte letzte Tag aus der Range fallen.
+              const toExclusive = new Date(`${to}T00:00:00`);
+              toExclusive.setDate(toExclusive.getDate() + 1);
               startSyncRun.mutate({
                 sourceId: source.id,
-                from: new Date(from),
-                to: new Date(to),
-              })
-            }
+                from: new Date(`${from}T00:00:00`),
+                to: toExclusive,
+              });
+            }}
           >
             {startSyncRun.isPending && (
               <Loader2Icon className="mr-2 h-4 w-4 animate-spin" aria-hidden />

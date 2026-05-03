@@ -341,9 +341,27 @@ const AddImapSourceDialog = ({
             />
             <p className="text-xs text-muted-foreground">
               <Trans>
-                Bei Gmail/Outlook: in den Konto-Einstellungen ein App-Passwort erzeugen statt das
-                Login-Passwort zu nutzen.
-              </Trans>
+                Bei Gmail/Outlook nicht das Login-Passwort verwenden, sondern ein App-Passwort
+                erzeugen:
+              </Trans>{' '}
+              <a
+                href="https://myaccount.google.com/apppasswords"
+                target="_blank"
+                rel="noreferrer noopener"
+                className="underline hover:text-foreground"
+              >
+                Gmail
+              </a>
+              {' · '}
+              <a
+                href="https://account.microsoft.com/security"
+                target="_blank"
+                rel="noreferrer noopener"
+                className="underline hover:text-foreground"
+              >
+                Outlook/Microsoft
+              </a>
+              .
             </p>
           </div>
         </div>

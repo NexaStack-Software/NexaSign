@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // © 2026 NexaStack, NexaSign contributors
+import { useEffect, useState } from 'react';
+
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
@@ -7,7 +9,6 @@ import {
   AlertCircleIcon,
   ArchiveIcon,
   ArrowLeftIcon,
-  CheckCircleIcon,
   ClockIcon,
   DownloadIcon,
   ExternalLinkIcon,
@@ -31,9 +32,11 @@ import type {
 import { Badge } from '@nexasign/ui/primitives/badge';
 import { Button } from '@nexasign/ui/primitives/button';
 import { Card } from '@nexasign/ui/primitives/card';
+import { Input } from '@nexasign/ui/primitives/input';
 import { Skeleton } from '@nexasign/ui/primitives/skeleton';
 import { useToast } from '@nexasign/ui/primitives/use-toast';
 
+import { AcceptDiscoveryDocumentButton } from '~/components/dialogs/accept-discovery-document-button';
 import { appMetaTags } from '~/utils/meta';
 
 export function meta() {
@@ -54,6 +57,98 @@ const formatDate = (date: Date | null, locale: string): string => {
   }).format(date);
 };
 
+/**
+ * Inline-Edit für ein erkanntes Feld. Read-Only solange Beleg `isAccepted`
+ * (WORM-Lock — Server würde die Mutation eh ablehnen). Speichern auf Enter
+ * oder Blur, Abbrechen mit Escape. Persona-Nutzen: Heuristik-Fehler (Netto
+ * statt Brutto, abgekürzte Korrespondenten) lassen sich vor dem Akzeptieren
+ * direkt korrigieren — die spätere CSV ist dann belastbar.
+ */
+const EditableDetectedField = ({
+  value,
+  onSave,
+  disabled,
+  placeholder,
+  monospace,
+  ariaLabel,
+}: {
+  value: string | null;
+  onSave: (next: string | null) => Promise<void> | void;
+  disabled: boolean;
+  placeholder: string;
+  monospace?: boolean;
+  ariaLabel: string;
+}) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState(value ?? '');
+
+  useEffect(() => {
+    if (!isEditing) setDraft(value ?? '');
+  }, [value, isEditing]);
+
+  const commit = async () => {
+    const trimmed = draft.trim();
+    const next = trimmed === '' ? null : trimmed;
+    if (next === value) {
+      setIsEditing(false);
+      return;
+    }
+    await onSave(next);
+    setIsEditing(false);
+  };
+
+  if (disabled || !isEditing) {
+    const display = value ?? '–';
+    return (
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setIsEditing(true)}
+        className={`group flex w-full items-baseline gap-2 rounded text-left ${
+          disabled ? 'cursor-default' : 'hover:text-foreground'
+        }`}
+        aria-label={ariaLabel}
+      >
+        <span
+          className={`font-medium ${monospace ? 'font-mono text-sm' : ''} ${
+            value ? '' : 'text-muted-foreground'
+          }`}
+        >
+          {display}
+        </span>
+        {!disabled && (
+          <PenLineIcon
+            className="h-3 w-3 flex-shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+            aria-hidden
+          />
+        )}
+      </button>
+    );
+  }
+
+  return (
+    <Input
+      autoFocus
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => void commit()}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          void commit();
+        }
+        if (e.key === 'Escape') {
+          setDraft(value ?? '');
+          setIsEditing(false);
+        }
+      }}
+      placeholder={placeholder}
+      className={`h-8 ${monospace ? 'font-mono text-sm' : ''}`}
+      aria-label={ariaLabel}
+    />
+  );
+};
+
 const ArtifactRow = ({ artifact }: { artifact: TDiscoveryArtifact }) => {
   const Icon = artifact.kind === 'ATTACHMENT' ? PaperclipIcon : FileTextIcon;
   return (
@@ -66,8 +161,8 @@ const ArtifactRow = ({ artifact }: { artifact: TDiscoveryArtifact }) => {
             {formatBytes(artifact.fileSize)} · {artifact.contentType}
           </p>
         </div>
-        <p className="mt-1 flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground">
-          <HashIcon className="h-3 w-3" aria-hidden />
+        <p className="mt-1 flex items-center gap-1.5 break-all font-mono text-xs leading-relaxed text-muted-foreground">
+          <HashIcon className="h-3 w-3 flex-shrink-0" aria-hidden />
           {artifact.sha256}
         </p>
       </div>
@@ -133,6 +228,20 @@ export default function FindDocumentsDetail() {
     onError: (err) => {
       toast({
         title: _(msg`Re-Sync fehlgeschlagen`),
+        description: err.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const updateDetectedFieldsMutation = trpc.discovery.updateDetectedFields.useMutation({
+    onSuccess: () => {
+      void utils.discovery.getDocumentDetail.invalidate({ id });
+      void utils.discovery.findDocuments.invalidate();
+    },
+    onError: (err) => {
+      toast({
+        title: _(msg`Korrektur fehlgeschlagen`),
         description: err.message,
         variant: 'destructive',
       });
@@ -221,18 +330,21 @@ export default function FindDocumentsDetail() {
         </div>
       </header>
 
-      {/* Aktions-Buttons */}
+      {/* Aktions-Buttons — Hierarchie:
+          1) Workflow-Entscheidungen (akzeptieren / manuell / ignorieren)
+          2) Trenn-Pipe
+          3) Hilfsfunktionen (Gmail öffnen, Signatur-Doc) als ghost
+          „Ignorieren" wird ghost statt outline, weil es destruktiv ist und
+          nicht versehentlich neben „Akzeptieren" geklickt werden soll. */}
       <div className="mb-6 flex flex-wrap items-center gap-2">
         {!isAccepted && doc.status === 'inbox' && (
           <>
-            <Button onClick={() => handleAction('accept')} disabled={isPending}>
-              {isPending ? (
-                <Loader2Icon className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-              ) : (
-                <CheckCircleIcon className="mr-2 h-4 w-4" aria-hidden />
-              )}
-              <Trans>Als Beleg akzeptieren</Trans>
-            </Button>
+            <AcceptDiscoveryDocumentButton
+              onConfirm={() => handleAction('accept')}
+              disabled={isPending}
+              isPending={isPending}
+              label={<Trans>Als Beleg akzeptieren</Trans>}
+            />
             <Button
               variant="outline"
               onClick={() => handleAction('mark-pending-manual')}
@@ -241,7 +353,12 @@ export default function FindDocumentsDetail() {
               <ClockIcon className="mr-2 h-4 w-4" aria-hidden />
               <Trans>Manuell zu ziehen</Trans>
             </Button>
-            <Button variant="outline" onClick={() => handleAction('ignore')} disabled={isPending}>
+            <Button
+              variant="ghost"
+              className="text-muted-foreground hover:text-destructive"
+              onClick={() => handleAction('ignore')}
+              disabled={isPending}
+            >
               <XCircleIcon className="mr-2 h-4 w-4" aria-hidden />
               <Trans>Ignorieren</Trans>
             </Button>
@@ -259,8 +376,11 @@ export default function FindDocumentsDetail() {
             <Trans>Archivieren</Trans>
           </Button>
         )}
+        {(gmailDeepLink || doc.signingEnvelopeId !== null) && (
+          <span className="mx-1 hidden h-5 w-px bg-border md:inline-block" aria-hidden />
+        )}
         {gmailDeepLink && (
-          <Button asChild variant="outline">
+          <Button asChild variant="ghost" size="sm">
             <a href={gmailDeepLink} target="_blank" rel="noreferrer noopener">
               <ExternalLinkIcon className="mr-2 h-4 w-4" aria-hidden />
               <Trans>In Gmail öffnen</Trans>
@@ -268,7 +388,7 @@ export default function FindDocumentsDetail() {
           </Button>
         )}
         {doc.signingEnvelopeId ? (
-          <Button asChild variant="outline">
+          <Button asChild variant="ghost" size="sm">
             <Link to={`/t/${teamUrl}/documents/${doc.signingEnvelopeId}/edit`}>
               <PenLineIcon className="mr-2 h-4 w-4" aria-hidden />
               <Trans>Signatur-Dokument öffnen</Trans>
@@ -276,7 +396,8 @@ export default function FindDocumentsDetail() {
           </Button>
         ) : (
           <Button
-            variant="outline"
+            variant="ghost"
+            size="sm"
             onClick={() => createSigningDocumentMutation.mutate({ id })}
             disabled={!doc.canCreateSigningDocument || createSigningDocumentMutation.isPending}
             title={
@@ -293,35 +414,92 @@ export default function FindDocumentsDetail() {
         )}
       </div>
 
-      {/* Erkannte Felder */}
-      {(doc.detectedAmount || doc.detectedInvoiceNumber || doc.portalHint) && (
-        <Card className="mb-6 grid grid-cols-1 gap-3 p-4 md:grid-cols-3">
-          {doc.detectedAmount && (
-            <div>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                <Trans>Erkannter Betrag</Trans>
-              </p>
-              <p className="mt-1 font-medium">{doc.detectedAmount}</p>
-            </div>
-          )}
-          {doc.detectedInvoiceNumber && (
-            <div>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                <Trans>Rechnungs-Nr.</Trans>
-              </p>
-              <p className="mt-1 font-mono text-sm">{doc.detectedInvoiceNumber}</p>
-            </div>
-          )}
-          {doc.portalHint && (
-            <div className="md:col-span-3">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                <Trans>Portal-Hinweis (Mail enthält)</Trans>
-              </p>
-              <p className="mt-1 text-sm italic">{doc.portalHint}</p>
-            </div>
-          )}
-        </Card>
-      )}
+      {/* Erkannte Felder — vor Akzeptieren editierbar (Heuristik korrigieren),
+          nach Akzeptieren read-only (WORM-Lock, GoBD). */}
+      <Card className="mb-6 grid grid-cols-1 gap-4 p-4 md:grid-cols-3">
+        <div>
+          <p className="flex items-baseline justify-between gap-2 text-xs uppercase tracking-wide text-muted-foreground">
+            <span>
+              <Trans>Möglicher Rechnungsbetrag</Trans>
+            </span>
+            <span className="text-[10px] normal-case tracking-normal">
+              <Trans>automatisch — bitte prüfen</Trans>
+            </span>
+          </p>
+          <div className="mt-1">
+            <EditableDetectedField
+              value={doc.detectedAmount}
+              disabled={isAccepted || updateDetectedFieldsMutation.isPending}
+              placeholder="z. B. 23,79 EUR"
+              ariaLabel="Rechnungsbetrag bearbeiten"
+              onSave={async (next) => {
+                await updateDetectedFieldsMutation.mutateAsync({ id, detectedAmount: next });
+              }}
+            />
+          </div>
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            <Trans>Rechnungs-Nr.</Trans>
+          </p>
+          <div className="mt-1">
+            <EditableDetectedField
+              value={doc.detectedInvoiceNumber}
+              disabled={isAccepted || updateDetectedFieldsMutation.isPending}
+              placeholder="z. B. R-2024-1234"
+              monospace
+              ariaLabel="Rechnungs-Nummer bearbeiten"
+              onSave={async (next) => {
+                await updateDetectedFieldsMutation.mutateAsync({
+                  id,
+                  detectedInvoiceNumber: next,
+                });
+              }}
+            />
+          </div>
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            <Trans>Korrespondent</Trans>
+          </p>
+          <div className="mt-1">
+            <EditableDetectedField
+              value={doc.correspondent}
+              disabled={isAccepted || updateDetectedFieldsMutation.isPending}
+              placeholder="z. B. Hetzner Online GmbH"
+              ariaLabel="Korrespondent bearbeiten"
+              onSave={async (next) => {
+                await updateDetectedFieldsMutation.mutateAsync({ id, correspondent: next });
+              }}
+            />
+          </div>
+        </div>
+        {doc.portalHint && (
+          <div className="md:col-span-3 md:border-t md:pt-3">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              <Trans>Beleg liegt im Kunden-Portal</Trans>
+            </p>
+            <p className="mt-1 text-sm">
+              <span className="italic text-muted-foreground">„{doc.portalHint}"</span>
+            </p>
+            {doc.portalUrl && doc.portalUrlLabel && (
+              <Button asChild variant="outline" size="sm" className="mt-2">
+                <a href={doc.portalUrl} target="_blank" rel="noreferrer noopener">
+                  <ExternalLinkIcon className="mr-2 h-3.5 w-3.5" aria-hidden />
+                  <Trans>{doc.portalUrlLabel} öffnen</Trans>
+                </a>
+              </Button>
+            )}
+          </div>
+        )}
+        {isAccepted && (
+          <p className="text-xs text-muted-foreground md:col-span-3">
+            <Trans>
+              Beleg ist akzeptiert (GoBD-gesperrt). Felder können nicht mehr geändert werden.
+            </Trans>
+          </p>
+        )}
+      </Card>
 
       {/* Mail-Body — als Klartext, niemals dangerouslySetInnerHTML */}
       {doc.bodyText && (
@@ -339,7 +517,7 @@ export default function FindDocumentsDetail() {
               </p>
             )}
           </div>
-          <pre className="max-h-96 overflow-auto whitespace-pre-wrap break-words rounded bg-muted/30 p-3 text-xs leading-relaxed">
+          <pre className="max-h-96 overflow-auto whitespace-pre-wrap break-words rounded bg-muted/30 p-3 text-sm leading-relaxed">
             {doc.bodyText}
           </pre>
         </Card>
@@ -405,20 +583,26 @@ export default function FindDocumentsDetail() {
         </Card>
       )}
 
-      {/* Server-Pfad-Hinweis fürs FTP/SCP-Reingucken */}
+      {/* Server-Pfad-Hinweis fürs FTP/SCP-Reingucken — als technisches Detail
+          ausgeklappt, damit es nicht als Aktionskarte missverstanden wird. */}
       {absoluteArchivePath && (
-        <Card className="p-4 text-sm">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">
-            <Trans>Pfad auf dem Server</Trans>
-          </p>
-          <p className="mt-1 break-all font-mono text-xs">{absoluteArchivePath}</p>
-          <p className="mt-2 text-xs text-muted-foreground">
-            <Trans>
-              Per FTP/SCP erreichbar. Dateien sind read-only (0440); zum Verschieben einer Kopie
-              benutzen Sie `cp` statt `mv`.
-            </Trans>
-          </p>
-        </Card>
+        <details className="rounded-md border border-dashed border-neutral-200 bg-muted/20 text-sm">
+          <summary className="cursor-pointer list-none px-4 py-2 text-xs font-medium text-muted-foreground">
+            <Trans>Technische Details (für Admins)</Trans>
+          </summary>
+          <div className="border-t px-4 py-3">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              <Trans>Pfad auf dem Server</Trans>
+            </p>
+            <p className="mt-1 break-all font-mono text-xs">{absoluteArchivePath}</p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              <Trans>
+                Per FTP/SCP erreichbar. Dateien sind read-only (0440); zum Verschieben einer Kopie
+                benutzen Sie `cp` statt `mv`.
+              </Trans>
+            </p>
+          </div>
+        </details>
       )}
     </div>
   );

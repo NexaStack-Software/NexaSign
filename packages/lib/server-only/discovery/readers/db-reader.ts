@@ -75,6 +75,12 @@ type DbDiscoveryDocument = {
   archivePath: string | null;
   dataId: string | null;
   signingEnvelopeId: string | null;
+  source: { label: string } | null;
+  // `artifacts` wird mit Filter `kind = 'ATTACHMENT'` geladen — Anzahl ist
+  // die echte Anhang-Zahl. `_count.artifacts` ist der ungefilterte Gesamt-
+  // Count (inkl. EML/BODY/METADATA), nur für hasArchive: „Mail überhaupt
+  // im Archiv?" — wenn 0, dann gibt es nicht mal die Standard-Artifacts.
+  artifacts: { id: string }[];
   _count: { artifacts: number };
 };
 
@@ -106,14 +112,11 @@ const appendAnd = (
 };
 
 const toDiscoveryDocument = (doc: DbDiscoveryDocument): DiscoveryDocument => {
-  // attachmentCount = Anzahl ATTACHMENT-Artifacts. _count.artifacts liefert
-  // alle Artifacts (inkl. MAIL_EML/BODY/METADATA), wir interessieren uns aber
-  // nur für die User-sichtbaren Anhaenge. Vereinfacht: wenn _count > 1, dann
-  // hat die Mail mind. einen ATTACHMENT (jeder Sync schreibt 3 Standard-
-  // Artifacts: EML+BODY_TEXT+METADATA — alles drueber sind Anhaenge).
-  // Exakt waere ein separater count, aber das ist N+1 — fuer V1 reicht die
-  // Heuristik. Spaeter: dedizierter count via where-Clause auf kind=ATTACHMENT.
-  const attachmentCount = Math.max(0, doc._count.artifacts - 3);
+  // attachmentCount kommt jetzt aus einer dedizierten Relation-Selection mit
+  // `where: { kind: 'ATTACHMENT' }`, kein `_count - 3`-Hack mehr. Damit ist
+  // die Anzeige robust gegenüber Belegen, die weniger als 3 Standard-
+  // Artifacts haben (z. B. ältere Sync-Stände ohne BODY_TEXT/METADATA).
+  const attachmentCount = doc.artifacts.length;
   const hasArchive = doc.archivePath !== null && doc.archivePath !== '' && doc._count.artifacts > 0;
 
   return {
@@ -134,6 +137,7 @@ const toDiscoveryDocument = (doc: DbDiscoveryDocument): DiscoveryDocument => {
     hasArchive,
     signingEnvelopeId: doc.signingEnvelopeId,
     canCreateSigningDocument: doc.dataId !== null || hasArchive,
+    sourceLabel: doc.source?.label ?? null,
   };
 };
 
@@ -224,7 +228,15 @@ export const dbDiscoveryReader: DiscoveryReader = {
         ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
         include: {
           acceptedBy: { select: { name: true } },
-          // attachmentCount/hasArchive ableiten — siehe toDiscoveryDocument().
+          source: { select: { label: true } },
+          // attachmentCount: dedizierter Filter auf kind=ATTACHMENT. Kostet
+          // pro Page (PAGE_SIZE=25) eine extra Sub-Query, ist aber durch den
+          // Foreign-Key-Index auf DiscoveryArtifact.discoveryDocumentId
+          // gedeckt. hasArchive: braucht weiterhin den Gesamt-Count.
+          artifacts: {
+            where: { kind: 'ATTACHMENT' },
+            select: { id: true },
+          },
           _count: { select: { artifacts: true } },
         },
       }),
@@ -311,6 +323,11 @@ export const dbDiscoveryReader: DiscoveryReader = {
       where: { ...where, id },
       include: {
         acceptedBy: { select: { name: true } },
+        source: { select: { label: true } },
+        artifacts: {
+          where: { kind: 'ATTACHMENT' },
+          select: { id: true },
+        },
         _count: { select: { artifacts: true } },
       },
     });

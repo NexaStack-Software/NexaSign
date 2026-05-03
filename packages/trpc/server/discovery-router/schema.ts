@@ -48,6 +48,10 @@ export const ZDiscoveryDocumentSchema = z.object({
   hasArchive: z.boolean(),
   signingEnvelopeId: z.string().nullable().optional(),
   canCreateSigningDocument: z.boolean().optional(),
+  // Quelle, aus der der Beleg stammt — Persona mit mehreren Postfächern
+  // (privat + business) muss in der Liste sehen, woher ein Beleg kommt.
+  // null bei lokalen Uploads (providerSource = 'local').
+  sourceLabel: z.string().nullable().optional(),
 });
 
 export const ZSourceKindSchema = z.enum(['IMAP']);
@@ -60,6 +64,10 @@ export const ZSourceSummarySchema = z.object({
   label: z.string(),
   lastSyncAt: z.coerce.date().nullable(),
   lastSyncStatus: ZSourceSyncStatusSchema.nullable(),
+  // rangeTo des letzten erfolgreichen SyncRun. Frontend nutzt das als
+  // inkrementelles Default für `fromDate` — neuer Lauf zieht „seit zuletzt".
+  // null = noch nie erfolgreich gelaufen → Onboarding-Pfad.
+  lastSuccessfulSyncRangeTo: z.coerce.date().nullable(),
 });
 
 export const ZDiscoverySummarySchema = z.object({
@@ -121,6 +129,33 @@ export const ZUpdateDiscoveryDocumentStatusResponseSchema = z.object({
   ok: z.boolean(),
 });
 
+/**
+ * Manuelles Korrigieren der vom Klassifikator erkannten Felder. Heuristik
+ * trifft nicht jeden Fall (Brutto vs. Netto, mehrwertige Rechnungs-Nr.,
+ * abgekürzte Korrespondenten). Nach `acceptedAt` greift WORM und Edits
+ * werden serverseitig abgewiesen — das ist die GoBD-Garantie für die
+ * abgeschlossene Buchhaltung.
+ *
+ * Felder als optional: leerer String → null (Feld zurücksetzen). Nicht
+ * gesetzte Schlüssel → unverändert.
+ */
+export const ZUpdateDetectedFieldsRequestSchema = z.object({
+  id: z.string(),
+  detectedAmount: z.string().trim().max(64).nullable().optional(),
+  detectedInvoiceNumber: z.string().trim().max(64).nullable().optional(),
+  correspondent: z.string().trim().max(255).nullable().optional(),
+});
+
+export const ZUpdateDetectedFieldsResponseSchema = z.object({
+  ok: z.boolean(),
+  detectedAmount: z.string().nullable(),
+  detectedInvoiceNumber: z.string().nullable(),
+  correspondent: z.string().nullable(),
+});
+
+export type TUpdateDetectedFieldsRequest = z.infer<typeof ZUpdateDetectedFieldsRequestSchema>;
+export type TUpdateDetectedFieldsResponse = z.infer<typeof ZUpdateDetectedFieldsResponseSchema>;
+
 export const ZDiscoveryArtifactKindSchema = z.enum([
   'MAIL_EML',
   'MAIL_BODY_TEXT',
@@ -152,6 +187,12 @@ export const ZGetDocumentDetailResponseSchema = z
       detectedAmount: z.string().nullable(),
       detectedInvoiceNumber: z.string().nullable(),
       portalHint: z.string().nullable(),
+      // Wenn der Beleg-Sender eine bekannte Anbieter-Domain hat, liefert das
+      // Backend zusätzlich URL + Label des Kunden-Portals. Frontend rendert
+      // das als anklickbaren Link, sodass Persona „im Portal nachziehen"
+      // direkt zum Login springt statt googelt.
+      portalUrl: z.string().url().nullable(),
+      portalUrlLabel: z.string().nullable(),
       messageIdHash: z.string().nullable(),
       providerSource: z.string(),
       providerNativeId: z.string().nullable(),
@@ -202,6 +243,31 @@ export const ZResyncSingleDocumentResponseSchema = z.discriminatedUnion('ok', [
 
 export type TResyncSingleDocumentRequest = z.infer<typeof ZResyncSingleDocumentRequestSchema>;
 export type TResyncSingleDocumentResponse = z.infer<typeof ZResyncSingleDocumentResponseSchema>;
+
+/**
+ * Aktive Sync-Runs für die Hauptseite — schmaler Endpoint, der genau das
+ * liefert, was der Inline-Status-Banner anzeigt: pro Quelle die laufenden/
+ * pendenten Läufe mit ihrem Fortschritts-Counter. Wird im Frontend mit kurzem
+ * `refetchInterval` (3s) gepollt, solange Einträge zurückkommen — sobald die
+ * Liste leer ist, stoppt das Polling. Damit pollt die Persona auch nicht
+ * dauerhaft den teuren `findDocuments`-Reader, sondern nur diesen kleinen Read.
+ */
+export const ZActiveSyncRunSchema = z.object({
+  id: z.string(),
+  sourceId: z.string(),
+  sourceLabel: z.string(),
+  status: z.enum(['PENDING', 'RUNNING']),
+  rangeFrom: z.coerce.date(),
+  rangeTo: z.coerce.date(),
+  mailsChecked: z.number().int().nonnegative(),
+  documentsAuto: z.number().int().nonnegative(),
+  documentsManual: z.number().int().nonnegative(),
+  startedAt: z.coerce.date(),
+});
+
+export const ZGetActiveSyncRunsResponseSchema = z.array(ZActiveSyncRunSchema);
+
+export type TActiveSyncRun = z.infer<typeof ZActiveSyncRunSchema>;
 
 export const ZCreateSigningDocumentRequestSchema = z.object({
   id: z.string(),
