@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // © 2026 NexaStack, NexaSign contributors
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
@@ -44,6 +44,12 @@ import { Skeleton } from '@nexasign/ui/primitives/skeleton';
 import { useToast } from '@nexasign/ui/primitives/use-toast';
 
 import { SettingsHeader } from '~/components/general/settings-header';
+import {
+  CUSTOM_PROVIDER_VALUE,
+  ImapProviderPicker,
+  isCustomProvider,
+} from '~/components/sources/imap-provider-picker';
+import { detectProviderByEmail, getProviderById } from '~/components/sources/imap-providers';
 import { appMetaTags } from '~/utils/meta';
 
 export function meta() {
@@ -128,12 +134,41 @@ const AddImapSourceDialog = ({
   const [teamId, setTeamId] = useState<string>(
     availableTeams[0] ? String(availableTeams[0].id) : '',
   );
-  const [host, setHost] = useState('');
+  const [providerId, setProviderId] = useState<string | null>(null);
   const [customHost, setCustomHost] = useState('');
-  const [port, setPort] = useState(993);
+  const [port, setPort] = useState<number>(993);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [tlsVerify, setTlsVerify] = useState(true);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Auto-Detect: sobald der Nutzer eine vollständige E-Mail tippt und noch
+  // keinen Anbieter manuell gewählt hat, springt der Picker auf den passenden
+  // Provider. Das spart einen Klick und verhindert Fehler-Konfigurationen.
+  useEffect(() => {
+    if (providerId) return;
+    const detected = detectProviderByEmail(username);
+    if (detected) {
+      setProviderId(detected.id);
+      setPort(detected.port);
+    }
+  }, [username, providerId]);
+
+  // Wenn der Nutzer den Provider explizit wechselt, aktualisieren wir Port und
+  // setzen den Custom-Host zurück, damit nichts inkonsistent stehen bleibt.
+  const handleProviderChange = (id: string) => {
+    setProviderId(id);
+    if (id === CUSTOM_PROVIDER_VALUE) {
+      setShowAdvanced(true);
+      return;
+    }
+    const provider = getProviderById(id);
+    if (provider) {
+      setPort(provider.port);
+      setCustomHost('');
+      setShowAdvanced(false);
+    }
+  };
 
   const utils = trpc.useUtils();
   const create = trpc.sources.createImapSource.useMutation({
@@ -147,10 +182,11 @@ const AddImapSourceDialog = ({
       onCreated();
       setOpen(false);
       setLabel('');
-      setHost('');
+      setProviderId(null);
       setCustomHost('');
       setUsername('');
       setPassword('');
+      setShowAdvanced(false);
     },
     onError: (err) => {
       toast({
@@ -178,7 +214,13 @@ const AddImapSourceDialog = ({
     },
   });
 
-  const effectiveHost = host === '__custom__' ? customHost.trim() : host;
+  const effectiveHost = (() => {
+    if (isCustomProvider(providerId)) return customHost.trim();
+    if (providerId) return getProviderById(providerId)?.host ?? '';
+    return '';
+  })();
+  const selectedProvider =
+    providerId && !isCustomProvider(providerId) ? getProviderById(providerId) : undefined;
   const canSubmit =
     label.trim() && teamId && effectiveHost && username.trim() && password && !create.isPending;
 
@@ -251,71 +293,6 @@ const AddImapSourceDialog = ({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="source-host">
-              <Trans>Anbieter</Trans>
-            </Label>
-            <Select value={host} onValueChange={setHost}>
-              <SelectTrigger id="source-host">
-                <SelectValue placeholder={_(msg`Anbieter auswählen`)} />
-              </SelectTrigger>
-              <SelectContent>
-                {(capabilities?.allowedHosts ?? []).map((h) => (
-                  <SelectItem key={h} value={h}>
-                    {h}
-                  </SelectItem>
-                ))}
-                {capabilities?.customHostsAllowed && (
-                  <SelectItem value="__custom__">{_(msg`Eigenen Host eingeben…`)}</SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-            {host === '__custom__' && (
-              <Input
-                value={customHost}
-                placeholder="imap.example.com"
-                onChange={(e) => setCustomHost(e.target.value)}
-              />
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="source-port">
-                <Trans>Port</Trans>
-              </Label>
-              <Select value={String(port)} onValueChange={(v) => setPort(Number(v))}>
-                <SelectTrigger id="source-port">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="993">993 (IMAPS)</SelectItem>
-                  <SelectItem value="143">143 (STARTTLS)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-end pb-2">
-              <label className="flex items-center gap-2 text-sm">
-                <Checkbox
-                  checked={tlsVerify}
-                  onCheckedChange={(checked) => setTlsVerify(Boolean(checked))}
-                />
-                <span>
-                  <Trans>TLS-Zertifikat prüfen</Trans>
-                </span>
-              </label>
-            </div>
-          </div>
-
-          {!tlsVerify && (
-            <Card className="border-destructive bg-destructive/5 p-3 text-sm text-destructive">
-              <Trans>
-                Ohne TLS-Verifikation kann der Datenverkehr von einem Angreifer mitgelesen werden.
-                Nur einsetzen, wenn der Server ein bekanntes selbst-signiertes Zertifikat hat.
-              </Trans>
-            </Card>
-          )}
-
-          <div className="flex flex-col gap-1.5">
             <Label htmlFor="source-username">
               <Trans>E-Mail-Adresse</Trans>
             </Label>
@@ -324,9 +301,44 @@ const AddImapSourceDialog = ({
               type="email"
               value={username}
               autoComplete="off"
+              placeholder="dein.name@beispiel.de"
               onChange={(e) => setUsername(e.target.value)}
             />
+            <p className="text-xs text-muted-foreground">
+              <Trans>Sobald du @ tippst, wählen wir den passenden Anbieter automatisch aus.</Trans>
+            </p>
           </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label>
+              <Trans>Anbieter</Trans>
+            </Label>
+            <ImapProviderPicker
+              value={providerId}
+              onValueChange={handleProviderChange}
+              allowCustom={Boolean(capabilities?.customHostsAllowed)}
+            />
+          </div>
+
+          {isCustomProvider(providerId) && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="source-custom-host">
+                <Trans>IMAP-Server</Trans>
+              </Label>
+              <Input
+                id="source-custom-host"
+                value={customHost}
+                placeholder="imap.example.com"
+                onChange={(e) => setCustomHost(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                <Trans>
+                  Erlaubte Hosts (vom Admin freigegeben):{' '}
+                  {(capabilities?.allowedHosts ?? []).join(', ')}
+                </Trans>
+              </p>
+            </div>
+          )}
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="source-password">
@@ -337,33 +349,70 @@ const AddImapSourceDialog = ({
               type="password"
               value={password}
               autoComplete="new-password"
+              placeholder={selectedProvider ? '••••••••••••••••' : '••••••••'}
               onChange={(e) => setPassword(e.target.value)}
             />
-            <p className="text-xs text-muted-foreground">
-              <Trans>
-                Bei Gmail/Outlook nicht das Login-Passwort verwenden, sondern ein App-Passwort
-                erzeugen:
-              </Trans>{' '}
-              <a
-                href="https://myaccount.google.com/apppasswords"
-                target="_blank"
-                rel="noreferrer noopener"
-                className="underline hover:text-foreground"
-              >
-                Gmail
-              </a>
-              {' · '}
-              <a
-                href="https://account.microsoft.com/security"
-                target="_blank"
-                rel="noreferrer noopener"
-                className="underline hover:text-foreground"
-              >
-                Outlook/Microsoft
-              </a>
-              .
-            </p>
+            {!selectedProvider && (
+              <p className="text-xs text-muted-foreground">
+                <Trans>
+                  Achtung: Bei den meisten Anbietern ist das nicht das normale Login-Passwort,
+                  sondern ein eigens generiertes „App-Passwort". Wähl oben deinen Anbieter und du
+                  bekommst die genaue Anleitung.
+                </Trans>
+              </p>
+            )}
           </div>
+
+          <button
+            type="button"
+            className="self-start text-xs text-muted-foreground hover:text-foreground hover:underline"
+            onClick={() => setShowAdvanced((v) => !v)}
+          >
+            {showAdvanced ? (
+              <Trans>Erweiterte Einstellungen ausblenden</Trans>
+            ) : (
+              <Trans>Erweiterte Einstellungen (Port, TLS) anzeigen</Trans>
+            )}
+          </button>
+
+          {showAdvanced && (
+            <div className="grid grid-cols-2 gap-4 rounded-md border bg-muted/30 p-3">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="source-port">
+                  <Trans>Port</Trans>
+                </Label>
+                <Select value={String(port)} onValueChange={(v) => setPort(Number(v))}>
+                  <SelectTrigger id="source-port">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="993">993 (IMAPS)</SelectItem>
+                    <SelectItem value="143">143 (STARTTLS)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-end pb-2">
+                <label className="flex items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={tlsVerify}
+                    onCheckedChange={(checked) => setTlsVerify(Boolean(checked))}
+                  />
+                  <span>
+                    <Trans>TLS-Zertifikat prüfen</Trans>
+                  </span>
+                </label>
+              </div>
+            </div>
+          )}
+
+          {!tlsVerify && (
+            <Card className="border-destructive bg-destructive/5 p-3 text-sm text-destructive">
+              <Trans>
+                Ohne TLS-Verifikation kann der Datenverkehr von einem Angreifer mitgelesen werden.
+                Nur einsetzen, wenn der Server ein bekanntes selbst-signiertes Zertifikat hat.
+              </Trans>
+            </Card>
+          )}
         </div>
 
         <DialogFooter>

@@ -55,6 +55,7 @@ import { useToast } from '@nexasign/ui/primitives/use-toast';
 
 import { AcceptDiscoveryDocumentButton } from '~/components/dialogs/accept-discovery-document-button';
 import { TaxPackageConfirmButton } from '~/components/dialogs/tax-package-confirm-button';
+import { SyncOverviewCard } from '~/components/discovery/sync-overview-card';
 
 // Vollständiger Status-Enum (matcht das tRPC-Schema). Tabs zeigen aber nur
 // die 4 Hauptzustände — IGNORED ist via Filter erreichbar, PROCESSED ist eine
@@ -1299,6 +1300,11 @@ export default function FindDocumentsPage() {
     documentDateTo: dateFilterRange?.to,
   });
 
+  // Globaler Overview für die Wow-Card. Einmaliger Aggregat-Read, wird beim
+  // Abschluss eines Sync-Laufs invalidiert, damit die Card frische Zahlen
+  // zeigt. Skaliert linear mit der Anzahl Belege — siehe Router-Kommentar.
+  const { data: overview } = trpc.discovery.getOverview.useQuery();
+
   // Aktive Sync-Runs pollen — schmaler Endpoint, kein Discovery-Reader.
   // Solange aktive Runs zurückkommen, alle 3 s neu fragen; sobald Liste leer,
   // Discovery + Sources einmalig invalidieren, damit die fertigen Belege in
@@ -1311,9 +1317,10 @@ export default function FindDocumentsPage() {
   useEffect(() => {
     if (lastActiveRunsCountRef.current > 0 && activeRunsCount === 0) {
       void utils.discovery.findDocuments.invalidate();
+      void utils.discovery.getOverview.invalidate();
     }
     lastActiveRunsCountRef.current = activeRunsCount;
-  }, [activeRunsCount, utils.discovery.findDocuments]);
+  }, [activeRunsCount, utils.discovery.findDocuments, utils.discovery.getOverview]);
 
   useEffect(() => {
     if (!sourceId && data?.sources[0]?.id) {
@@ -1517,6 +1524,14 @@ export default function FindDocumentsPage() {
           </Trans>
         </p>
       </header>
+
+      {overview && overview.total > 0 && (
+        <SyncOverviewCard
+          overview={overview}
+          reviewHref={`/t/${teamUrl}/find-documents/review`}
+          locale={i18n.locale}
+        />
+      )}
 
       {hasAnySource && (
         <>

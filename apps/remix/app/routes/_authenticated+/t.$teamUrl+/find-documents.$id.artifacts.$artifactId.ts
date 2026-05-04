@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // © 2026 NexaStack, NexaSign contributors
-
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
@@ -11,13 +10,14 @@ import { prisma } from '@nexasign/prisma';
 
 import type { Route } from './+types/find-documents.$id.artifacts.$artifactId';
 
-const attachmentHeader = (fileName: string): string => {
+const dispositionHeader = (fileName: string, inline: boolean): string => {
   const safe = fileName.replace(/["\r\n]/g, '_');
-  return `attachment; filename="${safe}"`;
+  return `${inline ? 'inline' : 'attachment'}; filename="${safe}"`;
 };
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   const { user } = await getSession(request);
+  const inline = new URL(request.url).searchParams.get('inline') === '1';
   const team = await getTeamByUrl({
     userId: user.id,
     teamUrl: params.teamUrl,
@@ -58,7 +58,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     headers: {
       'Content-Type': artifact.contentType,
       'Content-Length': String(content.length),
-      'Content-Disposition': attachmentHeader(artifact.fileName),
+      'Content-Disposition': dispositionHeader(artifact.fileName, inline),
       'Cache-Control': 'private, no-store',
       'X-Content-Type-Options': 'nosniff',
     },

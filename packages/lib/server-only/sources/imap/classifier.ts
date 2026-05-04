@@ -86,7 +86,7 @@ const normalizeCurrency = (cur: string): string => {
 // Originaldarstellung zu verlieren. Heuristik: das letzte Trennzeichen ist
 // das Dezimal-Trennzeichen (immer 2 Nachkommastellen via Regex), alle vorher
 // sind Tausender-Trennzeichen.
-const parseAmountToNumber = (raw: string): number => {
+export const parseAmountToNumber = (raw: string): number => {
   const cleaned = raw.replace(/\s/g, '');
   const lastDot = cleaned.lastIndexOf('.');
   const lastComma = cleaned.lastIndexOf(',');

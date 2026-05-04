@@ -21,3 +21,4 @@ export { ZImapAccountConfigSchema } from './types';
 export { resyncSingleDocument } from './imap-resync-single';
 export type { ResyncSingleInput, ResyncSingleResult } from './imap-resync-single';
 export { lookupPortalUrl, PORTAL_URLS_BY_DOMAIN } from './keywords';
+export { parseAmountToNumber } from './classifier';

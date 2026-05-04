@@ -269,6 +269,43 @@ export const ZGetActiveSyncRunsResponseSchema = z.array(ZActiveSyncRunSchema);
 
 export type TActiveSyncRun = z.infer<typeof ZActiveSyncRunSchema>;
 
+/**
+ * Aggregat-Endpoint für die „Wow-Card" oben auf der Find-Documents-Seite.
+ *
+ * Liefert eine Übersicht über alle Belege im Team — keine Pagination, kein
+ * Status-Filter — damit die Persona auf einen Blick sieht: „so viele Belege,
+ * so viel Geld, verteilt über diese Jahre". Beträge werden serverseitig aus
+ * den `detectedAmount`-Strings geparst (ein und dieselbe Logik wie der
+ * IMAP-Classifier sie geschrieben hat) und in Cent zurückgegeben — die UI
+ * formatiert lokal-spezifisch.
+ *
+ * Zähler ohne Status-Filter (also auch akzeptierte und archivierte Belege),
+ * weil es das „dein gesamtes Datenarchiv"-Bild ist, nicht ein Inbox-Bild.
+ */
+export const ZGetOverviewResponseSchema = z.object({
+  total: z.number().int().nonnegative(),
+  withAmount: z.number().int().nonnegative(),
+  downloadable: z.number().int().nonnegative(),
+  accepted: z.number().int().nonnegative(),
+  needsReview: z.number().int().nonnegative(),
+  /** Summe der erkannten Brutto-Beträge in Cent (EUR-äquivalent, nicht währungs-konvertiert). */
+  estimatedTotalCents: z.number().int().nonnegative(),
+  /** Aufschlüsselung pro Kalenderjahr, sortiert absteigend (neuestes zuerst). */
+  yearDistribution: z.array(
+    z.object({
+      year: z.number().int(),
+      count: z.number().int().nonnegative(),
+    }),
+  ),
+  /** Frühestes/spätestes documentDate über alle Belege; null wenn keine Belege. */
+  rangeFrom: z.coerce.date().nullable(),
+  rangeTo: z.coerce.date().nullable(),
+  /** Datum/Zeit des letzten erfolgreichen Sync über alle Sources. */
+  lastCompletedSyncAt: z.coerce.date().nullable(),
+});
+
+export type TGetOverviewResponse = z.infer<typeof ZGetOverviewResponseSchema>;
+
 export const ZCreateSigningDocumentRequestSchema = z.object({
   id: z.string(),
 });

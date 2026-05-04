@@ -8,7 +8,11 @@ import { AppError, AppErrorCode } from '@nexasign/lib/errors/app-error';
 import { getDiscoveryReader, isDiscoveryConfigured } from '@nexasign/lib/server-only/discovery';
 import { createEnvelope } from '@nexasign/lib/server-only/envelope/create-envelope';
 import { getAbsoluteArchivePath } from '@nexasign/lib/server-only/sources/archive';
-import { lookupPortalUrl, resyncSingleDocument } from '@nexasign/lib/server-only/sources/imap';
+import {
+  lookupPortalUrl,
+  parseAmountToNumber,
+  resyncSingleDocument,
+} from '@nexasign/lib/server-only/sources/imap';
 import { putNormalizedPdfFileServerSide } from '@nexasign/lib/universal/upload/put-file.server';
 import { prisma } from '@nexasign/prisma';
 
@@ -23,6 +27,7 @@ import {
   ZGetDiscoveryDocumentResponseSchema,
   ZGetDocumentDetailRequestSchema,
   ZGetDocumentDetailResponseSchema,
+  ZGetOverviewResponseSchema,
   ZResyncSingleDocumentRequestSchema,
   ZResyncSingleDocumentResponseSchema,
   ZUpdateDetectedFieldsRequestSchema,
@@ -695,4 +700,101 @@ export const discoveryRouter = router({
         ];
       });
     }),
+
+  /**
+   * Aggregat-Overview für die Wow-Card. Ein einziger Read pro Page-Visit,
+   * keine Pagination. Skaliert linear mit Beleg-Anzahl, was für die typische
+   * Solo-Persona (≤ ein paar tausend Belege) unkritisch ist; bei Mengen >
+   * 50 000 Belegen würde man hier einen materialisierten Counter brauchen.
+   */
+  getOverview: authenticatedProcedure.output(ZGetOverviewResponseSchema).query(async ({ ctx }) => {
+    const { teamId, user } = ctx;
+    const empty = {
+      total: 0,
+      withAmount: 0,
+      downloadable: 0,
+      accepted: 0,
+      needsReview: 0,
+      estimatedTotalCents: 0,
+      yearDistribution: [],
+      rangeFrom: null,
+      rangeTo: null,
+      lastCompletedSyncAt: null,
+    };
+    if (!teamId) return empty;
+
+    const docs = await prisma.discoveryDocument.findMany({
+      where: {
+        teamId,
+        // Gleiche Multi-User-Isolation wie der DB-Reader: lokale Uploads
+        // sind Team-sichtbar, IMAP-Belege nur für ihren Owner.
+        OR: [{ providerSource: 'local' }, { uploadedById: user.id }],
+      },
+      select: {
+        documentDate: true,
+        capturedAt: true,
+        status: true,
+        detectedAmount: true,
+        acceptedAt: true,
+        _count: { select: { artifacts: { where: { kind: 'ATTACHMENT' } } } },
+      },
+    });
+
+    if (docs.length === 0) return empty;
+
+    let withAmount = 0;
+    let downloadable = 0;
+    let accepted = 0;
+    let needsReview = 0;
+    let estimatedTotalCents = 0;
+    const yearMap = new Map<number, number>();
+    let rangeFrom: Date | null = null;
+    let rangeTo: Date | null = null;
+
+    for (const d of docs) {
+      const dt = d.documentDate ?? d.capturedAt;
+      if (dt) {
+        const year = dt.getUTCFullYear();
+        yearMap.set(year, (yearMap.get(year) ?? 0) + 1);
+        if (!rangeFrom || dt < rangeFrom) rangeFrom = dt;
+        if (!rangeTo || dt > rangeTo) rangeTo = dt;
+      }
+      if (d._count.artifacts > 0) downloadable += 1;
+      if (d.status === 'ACCEPTED') accepted += 1;
+      if (d.status === 'INBOX' || d.status === 'PENDING_MANUAL') needsReview += 1;
+      if (d.detectedAmount) {
+        const value = parseAmountToNumber(d.detectedAmount);
+        if (Number.isFinite(value) && value > 0) {
+          withAmount += 1;
+          estimatedTotalCents += Math.round(value * 100);
+        }
+      }
+    }
+
+    const lastSync = await prisma.syncRun.findFirst({
+      where: {
+        status: 'SUCCESS',
+        source: { userId: user.id, teamId },
+      },
+      orderBy: { finishedAt: 'desc' },
+      select: { finishedAt: true },
+    });
+
+    const yearDistribution = [...yearMap.entries()]
+      .map(([year, count]) => ({ year, count }))
+      .sort((a, b) => b.year - a.year);
+
+    return {
+      total: docs.length,
+      withAmount,
+      downloadable,
+      accepted,
+      needsReview,
+      estimatedTotalCents,
+      yearDistribution,
+      rangeFrom,
+      rangeTo,
+      lastCompletedSyncAt: lastSync?.finishedAt ?? null,
+    };
+  }),
 });
