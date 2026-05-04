@@ -72,6 +72,13 @@ export const TaxPackageConfirmButton = ({
     // Direktes window.location löst den Download aus, ohne dass wir einen
     // unsichtbaren <a>-Klick simulieren müssen.
     if (typeof window !== 'undefined') {
+      // Marker für die First-Run-Checklist: 4. Schritt ist erledigt.
+      try {
+        window.localStorage.setItem('nexafile_first_tax_package_created', '1');
+        window.dispatchEvent(new Event('nexafile:tax-package-created'));
+      } catch {
+        // Speicher gesperrt — Checklist bleibt offen, kein Hard-Fail.
+      }
       window.location.href = href;
     }
   };

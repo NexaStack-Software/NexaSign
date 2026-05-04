@@ -55,6 +55,8 @@ import { useToast } from '@nexasign/ui/primitives/use-toast';
 
 import { AcceptDiscoveryDocumentButton } from '~/components/dialogs/accept-discovery-document-button';
 import { TaxPackageConfirmButton } from '~/components/dialogs/tax-package-confirm-button';
+import { BackgroundSyncBanner } from '~/components/discovery/background-sync-banner';
+import { FirstRunChecklist } from '~/components/discovery/first-run-checklist';
 import { SyncOverviewCard } from '~/components/discovery/sync-overview-card';
 
 // Vollständiger Status-Enum (matcht das tRPC-Schema). Tabs zeigen aber nur
@@ -1539,6 +1541,17 @@ export default function FindDocumentsPage() {
           </Trans>
         </p>
       </header>
+
+      <BackgroundSyncBanner activeRuns={activeRuns ?? []} locale={i18n.locale} />
+
+      <FirstRunChecklist
+        hasSource={hasAnySource}
+        hasSuccessfulSync={(overview?.total ?? 0) > 0 || Boolean(lastSuccessfulRangeTo)}
+        hasReviewedAtLeastOne={(overview?.accepted ?? 0) > 0}
+        sourcesHref="/settings/sources"
+        reviewHref={`/t/${teamUrl}/find-documents/review`}
+        taxPackageHref={taxPackageHref}
+      />
 
       {overview && overview.total > 0 && (
         <SyncOverviewCard
