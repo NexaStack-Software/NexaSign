@@ -10,6 +10,8 @@ import type { TGetOverviewResponse } from '@nexasign/trpc/server/discovery-route
 import { Button } from '@nexasign/ui/primitives/button';
 import { Card } from '@nexasign/ui/primitives/card';
 
+import { SmartBulkAcceptDialog } from '~/components/dialogs/smart-bulk-accept-dialog';
+
 type Props = {
   overview: TGetOverviewResponse;
   reviewHref: string;
@@ -110,8 +112,8 @@ export const SyncOverviewCard = ({ overview, reviewHref, locale }: Props) => {
       )}
 
       {overview.needsReview > 0 && (
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-md bg-primary/10 px-4 py-3">
-          <div>
+        <div className="mt-5 flex flex-col gap-3 rounded-md bg-primary/10 px-4 py-3 md:flex-row md:items-center md:justify-between">
+          <div className="min-w-0">
             <p className="text-sm font-medium">
               <Trans>
                 {numberFmt.format(overview.needsReview)} Belege warten auf deine Prüfung.
@@ -122,12 +124,19 @@ export const SyncOverviewCard = ({ overview, reviewHref, locale }: Props) => {
               <Trans>Mit Tastenkürzeln (J/K/A/I) bist du in wenigen Minuten durch.</Trans>
             </p>
           </div>
-          <Button asChild size="sm">
-            <Link to={reviewHref}>
-              <Trans>Schnell-Review starten</Trans>
-              <ArrowRightIcon className="ml-2 h-4 w-4" aria-hidden />
-            </Link>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <SmartBulkAcceptDialog
+              locale={locale}
+              triggerVariant="outline"
+              triggerLabel={<Trans>Vollständige in einem Klick</Trans>}
+            />
+            <Button asChild size="sm">
+              <Link to={reviewHref}>
+                <Trans>Schnell-Review starten</Trans>
+                <ArrowRightIcon className="ml-2 h-4 w-4" aria-hidden />
+              </Link>
+            </Button>
+          </div>
         </div>
       )}
     </Card>

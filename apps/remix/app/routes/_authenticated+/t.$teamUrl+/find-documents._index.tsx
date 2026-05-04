@@ -1305,6 +1305,21 @@ export default function FindDocumentsPage() {
   // zeigt. Skaliert linear mit der Anzahl Belege — siehe Router-Kommentar.
   const { data: overview } = trpc.discovery.getOverview.useQuery();
 
+  // Smart-Default-Filter: wenn die Persona Belege im Status „needs-review"
+  // hat (offen, noch nicht akzeptiert/ignoriert), beim ersten Page-Load
+  // automatisch auf diese Sub-Liste fokussieren — sie ist schließlich der
+  // Punkt, warum die Persona die Seite überhaupt aufmacht. Sobald der User
+  // den Filter manuell ändert, greift der Default nicht mehr (Ref-Lock).
+  const smartDefaultAppliedRef = useRef(false);
+  useEffect(() => {
+    if (smartDefaultAppliedRef.current) return;
+    if (!overview) return;
+    smartDefaultAppliedRef.current = true;
+    if (overview.needsReview > 0) {
+      setFocusFilterState('needs-review');
+    }
+  }, [overview]);
+
   // Aktive Sync-Runs pollen — schmaler Endpoint, kein Discovery-Reader.
   // Solange aktive Runs zurückkommen, alle 3 s neu fragen; sobald Liste leer,
   // Discovery + Sources einmalig invalidieren, damit die fertigen Belege in

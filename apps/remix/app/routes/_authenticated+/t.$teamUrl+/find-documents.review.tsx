@@ -33,6 +33,7 @@ import { Skeleton } from '@nexasign/ui/primitives/skeleton';
 import { useToast } from '@nexasign/ui/primitives/use-toast';
 
 import { AcceptDiscoveryDocumentButton } from '~/components/dialogs/accept-discovery-document-button';
+import { useDeferredStatusAction } from '~/components/discovery/use-deferred-status-action';
 import { appMetaTags } from '~/utils/meta';
 
 export function meta() {
@@ -133,8 +134,17 @@ export default function FindDocumentsReview() {
     if (prev) setCurrentId(prev.id);
   }, [currentIndex, visibleDocuments]);
 
-  const updateStatusMutation = trpc.discovery.updateStatus.useMutation({
-    onSuccess: () => {
+  const undoLocalCommit = useCallback((id: string) => {
+    setCommitted((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    setCurrentId(id);
+  }, []);
+
+  const deferred = useDeferredStatusAction({
+    onCommitted: () => {
       void utils.discovery.findDocuments.invalidate();
       void utils.discovery.getOverview.invalidate();
     },
@@ -148,26 +158,31 @@ export default function FindDocumentsReview() {
   });
 
   const accept = useCallback(
-    (id: string) => {
+    (id: string, previewLabel?: string) => {
       setCommitted((prev) => new Set(prev).add(id));
       goNext();
-      updateStatusMutation.mutate({ id, action: 'accept' });
-      toast({
-        title: _(msg`Akzeptiert`),
-        description: _(msg`Beleg in das Steuerpaket übernommen.`),
+      deferred.schedule({
+        id,
+        action: 'accept',
+        previewLabel,
+        onUndo: () => undoLocalCommit(id),
       });
     },
-    [goNext, updateStatusMutation, toast, _],
+    [goNext, deferred, undoLocalCommit],
   );
 
   const ignore = useCallback(
-    (id: string) => {
+    (id: string, previewLabel?: string) => {
       setCommitted((prev) => new Set(prev).add(id));
       goNext();
-      updateStatusMutation.mutate({ id, action: 'ignore' });
-      toast({ title: _(msg`Ignoriert`) });
+      deferred.schedule({
+        id,
+        action: 'ignore',
+        previewLabel,
+        onUndo: () => undoLocalCommit(id),
+      });
     },
-    [goNext, updateStatusMutation, toast, _],
+    [goNext, deferred, undoLocalCommit],
   );
 
   const skip = useCallback(
@@ -270,7 +285,6 @@ export default function FindDocumentsReview() {
           onAccept={() => accept(currentId)}
           onIgnore={() => ignore(currentId)}
           onSkip={() => skip(currentId)}
-          isMutating={updateStatusMutation.isPending}
         />
       )}
 
@@ -385,7 +399,6 @@ const ReviewBody = ({
   onAccept,
   onIgnore,
   onSkip,
-  isMutating,
 }: {
   documentId: string;
   teamUrl: string;
@@ -394,7 +407,6 @@ const ReviewBody = ({
   onAccept: () => void;
   onIgnore: () => void;
   onSkip: () => void;
-  isMutating: boolean;
 }) => {
   const { data, isLoading } = trpc.discovery.getDocumentDetail.useQuery({ id: documentId });
 
@@ -474,8 +486,7 @@ const ReviewBody = ({
           <div className="grid grid-cols-2 gap-2">
             <AcceptDiscoveryDocumentButton
               size="sm"
-              disabled={isAccepted || isMutating}
-              isPending={isMutating}
+              disabled={isAccepted}
               onConfirm={onAccept}
               label={
                 <span className="flex items-center gap-1.5">
@@ -484,12 +495,12 @@ const ReviewBody = ({
                 </span>
               }
             />
-            <Button size="sm" variant="outline" onClick={onIgnore} disabled={isMutating}>
+            <Button size="sm" variant="outline" onClick={onIgnore}>
               <XCircleIcon className="mr-1.5 h-4 w-4 text-destructive" aria-hidden />
               <Trans>Ignorieren</Trans>
               <Kbd className="ml-1.5">I</Kbd>
             </Button>
-            <Button size="sm" variant="ghost" onClick={onSkip} disabled={isMutating}>
+            <Button size="sm" variant="ghost" onClick={onSkip}>
               <SkipForwardIcon className="mr-1.5 h-4 w-4" aria-hidden />
               <Trans>Überspringen</Trans>
               <Kbd className="ml-1.5">S</Kbd>

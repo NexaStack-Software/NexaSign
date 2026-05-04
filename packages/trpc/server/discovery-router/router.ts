@@ -18,6 +18,8 @@ import { prisma } from '@nexasign/prisma';
 
 import { authenticatedProcedure, router } from '../trpc';
 import {
+  ZBulkAcceptRequestSchema,
+  ZBulkAcceptResponseSchema,
   ZCreateSigningDocumentRequestSchema,
   ZCreateSigningDocumentResponseSchema,
   ZFindDiscoveryDocumentsRequestSchema,
@@ -30,6 +32,8 @@ import {
   ZGetOverviewResponseSchema,
   ZResyncSingleDocumentRequestSchema,
   ZResyncSingleDocumentResponseSchema,
+  ZSmartAcceptCriteriaSchema,
+  ZSmartAcceptPreviewResponseSchema,
   ZUpdateDetectedFieldsRequestSchema,
   ZUpdateDetectedFieldsResponseSchema,
   ZUpdateDiscoveryDocumentStatusRequestSchema,
@@ -797,4 +801,156 @@ export const discoveryRouter = router({
       lastCompletedSyncAt: lastSync?.finishedAt ?? null,
     };
   }),
+
+  /**
+   * Vorschau für den Smart-Bulk-Accept. „Vollständig" heißt: noch nicht
+   * akzeptiert (INBOX/PENDING_MANUAL), mit Anhang, mit erkanntem Betrag,
+   * mit Korrespondent. Diese Kombination ist im echten Leben so robust,
+   * dass die Persona auf einen Klick übernehmen kann ohne jeden Beleg
+   * einzeln zu prüfen — eine massive Zeitersparnis.
+   */
+  getSmartAcceptCandidates: authenticatedProcedure
+    .input(ZSmartAcceptCriteriaSchema)
+    .output(ZSmartAcceptPreviewResponseSchema)
+    .query(async ({ input, ctx }) => {
+      const { teamId, user } = ctx;
+      const empty = {
+        totalCount: 0,
+        sampleDocuments: [],
+        allIds: [],
+        groupedBySource: [],
+      };
+      if (!teamId) return empty;
+
+      const docs = await prisma.discoveryDocument.findMany({
+        where: {
+          teamId,
+          OR: [{ providerSource: 'local' }, { uploadedById: user.id }],
+          status: { in: ['INBOX', 'PENDING_MANUAL'] },
+          acceptedAt: null,
+          detectedAmount: { not: null },
+          correspondent: { not: null },
+          archivePath: { not: null },
+          artifacts: { some: { kind: 'ATTACHMENT' } },
+          ...(input.sourceId ? { sourceId: input.sourceId } : {}),
+        },
+        orderBy: { documentDate: 'desc' },
+        select: {
+          id: true,
+          title: true,
+          correspondent: true,
+          detectedAmount: true,
+          documentDate: true,
+          capturedAt: true,
+          sourceId: true,
+          source: { select: { label: true } },
+        },
+      });
+
+      // Year-Filter erst nach dem DB-Read, weil documentDate fallback auf
+      // capturedAt ist und Prisma kein UTC-Year-Filter über Coalesce kann.
+      const filtered = input.year
+        ? docs.filter((d) => {
+            const dt = d.documentDate ?? d.capturedAt;
+            return dt.getUTCFullYear() === input.year;
+          })
+        : docs;
+
+      const sourceCounts = new Map<string, { label: string | null; count: number }>();
+      for (const d of filtered) {
+        const key = d.sourceId ?? '__local__';
+        const entry = sourceCounts.get(key) ?? { label: d.source?.label ?? null, count: 0 };
+        entry.count += 1;
+        sourceCounts.set(key, entry);
+      }
+
+      return {
+        totalCount: filtered.length,
+        sampleDocuments: filtered.slice(0, 20).map((d) => ({
+          id: d.id,
+          title: d.title,
+          correspondent: d.correspondent,
+          detectedAmount: d.detectedAmount,
+          documentDate: d.documentDate,
+        })),
+        allIds: filtered.map((d) => d.id),
+        groupedBySource: [...sourceCounts.entries()].map(([key, v]) => ({
+          sourceId: key === '__local__' ? null : key,
+          sourceLabel: v.label,
+          count: v.count,
+        })),
+      };
+    }),
+
+  /**
+   * Bulk-Accept: bekommt explizite IDs vom Frontend, akzeptiert sie alle
+   * unter Beibehaltung der WORM-Semantik (acceptedAt + acceptedById +
+   * Audit-Log pro Beleg). Bereits akzeptierte oder nicht zugängliche IDs
+   * werden in `skippedIds` zurückgegeben — Frontend kann das melden.
+   *
+   * Verarbeitung in Chunks à 100, damit eine einzelne Transaktion nicht
+   * zu lange das Audit-Log lockt.
+   */
+  bulkAccept: authenticatedProcedure
+    .input(ZBulkAcceptRequestSchema)
+    .output(ZBulkAcceptResponseSchema)
+    .mutation(async ({ input, ctx }) => {
+      const { teamId, user } = ctx;
+      if (!teamId) {
+        throw new AppError(AppErrorCode.UNAUTHORIZED, {
+          message: 'Aktion braucht einen Team-Kontext.',
+        });
+      }
+
+      const eligible = await prisma.discoveryDocument.findMany({
+        where: {
+          id: { in: input.ids },
+          teamId,
+          OR: [{ providerSource: 'local' }, { uploadedById: user.id }],
+          acceptedAt: null,
+          status: { in: ['INBOX', 'PENDING_MANUAL'] },
+        },
+        select: { id: true, providerSource: true },
+      });
+
+      const eligibleIds = new Set(eligible.map((d) => d.id));
+      const skippedIds = input.ids.filter((id) => !eligibleIds.has(id));
+
+      if (eligible.length === 0) {
+        return { acceptedCount: 0, skippedIds };
+      }
+
+      const now = new Date();
+      const CHUNK = 100;
+
+      for (let i = 0; i < eligible.length; i += CHUNK) {
+        const chunk = eligible.slice(i, i + CHUNK);
+        await prisma.$transaction(async (tx) => {
+          await tx.discoveryDocument.updateMany({
+            where: { id: { in: chunk.map((d) => d.id) } },
+            data: {
+              status: 'ACCEPTED',
+              acceptedAt: now,
+              acceptedById: user.id,
+            },
+          });
+
+          await tx.discoveryAuditLog.createMany({
+            data: chunk.map((d) => ({
+              event: 'DISCOVERY_DOCUMENT_ACCEPTED' as const,
+              discoveryDocumentId: d.id,
+              userId: user.id,
+              teamId,
+              metadata: {
+                action: 'bulk-smart-accept',
+                providerSource: d.providerSource,
+                retentionStarted: true,
+              },
+            })),
+          });
+        });
+      }
+
+      return { acceptedCount: eligible.length, skippedIds };
+    }),
 });

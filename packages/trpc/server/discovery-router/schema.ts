@@ -306,6 +306,63 @@ export const ZGetOverviewResponseSchema = z.object({
 
 export type TGetOverviewResponse = z.infer<typeof ZGetOverviewResponseSchema>;
 
+/**
+ * Smart-Bulk-Accept: Persona mit hunderten Belegen will nicht 200 mal A drücken.
+ * Wenn ein Beleg vollständig ist (Anhang + erkannter Betrag + Korrespondent),
+ * ist die Akzeptanz im Normalfall sicher. Wir bieten daher einen vorgeschlagenen
+ * Bulk-Accept, der diese „grünen" Belege auf einen Klick übernimmt.
+ *
+ * Der Server berechnet die Kandidatenliste anhand der Kriterien — UI zeigt
+ * Vorschau (Count + erste paar IDs für die Liste), User bestätigt, Server
+ * verarbeitet via `bulkAccept` (das wiederum die WORM-Garantie hält).
+ */
+export const ZSmartAcceptCriteriaSchema = z.object({
+  /** Optional: nur Belege aus dieser Quelle. */
+  sourceId: z.string().optional(),
+  /** Optional: nur Belege aus diesem Jahr (UTC). */
+  year: z.number().int().min(1900).max(9999).optional(),
+});
+
+export const ZSmartAcceptPreviewResponseSchema = z.object({
+  /** Gesamt-Anzahl Kandidaten — über die Sample-Größe hinaus. */
+  totalCount: z.number().int().nonnegative(),
+  /** Erste N Kandidaten zur Anzeige im Confirm-Dialog. */
+  sampleDocuments: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string(),
+      correspondent: z.string().nullable(),
+      detectedAmount: z.string().nullable(),
+      documentDate: z.coerce.date().nullable(),
+    }),
+  ),
+  /** Alle Kandidaten-IDs (vollständig) — vom UI später in bulkAccept geschickt. */
+  allIds: z.array(z.string()),
+  /** Aufschlüsselung pro Quelle/Jahr für die Filter-Vorschau im Dialog. */
+  groupedBySource: z.array(
+    z.object({
+      sourceId: z.string().nullable(),
+      sourceLabel: z.string().nullable(),
+      count: z.number().int().nonnegative(),
+    }),
+  ),
+});
+
+export const ZBulkAcceptRequestSchema = z.object({
+  ids: z.array(z.string()).min(1).max(2000),
+});
+
+export const ZBulkAcceptResponseSchema = z.object({
+  acceptedCount: z.number().int().nonnegative(),
+  /** IDs die durch WORM-Lock oder fehlende Berechtigung übersprungen wurden. */
+  skippedIds: z.array(z.string()),
+});
+
+export type TSmartAcceptCriteria = z.infer<typeof ZSmartAcceptCriteriaSchema>;
+export type TSmartAcceptPreviewResponse = z.infer<typeof ZSmartAcceptPreviewResponseSchema>;
+export type TBulkAcceptRequest = z.infer<typeof ZBulkAcceptRequestSchema>;
+export type TBulkAcceptResponse = z.infer<typeof ZBulkAcceptResponseSchema>;
+
 export const ZCreateSigningDocumentRequestSchema = z.object({
   id: z.string(),
 });
