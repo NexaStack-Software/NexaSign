@@ -3,7 +3,8 @@
 // Side-effect-Import: registriert imapSourceAdapter in der Registry beim Laden.
 import './imap-source-adapter';
 
-export { imapSourceAdapter } from './imap-source-adapter';
+export { imapSourceAdapter, inspectFolders } from './imap-source-adapter';
+export type { ImapFolderInfo, InspectFoldersResult } from './imap-source-adapter';
 export {
   encryptImapConfig,
   decryptImapConfig,

@@ -105,7 +105,7 @@ export const FirstRunChecklist = ({
       id: 1,
       done: hasSource,
       label: <Trans>Postfach verbinden</Trans>,
-      hint: <Trans>Verbinde dein E-Mail-Postfach via IMAP.</Trans>,
+      hint: <Trans>Verbinden Sie Ihr E-Mail-Postfach via IMAP.</Trans>,
       cta: <Trans>Postfach hinzufügen</Trans>,
       href: sourcesHref,
     },
@@ -113,7 +113,9 @@ export const FirstRunChecklist = ({
       id: 2,
       done: hasSuccessfulSync,
       label: <Trans>Erste Suche starten</Trans>,
-      hint: <Trans>Wähle einen Zeitraum und lass NexaFile dein Postfach durchsuchen.</Trans>,
+      hint: (
+        <Trans>Wählen Sie einen Zeitraum und lassen Sie NexaFile Ihr Postfach durchsuchen.</Trans>
+      ),
       cta: <Trans>Auf dieser Seite weiter</Trans>,
       href: '#mailbox-search-panel',
     },
@@ -162,7 +164,7 @@ export const FirstRunChecklist = ({
           </p>
           <h2 className="text-lg font-semibold">
             <Trans>
-              Schritt {completedCount} von {steps.length} — so kommst du zum Steuerpaket
+              Schritt {completedCount} von {steps.length} — so kommen Sie zum Steuerpaket
             </Trans>
           </h2>
         </div>

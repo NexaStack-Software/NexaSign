@@ -60,7 +60,7 @@ export const SyncOverviewCard = ({ overview, reviewHref, locale }: Props) => {
 
       <div className="flex flex-col gap-1">
         <p className="text-sm font-medium text-primary">
-          <Trans>Dein Beleg-Archiv</Trans>
+          <Trans>Ihr Beleg-Archiv</Trans>
         </p>
         <h2 className="text-2xl font-semibold leading-tight md:text-3xl">
           <Trans>{numberFmt.format(overview.total)} Belege gefunden</Trans>
@@ -116,12 +116,12 @@ export const SyncOverviewCard = ({ overview, reviewHref, locale }: Props) => {
           <div className="min-w-0">
             <p className="text-sm font-medium">
               <Trans>
-                {numberFmt.format(overview.needsReview)} Belege warten auf deine Prüfung.
+                {numberFmt.format(overview.needsReview)} Belege warten auf Ihre Prüfung.
               </Trans>
             </p>
             <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
               <KeyboardIcon className="h-3 w-3" aria-hidden />
-              <Trans>Mit Tastenkürzeln (J/K/A/I) bist du in wenigen Minuten durch.</Trans>
+              <Trans>Mit Tastenkürzeln (J/K/A/I) sind Sie in wenigen Minuten durch.</Trans>
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">

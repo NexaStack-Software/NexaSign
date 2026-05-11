@@ -20,11 +20,19 @@ import { authenticatedProcedure, router } from '../trpc';
 import {
   ZBulkAcceptRequestSchema,
   ZBulkAcceptResponseSchema,
+  ZBulkArchiveByFilterRequestSchema,
+  ZBulkArchiveRequestSchema,
+  ZBulkArchiveResponseSchema,
+  ZBulkIgnoreRequestSchema,
+  ZBulkIgnoreResponseSchema,
+  ZBulkUnacceptRequestSchema,
+  ZBulkUnacceptResponseSchema,
   ZCreateSigningDocumentRequestSchema,
   ZCreateSigningDocumentResponseSchema,
   ZFindDiscoveryDocumentsRequestSchema,
   ZFindDiscoveryDocumentsResponseSchema,
   ZGetActiveSyncRunsResponseSchema,
+  ZGetCorrespondentSummaryResponseSchema,
   ZGetDiscoveryDocumentRequestSchema,
   ZGetDiscoveryDocumentResponseSchema,
   ZGetDocumentDetailRequestSchema,
@@ -45,14 +53,27 @@ const ACTION_STATUS_MAP = {
   'mark-pending-manual': 'PENDING_MANUAL',
   archive: 'ARCHIVED',
   ignore: 'IGNORED',
+  unaccept: 'INBOX',
 } as const;
 
 const ACTION_AUDIT_MAP = {
   accept: 'DISCOVERY_DOCUMENT_ACCEPTED',
   'mark-pending-manual': null,
-  archive: null,
+  archive: 'DISCOVERY_DOCUMENT_ARCHIVED',
   ignore: 'DISCOVERY_DOCUMENT_IGNORED',
+  unaccept: 'DISCOVERY_DOCUMENT_UNACCEPTED',
 } as const;
+
+const buildArchiveSearchFilter = (query?: string) => {
+  const term = query?.trim();
+  if (!term) return undefined;
+
+  return [
+    { title: { contains: term, mode: 'insensitive' as const } },
+    { correspondent: { contains: term, mode: 'insensitive' as const } },
+    { detectedInvoiceNumber: { contains: term, mode: 'insensitive' as const } },
+  ];
+};
 
 const getPrimaryPdfDocumentDataId = async (doc: {
   title: string;
@@ -129,6 +150,10 @@ export const discoveryRouter = router({
           label: true,
           lastSyncAt: true,
           lastSyncStatus: true,
+          // Brauchen wir, um pro Quelle den Host (verschlüsselt) zu lesen und
+          // ihn fürs Frontend (Gmail-Banner-Trigger u. a.) bereitzustellen.
+          encryptedConfig: true,
+          encryptedConfigKeyVersion: true,
           // Letzter erfolgreich abgeschlossener SyncRun je Quelle — sein rangeTo
           // ist das natürliche Start-Datum für den nächsten Lauf (inkrementelle
           // Sync-Semantik). Index `[sourceId, startedAt desc]` deckt das ab.
@@ -136,19 +161,41 @@ export const discoveryRouter = router({
             where: { status: 'SUCCESS' },
             orderBy: { startedAt: 'desc' },
             take: 1,
-            select: { rangeTo: true },
+            select: { rangeTo: true, mailsChecked: true, rangeFrom: true },
           },
         },
       });
 
-      const sourceSummaries = sources.map((source) => ({
-        id: source.id,
-        kind: source.kind,
-        label: source.label,
-        lastSyncAt: source.lastSyncAt,
-        lastSyncStatus: source.lastSyncStatus,
-        lastSuccessfulSyncRangeTo: source.syncRuns[0]?.rangeTo ?? null,
-      }));
+      // Host-Lookup: nur fuer IMAP-Quellen, dezentral entschluesselt. Wenn der
+      // Decrypt scheitert (z. B. nach Key-Rotation ohne Migration), schalten
+      // wir host auf null statt das ganze Listing scheitern zu lassen.
+      const { decryptImapConfig } = await import('@nexasign/lib/server-only/sources/imap');
+      const sourceSummaries = sources.map((source) => {
+        let host: string | null = null;
+        if (source.kind === 'IMAP') {
+          try {
+            const cfg = decryptImapConfig({
+              ciphertext: source.encryptedConfig,
+              keyVersion: source.encryptedConfigKeyVersion,
+            });
+            host = cfg.host.toLowerCase();
+          } catch {
+            host = null;
+          }
+        }
+        const lastRun = source.syncRuns[0] ?? null;
+        return {
+          id: source.id,
+          kind: source.kind,
+          label: source.label,
+          host,
+          lastSyncAt: source.lastSyncAt,
+          lastSyncStatus: source.lastSyncStatus,
+          lastSuccessfulSyncRangeTo: lastRun?.rangeTo ?? null,
+          lastSuccessfulSyncRangeFrom: lastRun?.rangeFrom ?? null,
+          lastSuccessfulSyncMailsChecked: lastRun?.mailsChecked ?? null,
+        };
+      });
 
       if (!configured) {
         return {
@@ -212,9 +259,17 @@ export const discoveryRouter = router({
    * eigene IMAP-Belege ändern. Fremde IMAP-Belege bleiben unsichtbar (siehe
    * db-reader.buildWhere) und damit auch unveränderbar.
    *
-   * WORM-Regel: ab `acceptedAt != null` (User hat den Beleg als Geschäftsbeleg
-   * akzeptiert) sind nur noch ACCEPTED → ARCHIVED erlaubt. Reverse zu INBOX
-   * oder IGNORED ist gesperrt — GoBD-Aufbewahrung.
+   * Zwei-Stufen-GoBD-Lifecycle:
+   *   Stufe 1 (`acceptedAt`): User hat den Beleg als Geschäftsbeleg übernommen.
+   *           Status wird ACCEPTED, Felder bleiben editierbar, der Beleg lebt
+   *           im Archiv-Tab unter "Zur Ablage bereit".
+   *   Stufe 2 (`archivedAt`): User hat "Rechtssicher archivieren" geklickt.
+   *           Status wird ARCHIVED, ab jetzt greift WORM, die 10-Jahres-
+   *           Aufbewahrungsfrist läuft, der Datensatz ist read-only.
+   *
+   * WORM-Regel: ab `archivedAt != null` sind keine Status- und Feld-Mutationen
+   * mehr erlaubt. Vor archivedAt sind alle Übergänge frei (ein versehentlich
+   * akzeptierter Beleg kann z.B. wieder ignoriert werden).
    */
   updateStatus: authenticatedProcedure
     .input(ZUpdateDiscoveryDocumentStatusRequestSchema)
@@ -233,7 +288,13 @@ export const discoveryRouter = router({
           teamId,
           OR: [{ providerSource: 'local' }, { uploadedById: user.id }],
         },
-        select: { id: true, providerSource: true, status: true, acceptedAt: true },
+        select: {
+          id: true,
+          providerSource: true,
+          status: true,
+          acceptedAt: true,
+          archivedAt: true,
+        },
       });
       if (!doc) {
         throw new AppError(AppErrorCode.NOT_FOUND, {
@@ -241,31 +302,44 @@ export const discoveryRouter = router({
         });
       }
 
-      // WORM-Guard: nach Accept nur noch Archivieren erlaubt.
-      if (doc.acceptedAt && input.action !== 'archive') {
+      // WORM-Guard: ab archivedAt ist der Beleg rechtssicher archiviert und
+      // unterliegt der 10-jährigen Aufbewahrung. Keine Status-Änderungen mehr.
+      if (doc.archivedAt) {
         throw new AppError(AppErrorCode.UNAUTHORIZED, {
           message:
-            'Dieses Dokument ist als Geschäftsbeleg akzeptiert und unterliegt der ' +
-            '10-jährigen Aufbewahrung (§ 147 AO / § 257 HGB). Es kann nur noch ' +
-            'archiviert, aber nicht zurückgesetzt oder ignoriert werden.',
+            'Dieses Dokument ist rechtssicher archiviert und unterliegt der ' +
+            '10-jährigen Aufbewahrung (§ 147 AO / § 257 HGB). Es kann nicht ' +
+            'mehr verändert werden — nur noch lesen und exportieren.',
         });
       }
 
       const newStatus = ACTION_STATUS_MAP[input.action];
       await prisma.$transaction(async (tx) => {
-        // accept/archive setzen acceptedAt + acceptedById exakt einmal.
-        // Wichtig für GoBD: Auch ein direkt archivierter Beleg ist damit
-        // aufbewahrungspflichtig und landet im Exportfluss.
+        // accept oder archive setzen acceptedAt einmalig (Stufe 1).
+        // archive setzt zusätzlich archivedAt einmalig (Stufe 2 → WORM aktiv).
+        // unaccept räumt acceptedAt + acceptedById wieder leer (zurück zu INBOX).
         const updateData: {
           status: typeof newStatus;
-          acceptedAt?: Date;
-          acceptedById?: number;
+          acceptedAt?: Date | null;
+          acceptedById?: number | null;
+          archivedAt?: Date;
+          archivedById?: number;
         } = { status: newStatus };
-        const startsRetention =
+        const now = new Date();
+        const setsAccept =
           !doc.acceptedAt && (input.action === 'accept' || input.action === 'archive');
-        if (startsRetention) {
-          updateData.acceptedAt = new Date();
+        if (setsAccept) {
+          updateData.acceptedAt = now;
           updateData.acceptedById = user.id;
+        }
+        const setsArchive = !doc.archivedAt && input.action === 'archive';
+        if (setsArchive) {
+          updateData.archivedAt = now;
+          updateData.archivedById = user.id;
+        }
+        if (input.action === 'unaccept') {
+          updateData.acceptedAt = null;
+          updateData.acceptedById = null;
         }
 
         await tx.discoveryDocument.update({
@@ -273,10 +347,7 @@ export const discoveryRouter = router({
           data: updateData,
         });
 
-        const auditEvent =
-          startsRetention && input.action === 'archive'
-            ? 'DISCOVERY_DOCUMENT_ACCEPTED'
-            : ACTION_AUDIT_MAP[input.action];
+        const auditEvent = ACTION_AUDIT_MAP[input.action];
 
         if (auditEvent) {
           await tx.discoveryAuditLog.create({
@@ -288,7 +359,8 @@ export const discoveryRouter = router({
               metadata: {
                 action: input.action,
                 providerSource: doc.providerSource,
-                retentionStarted: startsRetention,
+                acceptedSet: setsAccept,
+                archivedSet: setsArchive,
               },
             },
           });
@@ -319,6 +391,7 @@ export const discoveryRouter = router({
           artifacts: { orderBy: { kind: 'asc' } },
           source: { select: { label: true, kind: true } },
           acceptedBy: { select: { name: true } },
+          archivedBy: { select: { name: true } },
         },
       });
       if (!doc) return null;
@@ -382,6 +455,8 @@ export const discoveryRouter = router({
           providerNativeId: doc.providerNativeId,
           acceptedAt: doc.acceptedAt,
           acceptedByName: doc.acceptedBy?.name ?? null,
+          archivedAt: doc.archivedAt,
+          archivedByName: doc.archivedBy?.name ?? null,
           sourceLabel: doc.source?.label ?? null,
           signingEnvelopeId: doc.signingEnvelopeId,
           canCreateSigningDocument:
@@ -434,6 +509,13 @@ export const discoveryRouter = router({
       if (!doc) {
         throw new AppError(AppErrorCode.NOT_FOUND, {
           message: 'Dokument nicht gefunden oder nicht änderbar.',
+        });
+      }
+
+      if (doc.archivedAt || doc.status === 'ARCHIVED') {
+        throw new AppError(AppErrorCode.UNAUTHORIZED, {
+          message:
+            'Dieses Dokument ist bereits endgültig archiviert und kann nicht mehr zur Signatur vorbereitet werden.',
         });
       }
 
@@ -564,8 +646,8 @@ export const discoveryRouter = router({
    * Manuelle Korrektur der vom Klassifikator erkannten Felder. Persona-Anker:
    * Steuerberater verlangt belastbare CSV — wenn die Heuristik daneben liegt
    * (Netto statt Brutto, abgekürzter Anbieter), muss der Nutzer korrigieren
-   * können. Sobald der Beleg `acceptedAt` hat, greift WORM und der Mutator
-   * weist Edits ab.
+   * können. Felder bleiben editierbar bis zur Stufe-2-Archivierung
+   * (`archivedAt`); danach greift WORM und der Mutator weist Edits ab.
    *
    * Auth-Modell wie updateStatus: Team-Member darf eigene IMAP-Belege oder
    * lokale Uploads ändern; fremde IMAP-Belege bleiben unsichtbar/unmutierbar.
@@ -588,7 +670,7 @@ export const discoveryRouter = router({
         },
         select: {
           id: true,
-          acceptedAt: true,
+          archivedAt: true,
           providerSource: true,
         },
       });
@@ -597,12 +679,12 @@ export const discoveryRouter = router({
           message: 'Dokument nicht gefunden oder nicht änderbar.',
         });
       }
-      if (doc.acceptedAt) {
+      if (doc.archivedAt) {
         throw new AppError(AppErrorCode.UNAUTHORIZED, {
           message:
-            'Dieses Dokument ist als Geschäftsbeleg akzeptiert und unterliegt der ' +
+            'Dieses Dokument ist rechtssicher archiviert und unterliegt der ' +
             '10-jährigen Aufbewahrung (§ 147 AO / § 257 HGB). Erkannte Felder ' +
-            'können nach Akzeptieren nicht mehr geändert werden.',
+            'können nach dem Archivieren nicht mehr geändert werden.',
         });
       }
       const data: Record<string, string | null> = {};
@@ -679,6 +761,7 @@ export const discoveryRouter = router({
           status: true,
           rangeFrom: true,
           rangeTo: true,
+          mailsTotal: true,
           mailsChecked: true,
           documentsAuto: true,
           documentsManual: true,
@@ -696,6 +779,7 @@ export const discoveryRouter = router({
             status: r.status,
             rangeFrom: r.rangeFrom,
             rangeTo: r.rangeTo,
+            mailsTotal: r.mailsTotal,
             mailsChecked: r.mailsChecked,
             documentsAuto: r.documentsAuto,
             documentsManual: r.documentsManual,
@@ -718,6 +802,8 @@ export const discoveryRouter = router({
       withAmount: 0,
       downloadable: 0,
       accepted: 0,
+      archived: 0,
+      ignored: 0,
       needsReview: 0,
       estimatedTotalCents: 0,
       yearDistribution: [],
@@ -749,6 +835,8 @@ export const discoveryRouter = router({
     let withAmount = 0;
     let downloadable = 0;
     let accepted = 0;
+    let archived = 0;
+    let ignored = 0;
     let needsReview = 0;
     let estimatedTotalCents = 0;
     const yearMap = new Map<number, number>();
@@ -764,7 +852,9 @@ export const discoveryRouter = router({
         if (!rangeTo || dt > rangeTo) rangeTo = dt;
       }
       if (d._count.artifacts > 0) downloadable += 1;
-      if (d.status === 'ACCEPTED') accepted += 1;
+      if (d.status === 'ACCEPTED' || d.status === 'SIGNED') accepted += 1;
+      if (d.status === 'ARCHIVED') archived += 1;
+      if (d.status === 'IGNORED') ignored += 1;
       if (d.status === 'INBOX' || d.status === 'PENDING_MANUAL') needsReview += 1;
       if (d.detectedAmount) {
         const value = parseAmountToNumber(d.detectedAmount);
@@ -793,6 +883,8 @@ export const discoveryRouter = router({
       withAmount,
       downloadable,
       accepted,
+      archived,
+      ignored,
       needsReview,
       estimatedTotalCents,
       yearDistribution,
@@ -937,7 +1029,7 @@ export const discoveryRouter = router({
 
           await tx.discoveryAuditLog.createMany({
             data: chunk.map((d) => ({
-              event: 'DISCOVERY_DOCUMENT_ACCEPTED' as const,
+              event: 'DISCOVERY_DOCUMENT_ARCHIVED' as const,
               discoveryDocumentId: d.id,
               userId: user.id,
               teamId,
@@ -952,5 +1044,363 @@ export const discoveryRouter = router({
       }
 
       return { acceptedCount: eligible.length, skippedIds };
+    }),
+
+  /**
+   * Bulk-Archive: explizite IDs aus dem Archiv-Tab endgültig rechtssicher
+   * archivieren. Nur ACCEPTED-Belege ohne archivedAt sind zulässig.
+   */
+  bulkArchive: authenticatedProcedure
+    .input(ZBulkArchiveRequestSchema)
+    .output(ZBulkArchiveResponseSchema)
+    .mutation(async ({ input, ctx }) => {
+      const { teamId, user } = ctx;
+      if (!teamId) {
+        throw new AppError(AppErrorCode.UNAUTHORIZED, {
+          message: 'Aktion braucht einen Team-Kontext.',
+        });
+      }
+
+      const eligible = await prisma.discoveryDocument.findMany({
+        where: {
+          id: { in: input.ids },
+          teamId,
+          OR: [{ providerSource: 'local' }, { uploadedById: user.id }],
+          archivedAt: null,
+          status: 'ACCEPTED',
+        },
+        select: { id: true, providerSource: true },
+      });
+
+      const eligibleIds = new Set(eligible.map((d) => d.id));
+      const skippedIds = input.ids.filter((id) => !eligibleIds.has(id));
+
+      if (eligible.length === 0) {
+        return { archivedCount: 0, skippedIds };
+      }
+
+      const now = new Date();
+      const CHUNK = 100;
+      for (let i = 0; i < eligible.length; i += CHUNK) {
+        const chunk = eligible.slice(i, i + CHUNK);
+        await prisma.$transaction(async (tx) => {
+          await tx.discoveryDocument.updateMany({
+            where: { id: { in: chunk.map((d) => d.id) } },
+            data: {
+              status: 'ARCHIVED',
+              archivedAt: now,
+              archivedById: user.id,
+            },
+          });
+
+          await tx.discoveryAuditLog.createMany({
+            data: chunk.map((d) => ({
+              event: 'DISCOVERY_DOCUMENT_ARCHIVED' as const,
+              discoveryDocumentId: d.id,
+              userId: user.id,
+              teamId,
+              metadata: {
+                action: 'bulk-archive',
+                providerSource: d.providerSource,
+                acceptedSet: false,
+                archivedSet: true,
+              },
+            })),
+          });
+        });
+      }
+
+      return { archivedCount: eligible.length, skippedIds };
+    }),
+
+  /**
+   * Gleiche Aktion wie bulkArchive, aber auf "alle Treffer in dieser Sicht".
+   * Das Archiv-UI verwendet aktuell nur einen Textfilter, deshalb reicht hier
+   * `query` statt eines komplexeren Kriterienobjekts.
+   */
+  bulkArchiveByFilter: authenticatedProcedure
+    .input(ZBulkArchiveByFilterRequestSchema)
+    .output(ZBulkArchiveResponseSchema)
+    .mutation(async ({ input, ctx }) => {
+      const { teamId, user } = ctx;
+      if (!teamId) {
+        throw new AppError(AppErrorCode.UNAUTHORIZED, {
+          message: 'Aktion braucht einen Team-Kontext.',
+        });
+      }
+
+      const searchFilter = buildArchiveSearchFilter(input.query);
+      const eligible = await prisma.discoveryDocument.findMany({
+        where: {
+          teamId,
+          archivedAt: null,
+          status: 'ACCEPTED',
+          AND: [
+            { OR: [{ providerSource: 'local' }, { uploadedById: user.id }] },
+            ...(searchFilter ? [{ OR: searchFilter }] : []),
+          ],
+        },
+        select: { id: true, providerSource: true },
+      });
+
+      if (eligible.length === 0) {
+        return { archivedCount: 0, skippedIds: [] };
+      }
+
+      const now = new Date();
+      const CHUNK = 100;
+      for (let i = 0; i < eligible.length; i += CHUNK) {
+        const chunk = eligible.slice(i, i + CHUNK);
+        await prisma.$transaction(async (tx) => {
+          await tx.discoveryDocument.updateMany({
+            where: { id: { in: chunk.map((d) => d.id) } },
+            data: {
+              status: 'ARCHIVED',
+              archivedAt: now,
+              archivedById: user.id,
+            },
+          });
+
+          await tx.discoveryAuditLog.createMany({
+            data: chunk.map((d) => ({
+              event: 'DISCOVERY_DOCUMENT_ACCEPTED' as const,
+              discoveryDocumentId: d.id,
+              userId: user.id,
+              teamId,
+              metadata: {
+                action: 'bulk-archive-filter',
+                providerSource: d.providerSource,
+                acceptedSet: false,
+                archivedSet: true,
+              },
+            })),
+          });
+        });
+      }
+
+      return { archivedCount: eligible.length, skippedIds: [] };
+    }),
+
+  /**
+   * Bulk-Ignore: explizite IDs vom Frontend, alle nicht-WORM-gesperrten werden
+   * auf IGNORED gesetzt. Spiegelbild zu bulkAccept — wird vom Trefferlisten-
+   * Bestätigen-Bar genutzt, der unmarkierte/abgelehnte Belege beim finalen
+   * Commit zusammen verwirft.
+   */
+  bulkIgnore: authenticatedProcedure
+    .input(ZBulkIgnoreRequestSchema)
+    .output(ZBulkIgnoreResponseSchema)
+    .mutation(async ({ input, ctx }) => {
+      const { teamId, user } = ctx;
+      if (!teamId) {
+        throw new AppError(AppErrorCode.UNAUTHORIZED, {
+          message: 'Aktion braucht einen Team-Kontext.',
+        });
+      }
+
+      const eligible = await prisma.discoveryDocument.findMany({
+        where: {
+          id: { in: input.ids },
+          teamId,
+          OR: [{ providerSource: 'local' }, { uploadedById: user.id }],
+          archivedAt: null,
+          status: { in: ['INBOX', 'PENDING_MANUAL'] },
+        },
+        select: { id: true, providerSource: true },
+      });
+
+      const eligibleIds = new Set(eligible.map((d) => d.id));
+      const skippedIds = input.ids.filter((id) => !eligibleIds.has(id));
+
+      if (eligible.length === 0) {
+        return { ignoredCount: 0, skippedIds };
+      }
+
+      const CHUNK = 100;
+      for (let i = 0; i < eligible.length; i += CHUNK) {
+        const chunk = eligible.slice(i, i + CHUNK);
+        await prisma.$transaction(async (tx) => {
+          await tx.discoveryDocument.updateMany({
+            where: { id: { in: chunk.map((d) => d.id) } },
+            data: { status: 'IGNORED' },
+          });
+
+          await tx.discoveryAuditLog.createMany({
+            data: chunk.map((d) => ({
+              event: 'DISCOVERY_DOCUMENT_IGNORED' as const,
+              discoveryDocumentId: d.id,
+              userId: user.id,
+              teamId,
+              metadata: {
+                action: 'bulk-ignore',
+                providerSource: d.providerSource,
+              },
+            })),
+          });
+        });
+      }
+
+      return { ignoredCount: eligible.length, skippedIds };
+    }),
+
+  /**
+   * Bulk-Unaccept: ACCEPTED-Belege wieder zurück auf INBOX setzen — also
+   * "aus dem Archiv entfernen". Endgültig archivierte Belege (archivedAt
+   * gesetzt) sind GoBD-WORM-geschützt und werden in skippedIds zurückgegeben.
+   */
+  bulkUnaccept: authenticatedProcedure
+    .input(ZBulkUnacceptRequestSchema)
+    .output(ZBulkUnacceptResponseSchema)
+    .mutation(async ({ input, ctx }) => {
+      const { teamId, user } = ctx;
+      if (!teamId) {
+        throw new AppError(AppErrorCode.UNAUTHORIZED, {
+          message: 'Aktion braucht einen Team-Kontext.',
+        });
+      }
+
+      const eligible = await prisma.discoveryDocument.findMany({
+        where: {
+          id: { in: input.ids },
+          teamId,
+          OR: [{ providerSource: 'local' }, { uploadedById: user.id }],
+          archivedAt: null,
+          status: 'ACCEPTED',
+        },
+        select: { id: true, providerSource: true },
+      });
+
+      const eligibleIds = new Set(eligible.map((d) => d.id));
+      const skippedIds = input.ids.filter((id) => !eligibleIds.has(id));
+
+      if (eligible.length === 0) {
+        return { unacceptedCount: 0, skippedIds };
+      }
+
+      const CHUNK = 100;
+      for (let i = 0; i < eligible.length; i += CHUNK) {
+        const chunk = eligible.slice(i, i + CHUNK);
+        await prisma.$transaction(async (tx) => {
+          await tx.discoveryDocument.updateMany({
+            where: { id: { in: chunk.map((d) => d.id) } },
+            data: {
+              status: 'INBOX',
+              acceptedAt: null,
+              acceptedById: null,
+            },
+          });
+
+          await tx.discoveryAuditLog.createMany({
+            data: chunk.map((d) => ({
+              event: 'DISCOVERY_DOCUMENT_UNACCEPTED' as const,
+              discoveryDocumentId: d.id,
+              userId: user.id,
+              teamId,
+              metadata: {
+                action: 'bulk-unaccept',
+                providerSource: d.providerSource,
+              },
+            })),
+          });
+        });
+      }
+
+      return { unacceptedCount: eligible.length, skippedIds };
+    }),
+
+  /**
+   * Korrespondenten-Aggregat fuer den Hub: „wer hat mir Belege geschickt".
+   * Gruppiert nach `correspondent`-Feld (vom Klassifikator extrahiert) und
+   * zaehlt pro Eintrag, wieviele Belege mit/ohne PDF-Anhang vorliegen.
+   *
+   * Status-Filter: ohne IGNORED — nur was wirklich als Beleg taugt.
+   * Sortierung: nach „ohne PDF" absteigend, sodass die Eintraege mit dem
+   * meisten Portal-Aufwand zuerst kommen.
+   */
+  getCorrespondentSummary: authenticatedProcedure
+    .output(ZGetCorrespondentSummaryResponseSchema)
+    .query(async ({ ctx }) => {
+      const { teamId, user } = ctx;
+      if (!teamId) return { entries: [], totalDistinct: 0 };
+
+      const { lookupPortalUrl } = await import('@nexasign/lib/server-only/sources/imap');
+
+      const docs = await prisma.discoveryDocument.findMany({
+        where: {
+          teamId,
+          OR: [{ providerSource: 'local' }, { uploadedById: user.id }],
+          status: { in: ['INBOX', 'PENDING_MANUAL', 'ACCEPTED', 'ARCHIVED', 'SIGNED'] },
+        },
+        select: {
+          correspondent: true,
+          senderDomain: true,
+          senderEmail: true,
+          _count: { select: { artifacts: { where: { kind: 'ATTACHMENT' } } } },
+        },
+      });
+
+      type Acc = {
+        total: number;
+        withPdf: number;
+        withoutPdf: number;
+        domainCounts: Map<string, number>;
+        anyEmail: string | null;
+      };
+      const map = new Map<string, Acc>();
+      for (const d of docs) {
+        const key = (d.correspondent ?? '').trim() || '(ohne Absender-Erkennung)';
+        const has = d._count.artifacts > 0;
+        const e: Acc = map.get(key) ?? {
+          total: 0,
+          withPdf: 0,
+          withoutPdf: 0,
+          domainCounts: new Map(),
+          anyEmail: null,
+        };
+        e.total += 1;
+        if (has) e.withPdf += 1;
+        else e.withoutPdf += 1;
+        if (d.senderDomain) {
+          e.domainCounts.set(
+            d.senderDomain.toLowerCase(),
+            (e.domainCounts.get(d.senderDomain.toLowerCase()) ?? 0) + 1,
+          );
+        }
+        if (!e.anyEmail && d.senderEmail) e.anyEmail = d.senderEmail;
+        map.set(key, e);
+      }
+
+      // Sortierung: zuerst nach „ohne PDF" (= meiste Portal-Arbeit), dann
+      // nach total. Ergebnis-Cap auf 50, weil >50 fuer eine UI-Tabelle nicht
+      // mehr scannbar ist; der User kann ueber die Trefferliste nachsuchen.
+      const entries = [...map.entries()]
+        .map(([correspondent, v]) => {
+          // Haeufigste Domain in der Gruppe gewinnt — falls die Gruppe Mails
+          // von mehreren Domains hat (selten, aber moeglich bei Klassifikator-
+          // Heuristik-Variabilitaet).
+          let topDomain: string | null = null;
+          let topCount = 0;
+          for (const [dom, n] of v.domainCounts) {
+            if (n > topCount) {
+              topCount = n;
+              topDomain = dom;
+            }
+          }
+          const portal = topDomain ? lookupPortalUrl(topDomain) : null;
+          return {
+            correspondent,
+            senderDomain: topDomain,
+            senderEmail: v.anyEmail,
+            portalUrl: portal?.url ?? null,
+            portalLabel: portal?.label ?? null,
+            total: v.total,
+            withPdf: v.withPdf,
+            withoutPdf: v.withoutPdf,
+          };
+        })
+        .sort((a, b) => b.withoutPdf - a.withoutPdf || b.total - a.total)
+        .slice(0, 50);
+
+      return { entries, totalDistinct: map.size };
     }),
 });

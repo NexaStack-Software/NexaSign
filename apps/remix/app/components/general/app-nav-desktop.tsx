@@ -52,17 +52,21 @@ export const AppNavDesktop = ({
       return [];
     }
 
-    // NexaFile-Hauptnavigation: Erstellen → Finden → Signieren → Archivieren.
-    // Erstellen und Archivieren sind PHP-Bereiche, bleiben aber Teil derselben
-    // Nutzerführung.
+    // NexaFile-Hauptnavigation: Erstellen → Finden → Signieren → Archiv.
+    // Erstellen ist externer PHP-Bereich (oben separat gerendert), die anderen
+    // drei sind Remix-Routen.
     return [
       {
         href: `/t/${teamUrl}/find-documents`,
-        label: msg`Dokumente finden`,
+        label: msg`Finden`,
       },
       {
         href: `/t/${teamUrl}/documents`,
-        label: msg`Dokumente signieren`,
+        label: msg`Signieren`,
+      },
+      {
+        href: `/t/${teamUrl}/archiv`,
+        label: msg`Archiv`,
       },
     ];
   }, [currentTeam, organisations]);
@@ -96,7 +100,7 @@ export const AppNavDesktop = ({
                   },
                 )}
               >
-                <Trans>Dokumente erstellen</Trans>
+                <Trans>Erstellen</Trans>
               </a>
 
               {/* 2. Finden — interne Remix-Route */}
@@ -115,12 +119,12 @@ export const AppNavDesktop = ({
                 </Link>
               ))}
 
-              {/* 3. Signieren — interne Remix-Route */}
+              {/* 3+4. Signieren + Archiv — interne Remix-Routen */}
               {menuNavigationLinks.slice(1).map(({ href, label }) => (
                 <Link
                   key={href}
                   to={href}
-                  data-tour="nav-documents"
+                  data-tour={href.endsWith('/documents') ? 'nav-documents' : undefined}
                   className={cn(
                     'rounded-md font-medium leading-5 text-muted-foreground ring-offset-background hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-muted-foreground/60',
                     {
@@ -131,20 +135,6 @@ export const AppNavDesktop = ({
                   {_(label)}
                 </Link>
               ))}
-
-              {/* 4. Archivieren — externer PHP-Bereich /vorlagen/gobd/ */}
-              <a
-                href="/vorlagen/gobd/"
-                className={cn(
-                  'rounded-md font-medium leading-5 text-muted-foreground ring-offset-background hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-muted-foreground/60',
-                  {
-                    'text-foreground dark:text-muted-foreground':
-                      pathname?.startsWith('/vorlagen/gobd'),
-                  },
-                )}
-              >
-                <Trans>Dokumente archivieren</Trans>
-              </a>
             </motion.div>
           )}
         </AnimatePresence>

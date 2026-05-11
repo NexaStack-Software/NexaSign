@@ -79,6 +79,9 @@ export const ZSyncRunSchema = z.object({
   rangeTo: z.coerce.date(),
   searchTerm: z.string().nullable(),
   status: ZSyncRunStatusSchema,
+  // Obergrenze: Anzahl Mails, die der Adapter im Range gefunden hat. null bei
+  // alten Runs vor Migration oder wenn der Adapter den Wert noch nicht setzt.
+  mailsTotal: z.number().int().nonnegative().nullable(),
   mailsChecked: z.number().int().nonnegative(),
   documentsAuto: z.number().int().nonnegative(),
   documentsManual: z.number().int().nonnegative(),
@@ -86,6 +89,9 @@ export const ZSyncRunSchema = z.object({
   documentsFailed: z.number().int().nonnegative(),
   errorMessage: z.string().nullable(),
   cancelRequested: z.boolean(),
+  // Wenn ein Cap gegriffen hat, hier der Grund: 'BYTES_CAP' / 'MAILS_CAP'.
+  // null = Lauf vollstaendig durch. Frontend rendert daraus einen Hinweis.
+  truncationReason: z.string().nullable(),
   startedAt: z.coerce.date(),
   finishedAt: z.coerce.date().nullable(),
 });
@@ -110,6 +116,16 @@ export const ZListSyncRunsRequestSchema = z.object({
 });
 
 export const ZListSyncRunsResponseSchema = z.array(ZSyncRunSchema);
+
+export const ZRecentSyncRunSchema = ZSyncRunSchema.extend({
+  sourceLabel: z.string(),
+});
+
+export const ZListRecentSyncRunsRequestSchema = z.object({
+  limit: z.number().int().min(1).max(10).default(5),
+});
+
+export const ZListRecentSyncRunsResponseSchema = z.array(ZRecentSyncRunSchema);
 
 export const ZCancelSyncRunRequestSchema = z.object({
   syncRunId: z.string(),
@@ -148,4 +164,32 @@ export type TSyncRun = z.infer<typeof ZSyncRunSchema>;
 export type TSyncRunStatus = z.infer<typeof ZSyncRunStatusSchema>;
 export type TStartSyncRunRequest = z.infer<typeof ZStartSyncRunRequestSchema>;
 export type TListSyncRunsRequest = z.infer<typeof ZListSyncRunsRequestSchema>;
+export type TRecentSyncRun = z.infer<typeof ZRecentSyncRunSchema>;
 export type TCancelSyncRunRequest = z.infer<typeof ZCancelSyncRunRequestSchema>;
+
+// IMAP-Folder-Diagnose: zeigt der Persona, welche Folder ihr IMAP-Account
+// exposed und welche der Sync-Adapter wirklich scannt. Kernzweck: Gmail-User
+// stossen darauf, dass sie „[Gmail]/Alle Nachrichten" in IMAP freigeben muessen.
+export const ZInspectImapFoldersRequestSchema = z.object({
+  sourceId: z.string(),
+});
+
+export const ZImapFolderInfoSchema = z.object({
+  path: z.string(),
+  specialUse: z.string().nullable(),
+  scanned: z.boolean(),
+});
+
+export const ZInspectImapFoldersResponseSchema = z.object({
+  folders: z.array(ZImapFolderInfoSchema),
+  scannedPaths: z.array(z.string()),
+  isGmailHost: z.boolean(),
+  // Wenn der Provider Gmail ist und „All Mail" / „Alle Nachrichten" NICHT in
+  // der Folder-Liste auftaucht, scannen wir nur die INBOX — das ist fast immer
+  // ein Konfigurations-Bug auf Gmail-Seite.
+  gmailAllMailVisible: z.boolean(),
+});
+
+export type TInspectImapFoldersRequest = z.infer<typeof ZInspectImapFoldersRequestSchema>;
+export type TInspectImapFoldersResponse = z.infer<typeof ZInspectImapFoldersResponseSchema>;
+export type TImapFolderInfo = z.infer<typeof ZImapFolderInfoSchema>;

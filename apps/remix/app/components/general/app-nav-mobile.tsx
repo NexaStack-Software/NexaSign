@@ -66,21 +66,20 @@ export const AppNavMobile = ({ isMenuOpen, onMenuOpenChange }: AppNavMobileProps
     return [
       {
         href: '/vorlagen/',
-        text: t`Dokumente erstellen`,
+        text: t`Erstellen`,
         external: true,
       },
       {
         href: `/t/${teamUrl}/find-documents`,
-        text: t`Dokumente finden`,
+        text: t`Finden`,
       },
       {
         href: `/t/${teamUrl}/documents`,
-        text: t`Dokumente signieren`,
+        text: t`Signieren`,
       },
       {
-        href: '/vorlagen/gobd/',
-        text: t`Dokumente archivieren`,
-        external: true,
+        href: `/t/${teamUrl}/archiv`,
+        text: t`Archiv`,
       },
       {
         href: '/inbox',

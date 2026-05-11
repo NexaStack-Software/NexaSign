@@ -42,7 +42,6 @@ export const KNOWN_RECHNUNG_DOMAINS: ReadonlyArray<string> = [
   'cloudflare.com',
   'godaddy.com',
   'deutschepost.de',
-  'uber.com',
   'flixbus.de',
   'amazon.de',
   'amazon.com',
@@ -77,6 +76,126 @@ export const IGNORE_KEYWORDS: ReadonlyArray<string> = [
   'sale',
   'rabatt',
   '% off',
+];
+
+/**
+ * Hartes Veto auf Subject/Body-Ebene: wenn eines dieser Patterns in Subject
+ * oder Body auftaucht, ist es nie ein Beleg — auch wenn der Sender in
+ * KNOWN_RECHNUNG_DOMAINS steht oder ein Betrag im Body steht.
+ *
+ * Praxis-Cases:
+ *   - „Fehlgeschlagene Zahlung" / „payment failed" — keine Buchung, also
+ *     auch keine Quittung
+ *   - „Sicherheitstoken" / „2FA" — Login-Codes, kein Beleg
+ *   - „Verifizierung" / „security alert" — Service-Notification
+ *   - „Konto gesperrt" / „Konto geschlossen" — Compliance-Mail
+ */
+export const STRONG_NEGATIVE_KEYWORDS: ReadonlyArray<string> = [
+  // Zahlungs-Misslingen (deutsch + englisch)
+  'fehlgeschlagene zahlung',
+  'zahlung fehlgeschlagen',
+  'zahlung konnte nicht',
+  'fehlgeschlagene abbuchung',
+  'lastschrift fehlgeschlagen',
+  'payment failed',
+  'failed payment',
+  'unsuccessful payment',
+  'payment unsuccessful',
+  'declined payment',
+  'payment declined',
+  // Login / Security / 2FA
+  'sicherheitstoken',
+  'security token',
+  'verifizierungs-code',
+  'verifizierungscode',
+  'verification code',
+  'login-bestätigung',
+  'login confirmation',
+  '2-faktor',
+  'two-factor',
+  'einmalpasswort',
+  'one-time password',
+  'security alert',
+  'sicherheitswarnung',
+  // Konto-Compliance (kein Beleg)
+  'konto gesperrt',
+  'konto geschlossen',
+  'account suspended',
+  'account closed',
+  'account locked',
+  'konto vorläufig gesperrt',
+];
+
+/**
+ * Regex-Variante der STRONG_NEGATIVE_KEYWORDS — fuer Faelle, wo zwischen den
+ * Schluesselwoertern Fuellwoerter stehen (typisch fuer maschinell generierte
+ * Betreffe wie „€10.00 payment to Gamma was unsuccessful" oder „Eine
+ * Rechnungszahlung fuer X ist fehlgeschlagen"). Substring-Match wuerde dort
+ * versagen.
+ *
+ * Distanz: bis zu 60 Zeichen zwischen Anker-Woertern, das deckt die meisten
+ * realen Faelle ab ohne ganze Newsletter-Absaetze zu treffen.
+ */
+export const STRONG_NEGATIVE_PATTERNS: ReadonlyArray<RegExp> = [
+  // Englisch: payment ... unsuccessful/failed/declined (beide Reihenfolgen)
+  /\bpayment\b[\s\S]{0,60}\b(unsuccessful|failed|declined|could not be processed)\b/i,
+  /\b(unsuccessful|failed|declined)\b[\s\S]{0,60}\bpayment\b/i,
+  // Deutsch: Zahlung/Rechnungszahlung/Abbuchung ... fehlgeschlagen/abgelehnt/nicht möglich
+  /\b(zahlung|rechnungszahlung|abbuchung|lastschrift)\b[\s\S]{0,60}\b(fehlgeschlagen|abgelehnt|nicht möglich|konnte nicht|storniert)\b/i,
+  /\b(fehlgeschlagene?|abgelehnte?)\b[\s\S]{0,60}\b(zahlung|abbuchung|lastschrift|rechnungszahlung)\b/i,
+  // „Charge failed" / „Belastung fehlgeschlagen"
+  /\bcharge\b[\s\S]{0,40}\bfailed\b/i,
+  /\bbelastung\b[\s\S]{0,40}\bfehlgeschlagen\b/i,
+];
+
+/**
+ * Hartes Veto auf Domain-Ebene: alle Mails von diesen Domains werden als
+ * IGNORE behandelt. Ergaenzt NON_INVOICE_SENDER_PATTERNS (E-Mail-genau) um
+ * Faelle wo der gesamte Anbieter pauschal raus soll, weil seine Mails fuer
+ * den User nie als Beleg taugen — z. B. Mitfahrdienste, deren Quittungen
+ * ueber andere Wege erfasst werden.
+ *
+ * Suffix-Match: '.uber.com' und 'uber.com' matchen beide.
+ */
+export const NON_INVOICE_DOMAINS: ReadonlyArray<string> = [
+  'uber.com',
+  // Estateguru: P2P-Invest-Plattform, schickt rein werbliche
+  // „Neue Investitionsmoeglichkeit!"-Mails — keine Belege.
+  'estateguru.co',
+];
+
+/**
+ * Hartes Veto: Absender-Adressen, die nie Belege verschicken — auch wenn die
+ * Mail Beleg-Keywords im Body enthaelt.
+ *
+ * Hintergrund: KNOWN_RECHNUNG_DOMAINS listet ganze Domains wie `google.com`,
+ * `github.com`. Damit wuerden alle Service-Notifications dieser Anbieter (Ads-
+ * Reports, Calendar-Einladungen, Search-Console-Berichte) faelschlich als
+ * Beleg-Mails durchgehen. Diese Veto-Liste ueberstimmt die Domain-Whitelist
+ * fuer eindeutige Service-Adressen, OHNE legitime Beleg-Sender (Stripe,
+ * Anthropic billing, GitHub billing) zu blocken.
+ *
+ * Vergleich erfolgt case-insensitiv auf die volle E-Mail-Adresse.
+ */
+export const NON_INVOICE_SENDER_PATTERNS: ReadonlyArray<string> = [
+  // Google Services (Payments/Workspace-Billing schlagen separat zu)
+  'calendar-noreply@google.com',
+  'googleads-noreply@google.com',
+  'googleadwords-noreply@google.com',
+  'searchconsole-noreply@google.com',
+  'forwarding-noreply@google.com',
+  'feedback-noreply@google.com',
+  'noreply-googleplay@google.com',
+  'googleplay-noreply@google.com',
+  'noreply@youtube.com',
+  'noreply@accounts.google.com',
+  'no-reply@accounts.google.com',
+  // GitHub Notifications (NICHT Billing — billing@github.com bleibt erlaubt)
+  'notifications@github.com',
+  'noreply@github.com',
+  // LinkedIn / Xing Notifications
+  'notifications-noreply@linkedin.com',
+  'notifications@linkedin.com',
 ];
 
 /**
@@ -217,7 +336,6 @@ export const PORTAL_URLS_BY_DOMAIN: ReadonlyArray<{ domain: string; url: string;
       url: 'https://www.flixbus.de/booking/manage',
       label: 'Flixbus Buchungen',
     },
-    { domain: 'uber.com', url: 'https://riders.uber.com/trips', label: 'Uber Trips' },
     {
       domain: 'deutschepost.de',
       url: 'https://www.deutschepost.de/de/login.html',

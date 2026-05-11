@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120" fill="none">
+  <ellipse cx="80" cy="105" rx="55" ry="6" fill="#fde68a" opacity="0.6"/>
+  <!-- Kalender-Block -->
+  <rect x="35" y="30" width="50" height="60" rx="4" fill="#ffffff" stroke="#d97706" stroke-width="2"/>
+  <rect x="35" y="30" width="50" height="14" rx="4" fill="#f59e0b"/>
+  <line x1="45" y1="26" x2="45" y2="38" stroke="#d97706" stroke-width="3" stroke-linecap="round"/>
+  <line x1="75" y1="26" x2="75" y2="38" stroke="#d97706" stroke-width="3" stroke-linecap="round"/>
+  <!-- Tage-Linien -->
+  <rect x="42" y="52" width="6" height="6" fill="#fde68a"/>
+  <rect x="52" y="52" width="6" height="6" fill="#fde68a"/>
+  <rect x="62" y="52" width="6" height="6" fill="#f59e0b"/>
+  <rect x="72" y="52" width="6" height="6" fill="#fde68a"/>
+  <rect x="42" y="64" width="6" height="6" fill="#fde68a"/>
+  <rect x="52" y="64" width="6" height="6" fill="#fde68a"/>
+  <rect x="62" y="64" width="6" height="6" fill="#fde68a"/>
+  <rect x="72" y="64" width="6" height="6" fill="#fde68a"/>
+  <rect x="42" y="76" width="6" height="6" fill="#fde68a"/>
+  <rect x="52" y="76" width="6" height="6" fill="#fde68a"/>
+  <!-- Uhr -->
+  <circle cx="115" cy="65" r="22" fill="#ffffff" stroke="#d97706" stroke-width="2"/>
+  <line x1="115" y1="65" x2="115" y2="50" stroke="#d97706" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="115" y1="65" x2="125" y2="68" stroke="#d97706" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="115" cy="65" r="2" fill="#d97706"/>
+</svg>

@@ -17,10 +17,12 @@ import { findDocumentAuditLogsRoute } from './find-document-audit-logs';
 import { findDocumentsRoute } from './find-documents';
 import { findDocumentsInternalRoute } from './find-documents-internal';
 import { findInboxRoute } from './find-inbox';
+import { findOutstandingForSignerRoute } from './find-outstanding-for-signer';
 import { getDocumentRoute } from './get-document';
 import { getDocumentByTokenRoute } from './get-document-by-token';
 import { getDocumentsByIdsRoute } from './get-documents-by-ids';
 import { getInboxCountRoute } from './get-inbox-count';
+import { getOutstandingSignatureCountRoute } from './get-outstanding-signature-count';
 import { redistributeDocumentRoute } from './redistribute-document';
 import { searchDocumentRoute } from './search-document';
 import { shareDocumentRoute } from './share-document';
@@ -62,6 +64,8 @@ export const documentRouter = router({
     find: findInboxRoute,
     getCount: getInboxCountRoute,
   }),
+  getOutstandingSignatureCount: getOutstandingSignatureCountRoute,
+  findOutstandingForSigner: findOutstandingForSignerRoute,
   attachment: {
     create: createAttachmentRoute,
     update: updateAttachmentRoute,

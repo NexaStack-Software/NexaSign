@@ -72,6 +72,8 @@ type DbDiscoveryDocument = {
   detectedInvoiceNumber: string | null;
   acceptedAt: Date | null;
   acceptedBy: { name: string | null } | null;
+  archivedAt: Date | null;
+  archivedBy: { name: string | null } | null;
   archivePath: string | null;
   dataId: string | null;
   signingEnvelopeId: string | null;
@@ -133,6 +135,8 @@ const toDiscoveryDocument = (doc: DbDiscoveryDocument): DiscoveryDocument => {
     detectedInvoiceNumber: doc.detectedInvoiceNumber,
     acceptedAt: doc.acceptedAt,
     acceptedByName: doc.acceptedBy?.name ?? null,
+    archivedAt: doc.archivedAt,
+    archivedByName: doc.archivedBy?.name ?? null,
     attachmentCount,
     hasArchive,
     signingEnvelopeId: doc.signingEnvelopeId,
@@ -169,6 +173,7 @@ const buildWhere = (
     const textFilter = [
       { title: { contains: text, mode: 'insensitive' as const } },
       { correspondent: { contains: text, mode: 'insensitive' as const } },
+      { detectedInvoiceNumber: { contains: text, mode: 'insensitive' as const } },
     ];
     appendAnd(where, { OR: textFilter });
   }
@@ -228,6 +233,7 @@ export const dbDiscoveryReader: DiscoveryReader = {
         ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
         include: {
           acceptedBy: { select: { name: true } },
+          archivedBy: { select: { name: true } },
           source: { select: { label: true } },
           // attachmentCount: dedizierter Filter auf kind=ATTACHMENT. Kostet
           // pro Page (PAGE_SIZE=25) eine extra Sub-Query, ist aber durch den
@@ -277,6 +283,8 @@ export const dbDiscoveryReader: DiscoveryReader = {
 
     const months = new Map<string, number>();
     let accepted = 0;
+    let archived = 0;
+    let ignored = 0;
     let needsReview = 0;
     let downloadable = 0;
     let missingAmount = 0;
@@ -288,6 +296,12 @@ export const dbDiscoveryReader: DiscoveryReader = {
 
       if (doc.status === 'ACCEPTED' || doc.status === 'SIGNED' || doc.status === 'ARCHIVED') {
         accepted += 1;
+      }
+      if (doc.status === 'ARCHIVED') {
+        archived += 1;
+      }
+      if (doc.status === 'IGNORED') {
+        ignored += 1;
       }
       if (doc.status === 'INBOX' || doc.status === 'PENDING_MANUAL') {
         needsReview += 1;
@@ -306,6 +320,8 @@ export const dbDiscoveryReader: DiscoveryReader = {
     return {
       total: docs.length,
       accepted,
+      archived,
+      ignored,
       needsReview,
       downloadable,
       missingAmount,
@@ -323,6 +339,7 @@ export const dbDiscoveryReader: DiscoveryReader = {
       where: { ...where, id },
       include: {
         acceptedBy: { select: { name: true } },
+        archivedBy: { select: { name: true } },
         source: { select: { label: true } },
         artifacts: {
           where: { kind: 'ATTACHMENT' },

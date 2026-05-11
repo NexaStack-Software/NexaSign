@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 96" fill="none">
+  <!-- Dokument mit Schraffur -->
+  <rect x="30" y="14" width="60" height="74" rx="4" fill="#ffffff" stroke="#9ca3af" stroke-width="2"/>
+  <path d="M 75 14 L 75 30 L 90 30" stroke="#9ca3af" stroke-width="2" fill="none"/>
+  <line x1="40" y1="46" x2="80" y2="46" stroke="#d1d5db" stroke-width="2" stroke-linecap="round"/>
+  <line x1="40" y1="56" x2="70" y2="56" stroke="#d1d5db" stroke-width="2" stroke-linecap="round"/>
+  <line x1="40" y1="66" x2="78" y2="66" stroke="#d1d5db" stroke-width="2" stroke-linecap="round"/>
+  <line x1="40" y1="76" x2="60" y2="76" stroke="#d1d5db" stroke-width="2" stroke-linecap="round"/>
+  <!-- Frage-Icon oben rechts -->
+  <circle cx="92" cy="22" r="10" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1.5"/>
+  <text x="92" y="27" font-family="ui-sans-serif, system-ui" font-size="11" fill="#6b7280" text-anchor="middle" font-weight="bold">?</text>
+</svg>

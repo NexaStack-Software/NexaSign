@@ -26,6 +26,14 @@ export type SyncRangeContext = {
 };
 
 export type SyncRangeProgress = {
+  /**
+   * Obergrenze: Anzahl Mails, die der Adapter im Range gefunden hat. Wird
+   * einmalig nach dem IMAP-Search gesetzt und aendert sich danach nicht mehr.
+   * Frontend kann mit mailsChecked + Zeit eine ETA berechnen.
+   * Optional, weil aeltere Implementierungen das nicht reporten und der
+   * Persistenz-Pfad das nullable verarbeiten muss.
+   */
+  mailsTotal?: number | null;
   mailsChecked: number;
   documentsAuto: number;
   documentsManual: number;
@@ -33,7 +41,22 @@ export type SyncRangeProgress = {
   documentsFailed: number;
 };
 
-export type SyncRangeResult = SyncRangeProgress;
+/**
+ * Grund fuer einen vorzeitig abgebrochenen Lauf.
+ *   BYTES_CAP — RAM/Disk-Sicherheitsgrenze pro Lauf erreicht, Range nicht
+ *               vollstaendig abgearbeitet. UI zeigt das als Hinweis.
+ *   MAILS_CAP — Mail-Anzahl-Grenze pro Lauf erreicht (selten, nur bei riesigen
+ *               Postfaechern + langen Ranges).
+ * null — Lauf vollstaendig durch.
+ *
+ * User-Cancel ist KEINE Truncation und wird hier nicht gefuehrt; cancelRequested
+ * im DB-Eintrag deckt das ab.
+ */
+export type SyncTruncationReason = 'BYTES_CAP' | 'MAILS_CAP' | null;
+
+export type SyncRangeResult = SyncRangeProgress & {
+  truncationReason?: SyncTruncationReason;
+};
 
 export type TestConnectionInput = {
   config: unknown;

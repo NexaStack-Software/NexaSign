@@ -32,7 +32,6 @@ import { Input } from '@nexasign/ui/primitives/input';
 import { Skeleton } from '@nexasign/ui/primitives/skeleton';
 import { useToast } from '@nexasign/ui/primitives/use-toast';
 
-import { AcceptDiscoveryDocumentButton } from '~/components/dialogs/accept-discovery-document-button';
 import { useDeferredStatusAction } from '~/components/discovery/use-deferred-status-action';
 import { appMetaTags } from '~/utils/meta';
 
@@ -45,7 +44,7 @@ const PAGE_SIZE_HINT = 5;
 /**
  * Schnell-Review-Modus für die Beleg-Liste. Optimiert für Persona, die in
  * einem Rutsch hunderte Belege durchgehen muss: Vollbild-Single-Doc-Ansicht,
- * Tastenkürzel J/K für Navigation, A/I für Akzeptieren/Ignorieren, E zum
+ * Tastenkürzel J/K für Navigation, A/I für Ins Archiv/Ignorieren, E zum
  * Editieren. Lädt die Liste aller offenen Belege per Infinite Query und
  * fetched die Details des aktuellen Eintrags lazy nach.
  *
@@ -329,7 +328,8 @@ const ReviewHeader = ({
           </p>
           <p className="text-xs text-muted-foreground">
             <Trans>
-              {positionDisplay} von {totalDisplay} · {processedCount} in dieser Sitzung erledigt
+              {positionDisplay} von {totalDisplay} · {processedCount} in dieser Sitzung erledigt ·
+              A/I wirkt sofort, mit 5 Sekunden Rückgängig
             </Trans>
           </p>
         </div>
@@ -378,8 +378,8 @@ const ReviewDone = ({ backHref, processed }: { backHref: string; processed: numb
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
         <Trans>
-          Du hast {processed} Belege in dieser Sitzung erledigt. Wenn du weitere Belege findest,
-          starte einfach einen neuen Sync.
+          Sie haben {processed} Belege in dieser Sitzung erledigt. Wenn Sie weitere Belege finden
+          möchten, starten Sie einfach einen neuen Sync.
         </Trans>
       </p>
     </div>
@@ -427,6 +427,7 @@ const ReviewBody = ({
   });
   const docDate = detail.documentDate ?? detail.capturedAt;
   const isAccepted = Boolean(detail.acceptedAt);
+  const isArchived = Boolean(detail.archivedAt);
 
   return (
     <div className="grid flex-1 gap-4 lg:grid-cols-[3fr_2fr]">
@@ -455,7 +456,7 @@ const ReviewBody = ({
           {isAccepted && (
             <Badge variant="secondary" className="gap-1">
               <CheckCircle2Icon className="h-3 w-3" aria-hidden />
-              <Trans>Bereits akzeptiert</Trans>
+              <Trans>Bereits im Archiv</Trans>
             </Badge>
           )}
         </div>
@@ -473,7 +474,7 @@ const ReviewBody = ({
         <DetectedFieldsCard
           documentId={documentId}
           detail={detail}
-          isAccepted={isAccepted}
+          isArchived={isArchived}
           editFieldRef={editFieldRef}
         />
 
@@ -484,17 +485,11 @@ const ReviewBody = ({
             <Trans>Aktion (Tastenkürzel)</Trans>
           </p>
           <div className="grid grid-cols-2 gap-2">
-            <AcceptDiscoveryDocumentButton
-              size="sm"
-              disabled={isAccepted}
-              onConfirm={onAccept}
-              label={
-                <span className="flex items-center gap-1.5">
-                  <Trans>Akzeptieren</Trans>
-                  <Kbd>A</Kbd>
-                </span>
-              }
-            />
+            <Button size="sm" disabled={isAccepted} onClick={onAccept}>
+              <CheckCircle2Icon className="mr-1.5 h-4 w-4 text-emerald-600" aria-hidden />
+              <Trans>Ins Archiv</Trans>
+              <Kbd className="ml-1.5">A</Kbd>
+            </Button>
             <Button size="sm" variant="outline" onClick={onIgnore}>
               <XCircleIcon className="mr-1.5 h-4 w-4 text-destructive" aria-hidden />
               <Trans>Ignorieren</Trans>
@@ -521,12 +516,12 @@ const ReviewBody = ({
 const DetectedFieldsCard = ({
   documentId,
   detail,
-  isAccepted,
+  isArchived,
   editFieldRef,
 }: {
   documentId: string;
   detail: NonNullable<TGetDocumentDetailResponse>['document'];
-  isAccepted: boolean;
+  isArchived: boolean;
   editFieldRef: React.MutableRefObject<HTMLButtonElement | null>;
 }) => {
   const utils = trpc.useUtils();
@@ -554,7 +549,7 @@ const DetectedFieldsCard = ({
       <FieldRow
         label={_(msg`Korrespondent`)}
         value={detail.correspondent}
-        disabled={isAccepted}
+        disabled={isArchived}
         editFieldRef={editFieldRef}
         onSave={async (next) => {
           await updateFields.mutateAsync({ id: documentId, correspondent: next });
@@ -563,7 +558,7 @@ const DetectedFieldsCard = ({
       <FieldRow
         label={_(msg`Betrag`)}
         value={detail.detectedAmount}
-        disabled={isAccepted}
+        disabled={isArchived}
         onSave={async (next) => {
           await updateFields.mutateAsync({ id: documentId, detectedAmount: next });
         }}
@@ -571,7 +566,7 @@ const DetectedFieldsCard = ({
       <FieldRow
         label={_(msg`Rechnungsnummer`)}
         value={detail.detectedInvoiceNumber}
-        disabled={isAccepted}
+        disabled={isArchived}
         monospace
         onSave={async (next) => {
           await updateFields.mutateAsync({ id: documentId, detectedInvoiceNumber: next });
@@ -744,7 +739,7 @@ const KeyboardLegend = () => (
     </span>
     <Legend keyHint="J" label="Weiter" />
     <Legend keyHint="K" label="Zurück" />
-    <Legend keyHint="A" label="Akzeptieren" />
+    <Legend keyHint="A" label="Ins Archiv" />
     <Legend keyHint="I" label="Ignorieren" />
     <Legend keyHint="S" label="Überspringen" />
     <Legend keyHint="E" label="Feld bearbeiten" />

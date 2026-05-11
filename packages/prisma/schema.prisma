@@ -68,6 +68,7 @@ model User {
 
   uploadedDiscoveryDocuments DiscoveryDocument[]
   acceptedDiscoveryDocuments DiscoveryDocument[] @relation("DiscoveryDocumentAcceptedBy")
+  archivedDiscoveryDocuments DiscoveryDocument[] @relation("DiscoveryDocumentArchivedBy")
   sources                    Source[]
   triggeredSyncRuns          SyncRun[]
   discoveryAuditLogs         DiscoveryAuditLog[]
@@ -1178,6 +1179,8 @@ model DiscoveryDocument {
   detectedInvoiceNumber  String?
   portalHint             String?
   messageIdHash          String?
+  senderEmail            String?
+  senderDomain           String?
 
   // Mail-Body als Klartext (HTML-stripped) für UI-Anzeige. Begrenzt auf 1 MB.
   // Originale .eml + body.html liegen als Artifacts auf dem Filesystem.
@@ -1188,10 +1191,15 @@ model DiscoveryDocument {
   // Relative zu NEXT_PRIVATE_DISCOVERY_ARCHIVE_PATH.
   archivePath   String?
 
-  // GoBD-Lifecycle: ab acceptedAt zählt 10-Jahres-Retention, WORM aktiv.
+  // GoBD-Lifecycle Stufe 1: User hat den Beleg übernommen. Noch korrigierbar.
   acceptedAt    DateTime?
   acceptedById  Int?
   acceptedBy    User?    @relation("DiscoveryDocumentAcceptedBy", fields: [acceptedById], references: [id], onDelete: SetNull)
+
+  // GoBD-Lifecycle Stufe 2: endgültig archiviert. Ab hier WORM/read-only.
+  archivedAt    DateTime?
+  archivedById  Int?
+  archivedBy    User?    @relation("DiscoveryDocumentArchivedBy", fields: [archivedById], references: [id], onDelete: SetNull)
 
   // dataId ist optional, weil MANUAL-Belege (Beleg-Hinweis ohne PDF, User muss
   // im Portal nachziehen) keine Bytes haben. Lokale Uploads und IMAP-AUTO-
@@ -1216,6 +1224,8 @@ model DiscoveryDocument {
   @@index([sourceId])
   @@index([messageIdHash])
   @@index([acceptedAt])
+  @@index([archivedAt])
+  @@index([senderDomain])
 
   // Idempotenz-Constraint: pro Source darf jede Message-ID nur einmal vorkommen.
   // Schliesst die Race-Luecke des App-seitigen findFirst-vor-create-Patterns im
@@ -1325,12 +1335,14 @@ model SyncRun {
   status        SyncRunStatus @default(PENDING)
 
   mailsChecked      Int @default(0)
+  mailsTotal        Int?
   documentsAuto     Int @default(0)
   documentsManual   Int @default(0)
   documentsIgnored  Int @default(0)
   documentsFailed   Int @default(0)
 
   errorMessage String?
+  truncationReason String?
   cancelRequested Boolean @default(false)
 
   startedAt  DateTime  @default(now())
@@ -1355,7 +1367,9 @@ enum DiscoveryAuditEvent {
   IMAP_DOCUMENT_IMPORTED
   IMAP_DOCUMENT_RESYNCED
   DISCOVERY_DOCUMENT_ACCEPTED
+  DISCOVERY_DOCUMENT_ARCHIVED
   DISCOVERY_DOCUMENT_IGNORED
+  DISCOVERY_DOCUMENT_UNACCEPTED
   DISCOVERY_DOCUMENT_UPDATED
   DISCOVERY_SIGNING_DOCUMENT_CREATED
 }

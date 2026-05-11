@@ -57,6 +57,18 @@ msgstr "「{title}」は正常に削除されました"
 msgid "\"{title}\" has been successfully hidden"
 msgstr ""
 
+#: apps/remix/app/components/sources/folder-diagnostics-card.tsx
+msgid "„Alle Nachrichten\" fehlt"
+msgstr ""
+
+#: apps/remix/app/components/sources/folder-diagnostics-card.tsx
+msgid "„Alle Nachrichten\" freigegeben"
+msgstr ""
+
+#: apps/remix/app/components/sources/folder-diagnostics-card.tsx
+msgid "„Änderungen speichern\" → in NexaFile neuen Lauf starten"
+msgstr ""
+
 #: apps/remix/app/components/forms/document-preferences-form.tsx
 msgid "\"Team Name\" has invited you to sign \"example document\"."
 msgstr "「Team Name」から「example document」への署名依頼が届いています。"
@@ -245,7 +257,9 @@ msgid "{0, plural, one {You are about to delete the selected template.} other {Y
 msgstr "{0, plural, other {選択したテンプレートを削除しようとしています（# 件のテンプレート）。}}"
 
 #. placeholder {0}: _(FRIENDLY_FIELD_TYPE[fieldType as FieldType])
+#. placeholder {0}: data ? `${numberFmt.format(data.totalCount)} akzeptieren` : 'Akzeptieren'
 #. placeholder {0}: route.label
+#: apps/remix/app/components/dialogs/smart-bulk-accept-dialog.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-auto-sign.tsx
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings._layout.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings._layout.tsx
@@ -257,9 +271,47 @@ msgstr "{0}"
 msgid "{0} Anhang/Anhänge wieder verfügbar."
 msgstr ""
 
-#. placeholder {0}: summary.missingAmount + summary.missingInvoiceNumber
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "{0} Datenlücken"
+#. placeholder {0}: result.acceptedCount
+#: apps/remix/app/components/dialogs/smart-bulk-accept-dialog.tsx
+msgid "{0} Belege akzeptiert"
+msgstr ""
+
+#. placeholder {0}: res.unacceptedCount
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "{0} Belege aus dem Archiv entfernt"
+msgstr ""
+
+#. placeholder {0}: res.archivedCount
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "{0} Belege endgültig archiviert"
+msgstr ""
+
+#. placeholder {0}: numberFmt.format(overview.total)
+#: apps/remix/app/components/discovery/sync-overview-card.tsx
+msgid "{0} Belege gefunden"
+msgstr ""
+
+#. placeholder {0}: res.skippedIds.length
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "{0} Belege konnten nicht archiviert werden."
+msgstr ""
+
+#. placeholder {0}: numberFmt.format(overview.needsReview)
+#: apps/remix/app/components/discovery/sync-overview-card.tsx
+msgid "{0} Belege warten auf Ihre Prüfung."
+msgstr ""
+
+#. placeholder {0}: res.deletedDiscoveryDocuments
+#. placeholder {1}: res.deletedSources
+#. placeholder {2}: res.deletedEnvelopes
+#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
+msgid "{0} Belege, {1} Postfächer und {2} Verträge gelöscht."
+msgstr ""
+
+#. placeholder {0}: result.skippedIds.length
+#: apps/remix/app/components/dialogs/smart-bulk-accept-dialog.tsx
+msgid "{0} bereits akzeptiert oder nicht eligibel — übersprungen."
 msgstr ""
 
 #. placeholder {0}: team.name
@@ -267,21 +319,26 @@ msgstr ""
 msgid "{0} direct signing templates"
 msgstr "{0} のダイレクト署名テンプレート"
 
+#. placeholder {0}: res.skippedIds.length
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "{0} endgültig archivierte Belege konnten nicht entfernt werden (10-Jahres-Aufbewahrung)."
+msgstr ""
+
 #. placeholder {0}: t(FRIENDLY_FIELD_TYPE[field.type])
 #: packages/ui/components/document/envelope-recipient-field-tooltip.tsx
 msgid "{0} field"
 msgstr "{0} フィールド"
-
-#. placeholder {0}: summary.accepted
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "{0} geprüft"
-msgstr ""
 
 #. placeholder {0}: team.name
 #. placeholder {1}: envelope.title
 #: packages/lib/jobs/definitions/emails/send-signing-email.handler.ts
 msgid "{0} has invited you to {recipientActionVerb} the document \"{1}\"."
 msgstr "{0} からドキュメント「{1}」への{recipientActionVerb}依頼が届いています。"
+
+#. placeholder {0}: counts.ignore
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{0} ignorieren"
+msgstr ""
 
 #. placeholder {0}: run.documentsAuto
 #. placeholder {1}: run.documentsManual
@@ -291,10 +348,27 @@ msgstr "{0} からドキュメント「{1}」への{recipientActionVerb}依頼�
 msgid "{0} importiert, {1} manuell, {2} ignoriert · {3} Mails geprüft"
 msgstr ""
 
+#. placeholder {0}: counts.archive
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{0} ins Archiv"
+msgstr ""
+
 #. placeholder {0}: team.name
 #: packages/lib/jobs/definitions/emails/send-signing-email.handler.ts
 msgid "{0} invited you to {recipientActionVerb} a document"
 msgstr "{0} からドキュメントへの{recipientActionVerb}依頼が届いています"
+
+#. placeholder {0}: numberFmt.format(run.mailsChecked)
+#. placeholder {1}: numberFmt.format(found)
+#. placeholder {2}: ratePerMin >= 10 ? Math.round(ratePerMin) : ratePerMin.toFixed(1)
+#: apps/remix/app/components/discovery/background-sync-banner.tsx
+msgid "{0} Mails geprüft · {1} Belege · {2} Mails/Min · Gesamtumfang wird ermittelt"
+msgstr ""
+
+#. placeholder {0}: counts.undecided
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{0} noch zu entscheiden"
+msgstr ""
 
 #. placeholder {0}: remaining.documents
 #. placeholder {1}: quota.documents
@@ -304,9 +378,9 @@ msgstr "{0} からドキュメントへの{recipientActionVerb}依頼が届い�
 msgid "{0} of {1} documents remaining this month."
 msgstr "今月は {1} 件中 {0} 件の文書を残しています。"
 
-#. placeholder {0}: summary.needsReview
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "{0} offen"
+#. placeholder {0}: doc.portalUrlLabel
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "{0} öffnen"
 msgstr ""
 
 #. placeholder {0}: user.name || user.email
@@ -321,15 +395,37 @@ msgstr "{0} が「{1}」を代表してドキュメント「{2}」の{recipientA
 msgid "{0} Teams"
 msgstr "{0} のチーム"
 
-#. placeholder {0}: summary.total
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "{0} Treffer"
+#. placeholder {0}: numberFmt.format(run.mailsChecked)
+#. placeholder {1}: numberFmt.format(total)
+#. placeholder {2}: numberFmt.format(found)
+#. placeholder {3}: etaMin !== null && etaMin > 0 ? etaMin >= 60 ? `${Math.floor(etaMin / 60)} Std ${etaMin % 60} Min` : `${etaMin} Min` : 'fast fertig'
+#: apps/remix/app/components/discovery/background-sync-banner.tsx
+msgid "{0} von {1} Mails · {2} Belege · ca. {3} verbleibend"
 msgstr ""
 
-#. placeholder {0}: data.documents.length
-#. placeholder {1}: data.total
+#. placeholder {0}: documents.length
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "{0} von {loadedTotal} geladen"
+msgstr ""
+
+#. placeholder {0}: queueIndex + 1
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "{0} von {queueTotal}"
+msgstr ""
+
+#. placeholder {0}: documents.length
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "{0} von {totalCount} Discovery-Belegen geladen"
+msgstr ""
+
+#. placeholder {0}: docs.length
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "{0} von {totalCount} geladen"
+msgstr ""
+
+#. placeholder {0}: visibleDocs.length
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "{0} von {1} angezeigt"
+msgid "{0} von {totalHits} geladen"
 msgstr ""
 
 #. placeholder {0}: currentStepData.order
@@ -338,6 +434,10 @@ msgstr ""
 msgctxt "The step counter"
 msgid "{0}/{1}"
 msgstr "{0}/{1}"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "{acceptedCount} Belege zur Ablage bereit"
+msgstr ""
 
 #: packages/ui/components/document/expiration-period-picker.tsx
 #: packages/ui/components/document/reminder-settings-picker.tsx
@@ -367,13 +467,28 @@ msgstr "{browserInfo}（{os}）"
 msgid "{charactersRemaining, plural, one {1 character remaining} other {{charactersRemaining} characters remaining}}"
 msgstr "{charactersRemaining, plural, other {{charactersRemaining} 文字残り}}"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "{downloadableCount} davon mit Anhang — ZIP enthält MANIFEST.txt mit Liste der übersprungenen Mails."
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "{downloadableCount} Belege mit Anhang bereit für Steuerpaket"
 msgstr ""
 
 #: packages/email/template-components/template-access-auth-2fa.tsx
 msgid "{expiresInMinutes, plural, one {This code will expire in # minute.} other {This code will expire in # minutes.}}"
 msgstr "{expiresInMinutes, plural, other {このコードは # 分後に有効期限が切れます。}}"
+
+#. placeholder {0}: run.documentsIgnored
+#. placeholder {1}: run.documentsFailed
+#. placeholder {2}: run.mailsChecked
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{importedCount} Treffer, {0} ignoriert, {1} fehlgeschlagen, {2} Mails geprüft"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "{inboxCount} Belege im Eingang"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "{inboxCount} Belege liegen im Eingang — prüfen, übernehmen oder ignorieren."
+msgstr ""
 
 #: packages/email/templates/document-invite.tsx
 msgid "{inviterName} <0>({inviterEmail})</0>"
@@ -423,6 +538,14 @@ msgstr "{inviterName} が「{teamName}」を代表して {0}<0/>「{documentName
 msgid "{inviterName} on behalf of \"{teamName}\" has invited you to {action} {documentName}"
 msgstr "{inviterName} が「{teamName}」を代表して {action} {documentName} を依頼しています"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{manualChangeCount} Entscheidungen haben Sie aktiv geändert."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{manualChangeCount} Entscheidungen stammen von Ihnen, der Rest sind NexaFile-Vorschläge."
+msgstr ""
+
 #: apps/remix/app/components/dialogs/passkey-create-dialog.tsx
 msgid "{MAXIMUM_PASSKEYS, plural, one {You cannot have more than # passkey.} other {You cannot have more than # passkeys.}}"
 msgstr "{MAXIMUM_PASSKEYS, plural, other {# 個を超えるパスキーを保持することはできません。}}"
@@ -433,6 +556,14 @@ msgstr "{MAXIMUM_PASSKEYS, plural, other {# 個を超えるパスキーを保持
 #: apps/remix/app/components/general/envelope/envelope-upload-button.tsx
 msgid "{maximumEnvelopeItemCount, plural, one {You cannot upload more than # item per envelope.} other {You cannot upload more than # items per envelope.}}"
 msgstr "{maximumEnvelopeItemCount, plural, other {1 つの封筒にアップロードできるアイテムは # 件までです。}}"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
+msgid "{positionDisplay} von {totalDisplay} · {processedCount} in dieser Sitzung erledigt · A/I wirkt sofort, mit 5 Sekunden Rückgängig"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "{queueTotal} Belege im Eingang"
+msgstr ""
 
 #: apps/remix/app/components/general/direct-template/direct-template-page.tsx
 msgid "{recipientActionVerb} document"
@@ -477,8 +608,20 @@ msgstr "{recipientReference} が {documentName} に署名しました"
 msgid "{remaningLength, plural, one {# character remaining} other {# characters remaining}}"
 msgstr "{remaningLength, plural, other {# 文字残り}}"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "{selectedCount} ausgewählt"
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "{sealedCount} Belege sind endgültig archiviert. Sie können sie noch lesen, suchen und herunterladen — aber nicht mehr ändern. So verlangt es das Finanzamt (10 Jahre Aufbewahrung, § 147 AO)."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "{selectedCount} aus Archiv entfernen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "{selectedCount} ausgewählt:"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "{selectedCount} endgültig archivieren"
 msgstr ""
 
 #: apps/remix/app/components/tables/envelopes-table-bulk-action-bar.tsx
@@ -497,6 +640,10 @@ msgstr "{teamName} から {0}<0/>「{documentName}」の依頼が届いていま
 #: packages/email/templates/document-invite.tsx
 msgid "{teamName} has invited you to {action} {documentName}"
 msgstr "{teamName} から {action} {documentName} の依頼が届いています"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
+msgid "{totalEverLoaded} geladen"
+msgstr ""
 
 #: packages/lib/utils/document-audit-logs.ts
 msgid "{user} added a field"
@@ -665,6 +812,14 @@ msgstr "{validationLength, plural, other {ちょうど # 個のオプション�
 msgid "{visibleRows, plural, one {Showing # result.} other {Showing # results.}}"
 msgstr "{visibleRows, plural, other {# 件の結果を表示中}}"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "{waitingSigCount} Verträge warten auf Signatur"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "← Zurück"
+msgstr ""
+
 #. placeholder {0}: document.title
 #. placeholder {0}: envelope.title
 #: apps/remix/app/routes/_recipient+/sign.$token+/_index.tsx
@@ -672,12 +827,32 @@ msgstr "{visibleRows, plural, other {# 件の結果を表示中}}"
 msgid "<0>\"{0}\"</0>is no longer available to sign"
 msgstr "<0>\"{0}\"</0>は署名できなくなりました"
 
+#. placeholder {0}: successState.archive
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "<0>{0} Belege</0> liegen jetzt sicher in Ihrem Archiv."
+msgstr ""
+
+#. placeholder {0}: successState.archive
+#. placeholder {1}: successState.ignore
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "<0>{0} Belege</0> liegen jetzt sicher in Ihrem Archiv. <1>{1}</1> haben Sie als kein-Beleg ignoriert."
+msgstr ""
+
+#. placeholder {0}: successState.ignore
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "<0>{0} Mails</0> als kein-Beleg ignoriert."
+msgstr ""
+
 #: packages/email/templates/organisation-account-link-confirmation.tsx
 msgid "<0>{organisationName}</0> has requested to create an account on your behalf."
 msgstr "<0>{organisationName}</0> があなたに代わってアカウントを作成するようリクエストしています。"
 
 #: packages/email/templates/organisation-account-link-confirmation.tsx
 msgid "<0>{organisationName}</0> has requested to link your current NexaFile account to their organisation."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "<0>{pendingCount} Belege liegen im Archiv, sind aber noch nicht endgültig.</0> Sie können Felder korrigieren oder einen Beleg wieder entfernen."
 msgstr ""
 
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v1.tsx
@@ -829,6 +1004,18 @@ msgstr "<0>タイプ入力</0> - キーボードで入力された署名です�
 msgid "<0>Uploaded</0> - A signature that is uploaded from a file."
 msgstr "<0>アップロード</0> - ファイルからアップロードされた署名です。"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "⚠ Lauf vorzeitig beendet (Datenmenge-Limit erreicht). Es liegen noch ältere Mails im gewählten Zeitraum, die nicht geprüft wurden — bitte einen Folgelauf für den älteren Teil starten."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "⚠ Lauf vorzeitig beendet (Mail-Anzahl-Limit erreicht). Bitte einen Folgelauf mit kürzerem Zeitraum starten."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+msgid "✓ Erkannt: {detectedProvider} — wir öffnen den passenden Anmelde-Dialog."
+msgstr ""
+
 #: apps/remix/app/components/dialogs/organisation-create-dialog.tsx
 msgid "0 Free organisations left"
 msgstr "無料の組織枠は残り 0 件です"
@@ -841,6 +1028,15 @@ msgstr "無料の組織枠は残り 1 件です"
 msgid "1 month"
 msgstr "1 か月"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "1. Vorschläge prüfen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "10 Jahre Aufbewahrung"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/vorlagen+/_index.tsx
 msgid "11 pragmatische, rechtlich solide Vorlagen nach BGB / HGB / TzBfG / DSGVO. Jede Vorlage als geführter Generator: Felder ausfüllen, PDF erzeugen, in NexaFile hochladen und signieren. Die Markdown-Rohvorlagen bleiben zusätzlich auf den Generator-Seiten verlinkt."
 msgstr ""
@@ -848,6 +1044,10 @@ msgstr ""
 #: apps/remix/app/components/forms/token.tsx
 msgid "12 months"
 msgstr "12 か月"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "2. Nur Ausnahmen ändern"
+msgstr ""
 
 #: apps/remix/app/components/general/document-signing/document-signing-auth-dialog.tsx
 msgid "2FA"
@@ -864,6 +1064,10 @@ msgstr "2要素認証トークン"
 #: apps/remix/app/components/forms/token.tsx
 msgid "3 months"
 msgstr "3 か月"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "3. Erst am Ende bestätigen"
+msgstr ""
 
 #: apps/remix/app/routes/_unauthenticated+/organisation.sso.confirmation.$token.tsx
 msgid "400 Error"
@@ -1083,7 +1287,12 @@ msgstr "有効なメールアドレスを入力してください"
 msgid "A verification email will be sent to the provided email."
 msgstr "入力されたメールアドレス宛てに確認メールが送信されます。"
 
+#: apps/remix/app/components/dialogs/accept-discovery-document-button.tsx
+#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
+#: apps/remix/app/components/dialogs/smart-bulk-accept-dialog.tsx
+#: apps/remix/app/components/dialogs/tax-package-confirm-button.tsx
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
 msgid "Abbrechen"
 msgstr ""
 
@@ -1093,6 +1302,18 @@ msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
 msgid "Abbruch wird ausgeführt"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "abgebrochen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+msgid "Ablegen"
+msgstr ""
+
+#: apps/remix/app/components/discovery/correspondent-summary-card.tsx
+msgid "Absender"
 msgstr ""
 
 #: apps/remix/app/components/general/organisations/organisation-invitations.tsx
@@ -1177,6 +1398,18 @@ msgstr "アカウント再認証"
 #: apps/remix/app/routes/_authenticated+/settings+/security.linked-accounts.tsx
 msgid "Account unlinked"
 msgstr "アカウントのリンクを解除しました"
+
+#: apps/remix/app/components/dialogs/accept-discovery-document-button.tsx
+msgid "Achtung — das werden Sie nicht mehr ändern können"
+msgstr ""
+
+#: apps/remix/app/components/sources/folder-diagnostics-card.tsx
+msgid "Achtung: „Alle Nachrichten\" ist in Ihrem Gmail nicht für IMAP freigegeben"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
+msgid "Achtung: Bei den meisten Anbietern ist das nicht das normale Login-Passwort, sondern ein eigens generiertes „App-Passwort\". Wählen Sie oben Ihren Anbieter und Sie bekommen die genaue Anleitung."
+msgstr ""
 
 #: apps/remix/app/routes/_unauthenticated+/articles.signature-disclosure.tsx
 msgid "Acknowledgment"
@@ -1528,35 +1761,50 @@ msgstr "AI 機能"
 msgid "AI features are disabled for your team. Please ask your team owner or organisation owner to enable them."
 msgstr "チームではAI機能が無効になっています。チームオーナーまたは組織オーナーに有効化を依頼してください。"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Aktion"
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
+msgid "Aktion (Tastenkürzel)"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "Aktion ausgeführt"
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
 msgid "Aktion fehlgeschlagen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "Aktionen für alle in dieser Sicht:"
+msgstr ""
+
+#: apps/remix/app/components/sources/folder-diagnostics-card.tsx
+msgid "aktiv"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
 msgid "Aktiv"
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Akzeptieren"
+#: apps/remix/app/components/dialogs/smart-bulk-accept-dialog.tsx
+msgid "Aktuell gibt es keine Belege, die als „vollständig\" gelten. Gehen Sie die offenen Belege manuell durch — vielleicht fehlt nur der Betrag oder der Absender, und Sie können das im Schnell-Review nachtragen."
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Aktuell keine offenen Aufgaben."
+msgstr ""
+
+#: apps/remix/app/components/discovery/first-run-checklist.tsx
+msgid "Akzeptiere oder ignoriere die gefundenen Belege im Schnell-Review."
+msgstr ""
+
+#: apps/remix/app/components/dialogs/smart-bulk-accept-dialog.tsx
+msgid "Akzeptieren ist noch nicht die endgültige Archivierung. Die Belege landen erst in „Im Archiv (noch korrigierbar)\" und können dort weiter geprüft werden."
+msgstr ""
+
+#: apps/remix/app/components/discovery/sync-overview-card.tsx
 msgid "Akzeptiert"
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
-msgid "Akzeptiert · GoBD-gesperrt"
 msgstr ""
 
 #: apps/remix/app/components/general/document/document-status.tsx
@@ -1632,19 +1880,74 @@ msgid "All Time"
 msgstr "全期間"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
 msgid "Alle"
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
-msgid "Alle Belege"
+#. placeholder {0}: visibleDocs.length
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Alle {0} markieren"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "Alle {pendingCount} endgültig archivieren"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Alle ausgewählten Belege waren bereits verarbeitet — wir haben nichts doppelt abgelegt."
+msgstr ""
+
+#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
+msgid "alle Belege im Eingang und im Archiv"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Alle Dokumente"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+msgid "Alle Dokumente ansehen →"
+msgstr ""
+
+#. placeholder {0}: docs.length
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "Alle geladenen {0} markieren"
+msgstr ""
+
+#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
+msgid "Alle Inhalte löschen"
+msgstr ""
+
+#: apps/remix/app/components/dialogs/smart-bulk-accept-dialog.tsx
+msgid "Alle Kandidaten wurden in den korrigierbaren Archiv-Stapel übernommen."
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
 msgid "Alle Quellen"
 msgstr ""
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+msgid "Alle übernommenen Belege endgültig archivieren, Felder korrigieren oder ein Steuerpaket (DATEV-CSV) für Ihren Steuerberater exportieren."
+msgstr ""
+
+#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
+msgid "alle verbundenen E-Mail-Postfächer"
+msgstr ""
+
+#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
+msgid "alle Verträge und ihre Unterschriften-Status"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
+msgid "Alles abgearbeitet"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Alle Treffer"
+msgid "Alles entschieden"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Alles erledigt"
 msgstr ""
 
 #: apps/remix/app/components/dialogs/team-create-dialog.tsx
@@ -1690,12 +1993,8 @@ msgstr "ほぼ完了しました"
 msgid "Already have an account? <0>Sign in instead</0>"
 msgstr "すでにアカウントをお持ちですか？<0>サインイン</0>"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
-msgid "Als Beleg akzeptieren"
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Als manuell zu ziehen markieren"
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "Als ZIP herunterladen"
 msgstr ""
 
 #: apps/remix/app/components/tables/organisation-billing-invoices-table.tsx
@@ -1705,6 +2004,11 @@ msgstr "金額"
 #: packages/email/templates/document-super-delete.tsx
 msgid "An admin has deleted your document \"{documentName}\"."
 msgstr "管理者によって、あなたのドキュメント「{documentName}」が削除されました。"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "An Buchhaltung senden"
+msgstr ""
 
 #: apps/remix/app/routes/_unauthenticated+/articles.signature-disclosure.tsx
 msgid "An electronic signature provided by you on our platform, achieved through clicking through to a document and entering your name, or any other electronic signing method we provide, is legally binding. It carries the same weight and enforceability as a manual signature written with ink on paper."
@@ -2015,11 +2319,27 @@ msgstr "ページを分析しています"
 msgid "Anbieter"
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
-msgid "Anbieter auswählen"
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+msgid "Anderer Anbieter"
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/components/sources/imap-provider-picker.tsx
+msgid "Anderer Anbieter (manuelle Eingabe)"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "Anderes Postfach wählen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
+msgid "Anhang"
+msgstr ""
+
+#. placeholder {0}: attachments.length
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
+msgid "Anhang ({0})"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "Anhänge + Mail als ZIP"
 msgstr ""
@@ -2101,17 +2421,26 @@ msgctxt "Recipient role progressive verb"
 msgid "Approving"
 msgstr "承認中"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+msgid "Arbeitsvertrag, NDA, Beratungsvertrag, AV-Vertrag, X-Rechnung und mehr — fertig vorbereitete deutsche Vorlagen, Sie füllen nur die Felder aus."
+msgstr ""
+
+#: apps/remix/app/components/general/app-nav-desktop.tsx
+#: apps/remix/app/components/general/app-nav-mobile.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
 msgid "Archiv"
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
-msgid "Archivieren"
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Archiv · 10 Jahre Aufbewahrung"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "Archivierung fehlgeschlagen"
 msgstr ""
 
 #: apps/remix/app/components/dialogs/assistant-confirmation-dialog.tsx
@@ -2268,7 +2597,39 @@ msgstr "監査ログの詳細"
 msgid "Audit Logs"
 msgstr "監査ログ"
 
+#: apps/remix/app/components/discovery/first-run-checklist.tsx
+msgid "Auf dieser Seite weiter"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+msgid "Aufgaben"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Aufheben"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "Aus Archiv entfernen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "Aus dem Archiv entfernen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "Aus dem Postfach"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Aus Vorlage: Rechnung, Vertrag, X-Rechnung, GoBD-Formular."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Auswahl ändern auf:"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
 msgid "Auswahl aufheben"
 msgstr ""
 
@@ -2293,6 +2654,10 @@ msgstr "認証アプリ"
 #: apps/remix/app/components/general/document-signing/document-signing-auto-sign.tsx
 msgid "Automatically sign fields"
 msgstr "フィールドに自動で署名する"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "Automatisch aus der Mail ausgelesen — bei Bedarf hier korrigieren."
+msgstr ""
 
 #: apps/remix/app/components/forms/avatar-image.tsx
 msgid "Avatar"
@@ -2336,6 +2701,10 @@ msgstr "バックアップコード"
 msgid "Backup codes"
 msgstr "バックアップコード"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "bald"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/admin+/site-settings.tsx
 msgid "Banner Updated"
 msgstr "バナーを更新しました"
@@ -2349,16 +2718,39 @@ msgstr ""
 msgid "Beendet {0}"
 msgstr ""
 
+#. placeholder {0}: formatDate(run.finishedAt, i18n.locale)
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Beendet am {0}"
+msgstr ""
+
 #: packages/email/template-components/template-confirmation-email.tsx
 msgid "Before you get started, please confirm your email address by clicking the button below:"
 msgstr "開始する前に、下のボタンをクリックしてメールアドレスを確認してください。"
 
-#: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
-msgid "Bei Gmail/Outlook: in den Konto-Einstellungen ein App-Passwort erzeugen statt das Login-Passwort zu nutzen."
+#. placeholder {0}: counts.archive
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Beim Bestätigen landen die {0} Belege im Archiv (noch korrigierbar). Endgültig archivieren ist Stufe 2 im Archiv-Tab."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "Beim ersten Mal lohnt sich ein längerer Zeitraum — dann holen wir alles auf einmal nach. Spätere Läufe nehmen automatisch nur das Neue dazu."
 msgstr ""
 
 #: apps/remix/app/components/general/user-profile-timur.tsx
 msgid "Beispiel-Nutzer"
+msgstr ""
+
+#. placeholder {0}: Math.min(data.sampleDocuments.length, 20)
+#: apps/remix/app/components/dialogs/smart-bulk-accept-dialog.tsx
+msgid "Beispiele (erste {0})"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "Beleg ist endgültig archiviert. Felder können nicht mehr geändert werden."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "Beleg liegt im Kunden-Portal"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
@@ -2369,36 +2761,104 @@ msgstr ""
 msgid "Beleg-Detail"
 msgstr ""
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "Beleg-Detail · Tipp: A Archiv · I Ignorieren · → Nächster"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "Beleg-Typ fehlt"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Belege aus allen verbundenen Quellen an einem Ort — durchsuchbar und nach Status gefiltert."
+msgid "Belege aus dem Postfach"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
 msgid "Belege aus Ihrem Postfach werden automatisch im Eingang einsortiert. Zugangsdaten werden verschlüsselt gespeichert und sind nur für Sie sichtbar."
 msgstr ""
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Belege automatisch aus IMAP / Cloud ziehen — ein Klick pro Mail."
+msgstr ""
+
+#: apps/remix/app/components/discovery/first-run-checklist.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Belege erscheinen hier, sobald Sie eine Quelle verbunden und einen Sync-Lauf gestartet haben."
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "Belege durchgehen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Belege finden"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+msgid "Belege liegen im Eingang und warten auf Ihre Entscheidung"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+msgid "Belege sind bereit zur finalen Ablage"
+msgstr ""
+
+#: apps/remix/app/components/dialogs/smart-bulk-accept-dialog.tsx
+msgid "Belege werden akzeptiert"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Belege werden geladen…"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
 msgid "Belege ziehen"
 msgstr ""
 
+#: apps/remix/app/components/discovery/background-sync-banner.tsx
+msgid "Benachrichtige mich, wenn fertig"
+msgstr ""
+
+#: apps/remix/app/components/discovery/background-sync-banner.tsx
+msgid "Benachrichtigung aktiv"
+msgstr ""
+
+#: apps/remix/app/components/discovery/background-sync-banner.tsx
+msgid "Benachrichtigung deaktivieren"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "Bereits bekannte Belege werden übersprungen, neue kommen automatisch zur Trefferliste hinzu. Sie können die Seite schließen."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Bereits gefunden"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "Bereits gefundene Belege bleiben unverändert — wir erkennen jede Mail an einer eindeutigen Kennung wieder und überspringen sie. Es entstehen <0>keine Duplikate</0>, und nichts aus dem Archiv wird gelöscht. Hinzu kommen nur Mails, die wir bisher nicht gesehen haben."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
+msgid "Bereits im Archiv"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
 msgid "Bereits importierte Belege bleiben erhalten. Neue Belege werden ab sofort nicht mehr eingelesen."
 msgstr ""
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+msgid "Bereits verbundene Postfächer"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Bestätigen — Entscheidungen übernehmen →"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Bestätigen fehlgeschlagen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
 msgid "Betrag"
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Betrag fehlt"
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Betreff"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
@@ -2415,12 +2875,21 @@ msgstr ""
 msgid "Billing"
 msgstr "請求"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
 msgid "Bis"
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
-msgid "Bis (exklusiv)"
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "Bitte ergänzen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Bitte erst die offenen Zeilen entscheiden — sonst geht uns ein Beleg verloren."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "Bitte gehen Sie zurück zu Schritt 1 und wählen Sie ein Postfach."
 msgstr ""
 
 #: packages/ui/primitives/signature-pad/signature-pad-color-picker.tsx
@@ -2511,6 +2980,10 @@ msgstr "CSV でテンプレートを一括送信"
 #: apps/remix/app/components/tables/templates-table-action-dropdown.tsx
 msgid "Bulk Send via CSV"
 msgstr "CSV で一括送信"
+
+#: apps/remix/app/components/dialogs/smart-bulk-accept-dialog.tsx
+msgid "Bulk-Akzeptieren fehlgeschlagen"
+msgstr ""
 
 #: packages/email/templates/organisation-invite.tsx
 msgid "by <0>{senderName}</0>"
@@ -3502,10 +3975,6 @@ msgstr "ドキュメントを作成中"
 msgid "Creating Template"
 msgstr "テンプレートを作成中"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "CSV exportieren"
-msgstr ""
-
 #: apps/remix/app/components/dialogs/template-bulk-send-dialog.tsx
 msgid "CSV Structure"
 msgstr "CSV 構造"
@@ -3559,12 +4028,25 @@ msgstr ""
 msgid "Custom Organisation Groups"
 msgstr "カスタム組織グループ"
 
+#: apps/remix/app/components/sources/folder-diagnostics-card.tsx
+msgid "Damit sieht NexaFile nur die Mails, die jetzt noch in Ihrem Posteingang liegen. Alles, was Sie in Gmail schon einmal archiviert haben — und das sind in der Regel die meisten Ihrer Belege — bleibt unsichtbar."
+msgstr ""
+
 #: apps/remix/app/components/general/app-command-menu.tsx
 msgid "Dark Mode"
 msgstr "ダークモード"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Das ist noch nicht die endgültige Archivierung. Übernommene Belege können Sie im Archiv weiter prüfen und korrigieren."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
 msgid "Das Von-Datum muss vor dem Bis-Datum liegen."
+msgstr ""
+
+#. placeholder {0}: rangeText && <> · Zeitraum {rangeText}</>
+#: apps/remix/app/components/dialogs/tax-package-confirm-button.tsx
+msgid "Das ZIP enthält {totalCount} Belege aus dem aktuellen Filter{0}."
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/dashboard.tsx
@@ -3606,13 +4088,17 @@ msgstr "日付設定"
 msgid "Dateien im Archiv"
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "Datum"
 msgstr ""
 
 #: apps/remix/app/components/dialogs/ai-field-detection-dialog.tsx
 msgid "David is the Employee, Lucas is the Manager"
 msgstr "David は従業員で、Lucas はマネージャーです"
+
+#: apps/remix/app/components/dialogs/tax-package-confirm-button.tsx
+msgid "Davon haben {downloadableCount} einen Anhang. Die übrigen {skippedCount} werden im MANIFEST.txt als „nur Mail-Hinweis, PDF im Portal\" gelistet."
+msgstr ""
 
 #: apps/remix/app/components/general/organisations/organisation-invitations.tsx
 #: apps/remix/app/routes/_unauthenticated+/organisation.sso.confirmation.$token.tsx
@@ -3866,8 +4352,14 @@ msgstr "アカウントを削除しています..."
 msgid "Der Fortschritt wird unten angezeigt."
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Der Lauf ist angelegt. Aktualisieren Sie die Liste in Kürze."
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "Der Lauf läuft im Hintergrund — Sie können die Seite schließen und später zurückkommen."
+msgstr ""
+
+#. placeholder {0}: Math.round( ((suspect.lastSuccessfulSyncRangeTo?.getTime() ?? 0) - (suspect.lastSuccessfulSyncRangeFrom?.getTime() ?? 0)) / DAY_MS, )
+#. placeholder {1}: suspect.lastSuccessfulSyncMailsChecked
+#: apps/remix/app/components/sources/gmail-allmail-banner.tsx
+msgid "Der letzte Lauf hat über {0} Tage nur {1} Mails geprüft. Das ist deutlich weniger als bei einem Gmail-Konto zu erwarten — höchstwahrscheinlich ist „Alle Nachrichten\" in Ihren Gmail-IMAP-Einstellungen nicht freigegeben. NexaFile sieht dann nur die Mails, die jetzt noch in Ihrem Posteingang liegen, und übersieht alles, was Sie in Gmail schon einmal archiviert haben (= meistens den Großteil Ihrer Belege)."
 msgstr ""
 
 #: apps/remix/app/components/general/webhook-logs-sheet.tsx
@@ -3875,11 +4367,15 @@ msgid "Destination"
 msgstr "送信先"
 
 #: apps/remix/app/components/general/webhook-logs-sheet.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
 #: apps/remix/app/routes/_internal+/[__htmltopdf]+/certificate.tsx
 #: packages/lib/server-only/pdf/render-certificate.ts
 msgid "Details"
 msgstr "詳細"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
+msgid "Detailseite"
+msgstr ""
 
 #: apps/remix/app/components/dialogs/ai-field-detection-dialog.tsx
 #: apps/remix/app/components/dialogs/ai-recipient-detection-dialog.tsx
@@ -3938,12 +4434,28 @@ msgstr "開発者モード"
 msgid "Device"
 msgstr "デバイス"
 
+#: apps/remix/app/components/sources/folder-diagnostics-card.tsx
+msgid "Diagnose starten"
+msgstr ""
+
 #: packages/email/templates/reset-password.tsx
 msgid "Didn't request a password change? We are here to help you secure your account, just <0>contact us</0>."
 msgstr "パスワード変更をリクエストしていませんか？アカウントの安全確保をお手伝いしますので、<0>こちらからお問い合わせください</0>。"
 
+#: apps/remix/app/components/dialogs/tax-package-confirm-button.tsx
+msgid "Die Erstellung kann bei vielen Belegen einige Sekunden dauern."
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/vorlagen+/gobd+/_index.tsx
 msgid "Die Verantwortungs-Teilung"
+msgstr ""
+
+#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
+msgid "Diese Aktion löscht <0>unwiderruflich</0>:"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+msgid "Diese Dinge brauchen jetzt eine Entscheidung von Ihnen — Klick und erledigt."
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
@@ -3956,6 +4468,10 @@ msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/vorlagen+/_index.tsx
 msgid "Diese Vorlagen dienen zur <0>Orientierung</0> und stellen keine Rechtsberatung i.S.d. Rechtsdienstleistungsgesetzes dar. Vor produktiver Verwendung bitte durch zugelassene/n Rechtsanwältin/-anwalt prüfen lassen. Die Nutzung erfolgt auf eigenes Risiko."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
+msgid "Dieser Beleg konnte nicht geladen werden."
 msgstr ""
 
 #: apps/remix/app/components/general/template/template-direct-link-badge.tsx
@@ -4018,6 +4534,10 @@ msgstr "ダイレクトテンプレートリンクの使用数が上限を超え
 #: packages/ui/primitives/document-flow/field-items-advanced-settings/checkbox-field.tsx
 msgid "Direction"
 msgstr "方向"
+
+#: apps/remix/app/components/sources/imap-provider-picker.tsx
+msgid "Direkt zur App-Passwort-Seite öffnen"
+msgstr ""
 
 #: apps/remix/app/components/dialogs/public-profile-template-manage-dialog.tsx
 #: apps/remix/app/components/dialogs/team-inherit-member-disable-dialog.tsx
@@ -4520,25 +5040,24 @@ msgstr "すべての受信者が署名したものの、まだ封印されてい
 msgid "Dokumente"
 msgstr ""
 
-#: apps/remix/app/components/general/app-nav-desktop.tsx
-#: apps/remix/app/components/general/app-nav-mobile.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
 msgid "Dokumente archivieren"
 msgstr ""
 
-#: apps/remix/app/components/general/app-nav-desktop.tsx
-#: apps/remix/app/components/general/app-nav-mobile.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
 msgid "Dokumente erstellen"
 msgstr ""
 
-#: apps/remix/app/components/general/app-nav-desktop.tsx
-#: apps/remix/app/components/general/app-nav-mobile.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Dokumente finden"
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+msgid "Dokumente im Postfach finden"
 msgstr ""
 
-#: apps/remix/app/components/general/app-nav-desktop.tsx
-#: apps/remix/app/components/general/app-nav-mobile.tsx
-msgid "Dokumente signieren"
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+msgid "Dokumente unterschreiben"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Dokumenten-Übersicht"
 msgstr ""
 
 #: apps/remix/app/components/tables/organisation-email-domains-table.tsx
@@ -4718,20 +5237,20 @@ msgstr "テンプレートを複製"
 msgid "Duplicate values are not allowed"
 msgstr "同じ値を重複して使用することはできません"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Durchsuchen"
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Durchsuchung konnte nicht gestartet werden"
-msgstr ""
-
 #: packages/lib/constants/i18n.ts
 msgid "Dutch"
 msgstr "オランダ語"
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
 msgid "E-Mail-Adresse"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+msgid "E-Mail-Anbieter wählen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "E-Mails erneut durchsuchen"
 msgstr ""
 
 #: apps/remix/app/components/forms/editor/editor-field-number-form.tsx
@@ -4778,12 +5297,22 @@ msgstr "例: 法務"
 msgid "eg. Mac"
 msgstr "例: Mac"
 
-#: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
-msgid "Eigenen Host eingeben…"
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "Eigener Zeitraum"
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Ein Klick und sie sind 10 Jahre lang sicher abgelegt."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
 msgid "Eingang"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Eingang durchgehen"
 msgstr ""
 
 #: apps/remix/app/routes/_unauthenticated+/articles.signature-disclosure.tsx
@@ -5003,6 +5532,19 @@ msgstr "メール"
 msgid "Embedding, 5 members included and more"
 msgstr "埋め込み、5 メンバー含む など"
 
+#. placeholder {0}: formatDate(doc.documentDate ?? doc.capturedAt, i18n.locale)
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "Empfangen am {0}"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Empfänger erinnern oder Status prüfen."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "Empfohlen"
+msgstr ""
+
 #: packages/ui/primitives/document-flow/add-fields.tsx
 msgid "Empty field"
 msgstr "空のフィールド"
@@ -5104,6 +5646,30 @@ msgstr "同封文書"
 #: packages/lib/server-only/pdf/render-audit-logs.ts
 msgid "Enclosed Documents"
 msgstr "同封された文書"
+
+#: apps/remix/app/components/dialogs/accept-discovery-document-button.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Endgültig archivieren"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Endgültig archiviert"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "Endgültig archiviert · 10 Jahre Aufbewahrung"
+msgstr ""
+
+#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
+msgid "Endgültig archivierte Belege haben gesetzlich eine 10-Jahres-Aufbewahrung (§ 147 AO). Ein Reset löscht sie trotzdem — das sollten Sie nur in einem Test- oder Demo-Setup machen, nicht in einer produktiv genutzten Buchhaltung."
+msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
 msgid "Endgültig entfernen"
@@ -5216,7 +5782,12 @@ msgid "Enterprise"
 msgstr "Enterprise"
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
 msgid "Entfernen fehlgeschlagen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Entscheidungen übernehmen?"
 msgstr ""
 
 #: apps/remix/app/components/dialogs/envelope-distribute-dialog.tsx
@@ -5265,12 +5836,26 @@ msgstr "封筒タイトル"
 msgid "Envelope updated"
 msgstr "封筒を更新しました"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
-msgid "Erkannter Betrag"
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Erinnerung senden"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
+msgid "Erkannte Felder"
+msgstr ""
+
+#. placeholder {0}: (capabilities?.allowedHosts ?? []).join(', ')
+#: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
+msgid "Erlaubte Hosts (vom Admin freigegeben): {0}"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "Erneut aus IMAP laden"
+msgstr ""
+
+#: apps/remix/app/components/sources/folder-diagnostics-card.tsx
+msgid "Erneut prüfen"
 msgstr ""
 
 #: apps/remix/app/components/dialogs/admin-swap-subscription-dialog.tsx
@@ -5369,8 +5954,34 @@ msgstr "ページの読み込み中にエラーが発生しました。"
 msgid "Error uploading file"
 msgstr "ファイルのアップロード中にエラーが発生しました"
 
+#: apps/remix/app/components/discovery/first-run-checklist.tsx
+msgid "Erste Schritte"
+msgstr ""
+
+#: apps/remix/app/components/discovery/first-run-checklist.tsx
+msgid "Erste Suche starten"
+msgstr ""
+
+#: apps/remix/app/components/general/app-nav-desktop.tsx
+#: apps/remix/app/components/general/app-nav-mobile.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Erstellen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "Erster Beleg"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
 msgid "Erster Sync läuft im Hintergrund."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
+msgid "Erweiterte Einstellungen (Port, TLS) anzeigen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
+msgid "Erweiterte Einstellungen ausblenden"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
@@ -5598,6 +6209,18 @@ msgstr "機能"
 msgid "Fehler"
 msgstr ""
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "fehlgeschlagen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "Felder ergänzen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "fertig"
+msgstr ""
+
 #: packages/ui/primitives/document-flow/field-items-advanced-settings/text-field.tsx
 msgid "Field character limit"
 msgstr "フィールドの文字数制限"
@@ -5674,12 +6297,26 @@ msgstr "ファイルサイズが {APP_DOCUMENT_UPLOAD_SIZE_LIMIT} MB の上限�
 msgid "Fill in the details to create a new subscription claim."
 msgstr "新しいサブスクリプションクレームを作成するための詳細を入力してください。"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Filter aktiv: nur Belege von <0>„{correspondentFilter}\"</0>"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/admin+/email-domains._index.tsx
 msgid "Filter by status"
 msgstr "ステータスで絞り込む"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Filter entfernen"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/vorlagen+/gobd+/_index.tsx
 msgid "Finanzamt-Zugriff: Z1, Z2, Z3"
+msgstr ""
+
+#: apps/remix/app/components/general/app-nav-desktop.tsx
+#: apps/remix/app/components/general/app-nav-mobile.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Finden"
 msgstr ""
 
 #: apps/remix/app/components/dialogs/document-move-to-folder-dialog.tsx
@@ -5717,6 +6354,10 @@ msgstr "フォルダ設定"
 #: apps/remix/app/components/dialogs/folder-update-dialog.tsx
 msgid "Folder updated successfully"
 msgstr "フォルダは正常に更新されました"
+
+#: apps/remix/app/components/sources/gmail-allmail-banner.tsx
+msgid "Folder-Diagnose öffnen und Anleitung anzeigen"
+msgstr ""
 
 #: apps/remix/app/components/forms/editor/editor-field-generic-field-forms.tsx
 #: packages/ui/primitives/document-flow/field-items-advanced-settings/date-field.tsx
@@ -5794,8 +6435,20 @@ msgstr "フランス語"
 msgid "Full Name"
 msgstr "氏名"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Für Archivierung"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Für Archivierung ausgewählt"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/vorlagen+/gobd+/_index.tsx
 msgid "Für signierte Dokumente startet die Aufbewahrung mit <0>completedAt</0>. Für gefundene Belege startet sie mit <1>acceptedAt</1>, also in dem Moment, in dem Sie den Beleg als relevant übernehmen. Der Retention-Check meldet Belege, die auf die 10-Jahres-Frist zulaufen oder sie überschritten haben; er löscht nichts automatisch."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+msgid "Geben Sie Ihre Adresse ein — wir erkennen den Anbieter und übernehmen die Adresse direkt in den nächsten Schritt, damit Sie sie nicht erneut tippen müssen."
 msgstr ""
 
 #: apps/remix/app/components/embed/authoring/configure-document-advanced-settings.tsx
@@ -5822,6 +6475,20 @@ msgstr "リンクを生成"
 msgid "German"
 msgstr "ドイツ語"
 
+#: apps/remix/app/components/discovery/correspondent-summary-card.tsx
+msgid "Gesamt"
+msgstr ""
+
+#. placeholder {0}: data.scannedPaths.length
+#. placeholder {1}: data.folders.length
+#: apps/remix/app/components/sources/folder-diagnostics-card.tsx
+msgid "Gescannt: {0} von {1} Foldern"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Geschafft!"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
 msgid "Geschäftspostfach"
 msgstr ""
@@ -5835,6 +6502,11 @@ msgstr ""
 msgid "Gestartet {0}"
 msgstr ""
 
+#. placeholder {0}: formatDate(run.startedAt, i18n.locale)
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Gestartet am {0}"
+msgstr ""
+
 #: packages/ui/components/document/document-global-auth-action-select.tsx
 msgid "Global recipient action authentication"
 msgstr "グローバル受信者アクション認証"
@@ -5843,6 +6515,10 @@ msgstr "グローバル受信者アクション認証"
 #: apps/remix/app/routes/_authenticated+/admin+/teams.$id.tsx
 msgid "Global Settings"
 msgstr "グローバル設定"
+
+#: apps/remix/app/components/sources/folder-diagnostics-card.tsx
+msgid "Gmail öffnen → Zahnrad oben rechts → „Alle Einstellungen anzeigen\""
+msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/admin+/organisations.$id.tsx
 #: apps/remix/app/routes/_authenticated+/admin+/teams.$id.tsx
@@ -6038,6 +6714,10 @@ msgstr "ここでは、ドキュメント全般の設定を行うことができ
 msgid "Here's how it works:"
 msgstr "仕組みは次のとおりです。"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "Herunterladen"
+msgstr ""
+
 #: packages/email/template-components/template-document-reminder.tsx
 msgid "Hi {recipientName},"
 msgstr ""
@@ -6064,8 +6744,33 @@ msgstr "非表示"
 msgid "Hide license key"
 msgstr "ライセンスキーを非表示にする"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "Hier liegen alle Belege, die Sie übernommen haben. Solange Sie sie noch nicht endgültig archiviert haben, können Sie Felder korrigieren. Mit einem Klick auf „Endgültig archivieren\" sind sie 10 Jahre lang sicher abgelegt — wie es das Finanzamt verlangt."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Hier sehen Sie auf einen Blick, was noch geprüft, unterschrieben, abgelegt oder bereits endgültig archiviert ist."
+msgstr ""
+
+#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
+msgid "Hinweis zum Steuerrecht:"
+msgstr ""
+
+#. placeholder {0}: successState.archiveSkipped + successState.ignoreSkipped
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Hinweis: {0} Belege waren schon verarbeitet und wurden nicht doppelt abgelegt."
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/vorlagen+/gobd+/_index.tsx
 msgid "Hinweis: Der Export nimmt gefundene Belege auf, sobald sie akzeptiert wurden. Die Mail-Artefakte werden vom Host-Pfad <0>NEXASIGN_DISCOVERY_ARCHIVE_PATH</0> gelesen; Standard ist <1>/var/lib/nexasign-archive</1>."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "Hochgeladener Beleg"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Hochladen"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
@@ -6182,11 +6887,66 @@ msgstr "認証アプリが QR コードに対応していない場合は、代�
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
 msgid "Ignorieren"
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "Ignorieren — keine echte Rechnung"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
 msgid "Ignoriert"
+msgstr ""
+
+#: apps/remix/app/components/discovery/use-deferred-status-action.tsx
+msgid "Ignoriert (in 5 s endgültig)"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Ignorierte Mails verschwinden aus dieser Arbeitsliste. Falls Sie unsicher sind, brechen Sie ab und setzen die Zeile auf „Noch nicht entscheiden\"."
+msgstr ""
+
+#: apps/remix/app/components/discovery/sync-overview-card.tsx
+msgid "Ihr Beleg-Archiv"
+msgstr ""
+
+#: apps/remix/app/components/discovery/background-sync-banner.tsx
+msgid "Ihre Belege sind bereit. Klick öffnet die Liste."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+msgid "Ihre Privatsphäre."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Im Archiv (korrigierbar)"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Im Archiv (noch korrigierbar)"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Im Archiv ablegen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Im Archiv anschauen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "Im Archiv suchen — Titel, Korrespondent, Rechnungs-Nr."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Im Postfach finden"
+msgstr ""
+
+#: apps/remix/app/components/sources/folder-diagnostics-card.tsx
+msgid "IMAP-Folder-Diagnose"
 msgstr ""
 
 #. placeholder {0}: source.teamName
@@ -6203,12 +6963,29 @@ msgstr ""
 msgid "IMAP-Konto verbinden"
 msgstr ""
 
+#: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
+msgid "IMAP-Server"
+msgstr ""
+
 #: apps/remix/app/routes/_unauthenticated+/organisation.sso.confirmation.$token.tsx
 msgid "Important: What This Means"
 msgstr "重要: これが意味すること"
 
+#. placeholder {0}: Math.max(1, Math.round(inboxCount / 8))
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "In ca. {0} Min durchgegangen."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "In der Liste suchen — Absender, Betreff, Rechnungs-Nr."
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
 msgid "In dieses Team werden gefundene Belege einsortiert. Sie können das später nicht ändern — bei Bedarf eine neue Quelle anlegen."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+msgid "In drei Schritten haben wir alle Ihre Rechnungen beisammen — ohne dass Sie einzeln durch Mails scrollen müssen."
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
@@ -6272,6 +7049,14 @@ msgstr "情報"
 msgid "Inhalt des Export-Pakets"
 msgstr ""
 
+#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
+msgid "Inhalte zurückgesetzt"
+msgstr ""
+
+#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
+msgid "Inhalte zurücksetzen"
+msgstr ""
+
 #: packages/ui/components/recipient/recipient-action-auth-select.tsx
 msgid "Inherit authentication method"
 msgstr "認証方法を継承"
@@ -6326,6 +7111,21 @@ msgstr "イニシャルは必須です"
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page.tsx
 msgid "Initials Settings"
 msgstr "イニシャルの設定"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
+msgid "Ins Archiv"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "Ins Archiv — ist ein Beleg"
+msgstr ""
+
+#: apps/remix/app/components/discovery/use-deferred-status-action.tsx
+msgid "Ins Archiv übernommen (in 5 s endgültig)"
+msgstr ""
 
 #: apps/remix/app/components/tables/admin-document-recipient-item-table.tsx
 msgid "Inserted"
@@ -6488,9 +7288,33 @@ msgstr "現在はあなたの署名順ではありません。順番が来ると
 msgid "Italian"
 msgstr "イタリア語"
 
+#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
+msgid "Ja, alles löschen"
+msgstr ""
+
+#: apps/remix/app/components/dialogs/accept-discovery-document-button.tsx
+msgid "Ja, endgültig archivieren"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "Ja, jetzt starten"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Ja, übernehmen"
+msgstr ""
+
 #: packages/lib/constants/i18n.ts
 msgid "Japanese"
 msgstr "日本語"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Jede Zeile sagt Ihnen, warum NexaFile sie übernehmen oder ignorieren würde."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+msgid "Jetzt durchgehen"
+msgstr ""
 
 #: packages/email/templates/organisation-invite.tsx
 msgid "Join {organisationName} on NexaFile"
@@ -6507,17 +7331,45 @@ msgstr "参加日"
 msgid "Joined {0}"
 msgstr "{0} に参加"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Kein Anhang"
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
+msgid "Kein Anhang — bei Bedarf im Kunden-Portal nachziehen."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
+msgid "Kein Klartext verfügbar — öffne die Detail-Seite für die HTML-Variante."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "Kein Postfach gewählt"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "Keine Belege liegen aktuell zur Ablage bereit."
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Keine Belege im aktuellen Bereich"
+msgid "Keine Belege warten mehr auf eine Entscheidung. Was schon übernommen ist, finden Sie im Archiv-Tab."
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "Keine Dateien im Archiv. Diese E-Mail wurde entweder vor Aktivierung des Archive-Features importiert oder enthielt keinen herunterladbaren Anhang (z. B. Beleg-Hinweis ohne PDF, der zum Portal verweist)."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Keine Dokumente in dieser Sicht."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "Keine PDF-Vorschau verfügbar"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Keine Treffer in dieser Sicht."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Keine Verträge warten gerade auf eine Unterschrift."
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/vorlagen+/gobd+/_index.tsx
@@ -6528,6 +7380,14 @@ msgstr ""
 msgid "Key identifiers and relationships for this team."
 msgstr "このチームの主要な識別子と関連付けです。"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "Klick auf <0>„Endgültig archivieren\"</0> legt den Beleg für 10 Jahre fest — dann können Sie ihn nur noch lesen oder herunterladen, nicht mehr ändern."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+msgid "Klicken Sie auf „Weiter\" — Schritt 2 wählt den Zeitraum für den Lauf."
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/vorlagen+/gobd+/_index.tsx
 msgid "Kommandozeilen-Tool für den System-Administrator. Exportiert alle abgeschlossen signierten Envelopes, akzeptierten gefundenen Belege, Mail-/Anhang-Dateien und Audit-Logs eines Zeitraums als strukturiertes Paket."
 msgstr ""
@@ -6536,8 +7396,17 @@ msgstr ""
 msgid "Korean"
 msgstr "韓国語"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "Korrektur fehlgeschlagen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
 msgid "Korrespondent"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "Korrespondent fehlt"
 msgstr ""
 
 #: apps/remix/app/components/forms/editor/editor-field-generic-field-forms.tsx
@@ -6552,8 +7421,17 @@ msgstr ""
 msgid "Label"
 msgstr "ラベル"
 
+#: apps/remix/app/components/discovery/first-run-checklist.tsx
+msgid "Lade ein ZIP mit allen akzeptierten Belegen + MANIFEST.txt."
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "Laden"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Lädt…"
 msgstr ""
 
 #: apps/remix/app/components/embed/authoring/configure-document-advanced-settings.tsx
@@ -6629,6 +7507,22 @@ msgstr "最終検証日時"
 msgid "Last Year"
 msgstr "昨年"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "Lauf gestartet"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "Lauf konnte nicht gestartet werden"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Lauf läuft… ({activeRunsCount})"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "läuft"
+msgstr ""
+
 #: apps/remix/app/components/forms/subscription-claim-form.tsx
 #: apps/remix/app/components/general/admin-license-card.tsx
 #: apps/remix/app/routes/_authenticated+/admin+/organisations.$id.tsx
@@ -6667,12 +7561,25 @@ msgstr "文字間隔"
 msgid "Letter Spacing"
 msgstr "文字間隔"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Letzte Suchläufe"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "Letzter Beleg"
+msgstr ""
+
+#. placeholder {0}: new Date(src.lastSuccessfulSyncRangeTo).toLocaleDateString('de')
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+msgid "Letzter Lauf bis {0}"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
 msgid "Letzter Monat"
 msgstr ""
 
-#. placeholder {0}: formatRelativeTime(latestSync, locale)
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#. placeholder {0}: monthFmt.format(overview.lastCompletedSyncAt)
+#: apps/remix/app/components/discovery/sync-overview-card.tsx
 msgid "Letzter Sync: {0}"
 msgstr ""
 
@@ -6704,6 +7611,14 @@ msgstr "ライセンスの支払いが延滞しています。サービスの中
 #: apps/remix/app/components/general/admin-license-card.tsx
 msgid "License synced"
 msgstr "ライセンスが同期されました"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "Lieber einen eigenen Zeitraum wählen?"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Lifecycle-Hub"
+msgstr ""
 
 #: apps/remix/app/components/general/app-command-menu.tsx
 msgid "Light Mode"
@@ -6801,9 +7716,17 @@ msgstr "ローカルタイムゾーン"
 msgid "Login"
 msgstr "ログイン"
 
+#: apps/remix/app/components/discovery/correspondent-summary-card.tsx
+msgid "Login öffnen"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.webhooks._index.tsx
 msgid "Logs"
 msgstr "ログ"
+
+#: apps/remix/app/components/dialogs/smart-bulk-accept-dialog.tsx
+msgid "Lokale Uploads"
+msgstr ""
 
 #: apps/remix/app/components/dialogs/ai-field-detection-dialog.tsx
 msgid "Looking for form fields"
@@ -6815,6 +7738,10 @@ msgstr "署名フィールドを探しています"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "Mail erneut aus IMAP geladen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Mail ohne Anhang"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
@@ -6990,15 +7917,6 @@ msgstr "マネージャー"
 msgid "Managers and above"
 msgstr "マネージャー以上"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Manuell"
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
-msgid "Manuell zu ziehen"
-msgstr ""
-
 #: apps/remix/app/components/dialogs/ai-field-detection-dialog.tsx
 msgid "Mapping fields to recipients"
 msgstr "フィールドを受信者に対応付けています"
@@ -7109,8 +8027,32 @@ msgstr ""
 msgid "Missing Recipients"
 msgstr "不足している受信者"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/components/discovery/sync-overview-card.tsx
 msgid "Mit Anhang"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+msgid "Mit E-Mail-Adresse starten"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "Mit eigenem Zeitraum starten"
+msgstr ""
+
+#: apps/remix/app/components/discovery/sync-overview-card.tsx
+msgid "Mit erkanntem Betrag"
+msgstr ""
+
+#: apps/remix/app/components/discovery/correspondent-summary-card.tsx
+msgid "Mit PDF"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+msgid "Mit Server-Adresse"
+msgstr ""
+
+#: apps/remix/app/components/discovery/sync-overview-card.tsx
+msgid "Mit Tastenkürzeln (J/K/A/I) sind Sie in wenigen Minuten durch."
 msgstr ""
 
 #: apps/remix/app/components/general/document/document-page-view-recipients.tsx
@@ -7122,8 +8064,9 @@ msgstr "受信者を変更"
 msgid "Modify the details of the subscription claim."
 msgstr "サブスクリプションクレームの詳細を変更します。"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Monate"
+#. placeholder {0}: suspect.label
+#: apps/remix/app/components/sources/gmail-allmail-banner.tsx
+msgid "Möglicher Gmail-Konfigurationsfehler bei „{0}\""
 msgstr ""
 
 #: apps/remix/app/components/dialogs/organisation-create-dialog.tsx
@@ -7207,7 +8150,19 @@ msgstr "N/A"
 msgid "Nach § 147 Abs. 6 AO kann das Finanzamt drei Arten von Datenzugriff fordern:"
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Nach Titel, Korrespondent, Rechnungs-Nr. suchen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "Nächster"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "Nächster Beleg"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
 msgid "Nächster Schritt"
 msgstr ""
 
@@ -7272,7 +8227,8 @@ msgid "Needs to view"
 msgstr "閲覧が必要"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Neu"
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Neuen Lauf starten"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
@@ -7307,6 +8263,15 @@ msgstr "新しいオプション {0}"
 #: apps/remix/app/components/forms/password.tsx
 msgid "New Password"
 msgstr "新しいパスワード"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+msgid "NexaFile deckt vier Schritte für Sie ab: <0>Dokumente erstellen</0> aus Vorlagen, <1>Dokumente im Postfach finden</1>, <2>Dokumente unterschreiben</2> (eigene zur Unterschrift versenden oder selbst unterschreiben), und alles <3>rechtssicher archivieren</3>. Wählen Sie unten eine der vier Kacheln — wir führen Sie dann Schritt für Schritt durch."
+msgstr ""
+
+#. placeholder {0}: sourceLabel ?? ''
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "NexaFile durchsucht jetzt das Postfach <0>{0}</0> nach Rechnungen und Belegen — im folgenden Zeitraum:"
+msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/vorlagen+/gobd+/_index.tsx
 msgid "NexaFile ist Open-Source (AGPL-3.0). Die Bereitstellung erfolgt ohne Gewährleistung."
@@ -7530,16 +8495,39 @@ msgstr "値が見つかりません。"
 msgid "No worries, it happens! Enter your email and we'll email you a special link to reset your password."
 msgstr "大丈夫です。メールアドレスを入力していただければ、パスワードをリセットするための特別なリンクをメールでお送りします。"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Noch kein Sync gestartet"
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "Noch keine Belege endgültig archiviert."
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Noch keine Quelle verbunden"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
 msgid "Noch keine Sync-Läufe. Starten Sie oben einen Lauf."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "Noch korrigierbar"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Noch nicht entscheiden"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Noch zu entscheiden"
+msgstr ""
+
+#: apps/remix/app/components/discovery/sync-overview-card.tsx
+msgid "Noch zu prüfen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Nochmal prüfen"
 msgstr ""
 
 #: apps/remix/app/components/dialogs/envelope-distribute-dialog.tsx
@@ -7579,10 +8567,6 @@ msgstr "サポートされていません"
 msgid "Nothing to do"
 msgstr "今は行うことがありません"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Nr. fehlt"
-msgstr ""
-
 #: apps/remix/app/components/dialogs/ai-field-detection-dialog.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-number-field.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-drag-drop.tsx
@@ -7616,8 +8600,20 @@ msgstr "許可されるチーム数。0 = 無制限"
 msgid "Number Settings"
 msgstr "数値の設定"
 
+#: apps/remix/app/components/discovery/correspondent-summary-card.tsx
+msgid "Nur Portal"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/vorlagen+/gobd+/_index.tsx
 msgid "Nutzung"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+msgid "oder direkt einen Anbieter wählen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+msgid "oder ein weiteres Postfach hinzufügen"
 msgstr ""
 
 #: apps/remix/app/components/general/admin-global-settings-section.tsx
@@ -7625,21 +8621,11 @@ msgid "Off"
 msgstr "オフ"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Offen"
+msgid "Offene Zeilen anzeigen →"
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Offene prüfen"
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Ohne Betrag"
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Ohne Nr."
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "ohne Entscheidung weiterblättern"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
@@ -8068,6 +9054,10 @@ msgstr "支払い期限超過"
 msgid "PDF Document"
 msgstr "PDF文書"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "PDF, DOCX, Bild — direkt aus dem Datei-Explorer."
+msgstr ""
+
 #: apps/remix/app/components/general/document/document-page-view-recipients.tsx
 #: apps/remix/app/components/general/document/document-page-view-recipients.tsx
 #: apps/remix/app/components/general/document/document-status.tsx
@@ -8111,6 +9101,10 @@ msgstr "保留中の組織招待"
 #: apps/remix/app/routes/_authenticated+/admin+/email-domains.$id.tsx
 msgid "Pending since"
 msgstr "保留開始日時"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "Per E-Mail weitergeben"
+msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "Per FTP/SCP erreichbar. Dateien sind read-only (0440); zum Verschieben einer Kopie benutzen Sie `cp` statt `mv`."
@@ -8389,8 +9383,8 @@ msgstr "ポーランド語"
 msgid "Port"
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
-msgid "Portal-Hinweis (Mail enthält)"
+#: apps/remix/app/components/discovery/correspondent-summary-card.tsx
+msgid "Portal-Login"
 msgstr ""
 
 #: packages/lib/constants/i18n.ts
@@ -8407,13 +9401,17 @@ msgstr "X 位置:"
 msgid "Pos Y:"
 msgstr "Y 位置:"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Postfach durchsuchen"
+#: apps/remix/app/components/discovery/first-run-checklist.tsx
+msgid "Postfach hinzufügen"
 msgstr ""
 
+#: apps/remix/app/components/discovery/first-run-checklist.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Postfach-Durchsuchung gestartet"
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "Postfach verbinden"
 msgstr ""
 
 #: apps/remix/app/components/embed/embed-direct-template-client-page.tsx
@@ -8473,6 +9471,10 @@ msgstr "非公開テンプレート"
 msgid "Private templates can only be modified and viewed by you."
 msgstr "非公開テンプレートは、あなたのみが閲覧・編集できます。"
 
+#: apps/remix/app/components/discovery/correspondent-summary-card.tsx
+msgid "Pro Absender sehen Sie, wieviele Mails ein PDF dabei hatten und wieviele Sie manuell aus dem Portal ziehen müssen. Klick öffnet die Trefferliste mit Filter auf diesen Absender — dann arbeiten Sie sie am Stück ab."
+msgstr ""
+
 #: apps/remix/app/components/dialogs/assistant-confirmation-dialog.tsx
 msgid "Proceed"
 msgstr "続行"
@@ -8515,10 +9517,6 @@ msgstr "プロバイダー"
 msgid "Provider has been updated successfully"
 msgstr "プロバイダーを正常に更新しました"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Prüfung"
-msgstr ""
-
 #: apps/remix/app/components/general/template/template-type.tsx
 #: apps/remix/app/components/tables/templates-table.tsx
 #: packages/ui/components/template/template-type-select.tsx
@@ -8546,7 +9544,6 @@ msgid "Public templates are connected to your public profile. Any modifications 
 msgstr "公開テンプレートは公開プロフィールに紐づきます。公開テンプレートを変更すると、公開プロフィールにも反映されます。"
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Quelle"
 msgstr ""
 
@@ -8571,12 +9568,15 @@ msgid "Quelle reaktiviert"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Quelle verbinden"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
 msgid "Quelle wirklich entfernen?"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "Quelle:"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/vorlagen+/_index.tsx
@@ -8587,12 +9587,11 @@ msgstr ""
 #: apps/remix/app/components/general/settings-nav-mobile.tsx
 #: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
 #: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Quellen"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Quellen verwalten"
+msgid "Quellen öffnen"
 msgstr ""
 
 #: apps/remix/app/components/general/envelope-editor/envelope-editor.tsx
@@ -8711,9 +9710,9 @@ msgstr "最近のアクティビティ"
 msgid "Recent documents"
 msgstr "最近の文書"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
-msgid "Rechnungs-Nr."
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
+msgid "Rechnungsnummer"
 msgstr ""
 
 #: apps/remix/app/components/dialogs/template-direct-link-dialog.tsx
@@ -9149,6 +10148,10 @@ msgstr "2要素認証をリセット"
 msgid "Reset email sent"
 msgstr "リセット用メールを送信しました"
 
+#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
+msgid "Reset fehlgeschlagen"
+msgstr ""
+
 #: apps/remix/app/components/forms/forgot-password.tsx
 #: apps/remix/app/components/forms/reset-password.tsx
 #: apps/remix/app/routes/_unauthenticated+/reset-password._index.tsx
@@ -9301,6 +10304,11 @@ msgstr "ロール"
 msgid "Rows per page"
 msgstr "ページあたりの行数"
 
+#: apps/remix/app/components/discovery/use-deferred-status-action.tsx
+#: apps/remix/app/components/discovery/use-deferred-status-action.tsx
+msgid "Rückgängig"
+msgstr ""
+
 #: apps/remix/app/components/dialogs/template-direct-link-dialog.tsx
 #: apps/remix/app/components/embed/authoring/configure-fields-view.tsx
 #: apps/remix/app/components/embed/authoring/configure-fields-view.tsx
@@ -9328,6 +10336,28 @@ msgstr "保存に失敗しました"
 #: packages/ui/primitives/template-flow/add-template-fields.tsx
 msgid "Save Template"
 msgstr "テンプレートを保存"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
+msgid "Schnell-Review"
+msgstr ""
+
+#: apps/remix/app/components/discovery/first-run-checklist.tsx
+msgid "Schnell-Review öffnen"
+msgstr ""
+
+#: apps/remix/app/components/discovery/sync-overview-card.tsx
+msgid "Schnell-Review starten"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Schon erledigt"
+msgstr ""
+
+#. placeholder {0}: steps.length
+#: apps/remix/app/components/discovery/first-run-checklist.tsx
+msgid "Schritt {completedCount} von {0} — so kommen Sie zum Steuerpaket"
+msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/admin+/unsealed-documents._index.tsx
 msgid "Seal job triggered"
@@ -9420,6 +10450,11 @@ msgstr "ドキュメントを見る"
 #: apps/remix/app/routes/_authenticated+/admin+/documents.$id.tsx
 msgid "See the background jobs tab for the status"
 msgstr "ステータスはバックグラウンドジョブのタブで確認できます"
+
+#. placeholder {0}: formatDate(doc.archivedAt, locale)
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "Seit {0}"
+msgstr ""
 
 #: apps/remix/app/components/general/document-signing/document-signing-dropdown-field.tsx
 #: packages/ui/primitives/document-flow/field-content.tsx
@@ -9759,6 +10794,10 @@ msgstr "設定"
 msgid "Setup"
 msgstr "セットアップ"
 
+#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
+msgid "Setzt Ihren Account auf den Anfang zurück: alle gefundenen Belege, verbundenen Postfächer und versendeten Verträge werden gelöscht. Ihr Account, Ihr Name und Ihre Anmeldedaten bleiben."
+msgstr ""
+
 #: apps/remix/app/components/general/document/document-page-view-dropdown.tsx
 #: apps/remix/app/components/tables/documents-table-action-dropdown.tsx
 #: packages/ui/components/document/document-share-button.tsx
@@ -9795,6 +10834,42 @@ msgstr "ライセンスキーを表示する"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.public-profile.tsx
 msgid "Show templates in your public profile for your audience to sign and get started quickly"
 msgstr "オーディエンスがすぐに署名を開始できるよう、公開プロフィールにテンプレートを表示します"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+msgid "Sie gehen die Treffer durch — pro Beleg ein Klick: ins Archiv oder ignorieren. Fertig."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "Sie gehen sie einen nach dem anderen durch. Pro Beleg ein Klick: ins Archiv oder ignorieren."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
+msgid "Sie haben {processed} Belege in dieser Sitzung erledigt. Wenn Sie weitere Belege finden möchten, starten Sie einfach einen neuen Sync."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+msgid "Sie haben sie übernommen — jetzt nur noch ein Klick, und sie sind 10 Jahre lang sicher abgelegt."
+msgstr ""
+
+#: apps/remix/app/components/dialogs/accept-discovery-document-button.tsx
+msgid "Sie können den Beleg danach <0>nicht mehr ändern, nicht mehr löschen und nicht mehr aus dem Archiv entfernen</0>. Felder wie Korrespondent, Betrag oder Rechnungsnummer sind dann fix."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+msgid "Sie können den Empfängern eine freundliche Erinnerung schicken — mit einem Klick."
+msgstr ""
+
+#: apps/remix/app/components/discovery/background-sync-banner.tsx
+msgid "Sie können diese Seite jetzt schließen — wir laufen weiter, und Sie sehen die Belege beim nächsten Besuch."
+msgstr ""
+
+#: apps/remix/app/components/sources/imap-provider-picker.tsx
+msgid "Sie können Server, Port und Zugangsdaten manuell eintragen. Fragen Sie Ihren Provider nach den IMAP-Einstellungen, falls Sie sie nicht kennen."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+msgid "Sie wählen, wie weit zurück wir suchen sollen — von einem Monat bis zu fünf Jahren."
+msgstr ""
 
 #: apps/remix/app/components/dialogs/sign-field-signature-dialog.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-auth-2fa.tsx
@@ -9923,6 +10998,10 @@ msgstr ""
 msgid "Signatur-Dokument vorbereitet"
 msgstr ""
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Signatur-Status öffnen"
+msgstr ""
+
 #: apps/remix/app/components/dialogs/ai-field-detection-dialog.tsx
 #: apps/remix/app/components/embed/embed-direct-template-client-page.tsx
 #: apps/remix/app/components/embed/embed-document-signing-page-v1.tsx
@@ -10005,6 +11084,12 @@ msgstr "署名者のイベント"
 msgctxt "Recipient role plural name"
 msgid "Signers"
 msgstr "署名者"
+
+#: apps/remix/app/components/general/app-nav-desktop.tsx
+#: apps/remix/app/components/general/app-nav-mobile.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Signieren"
+msgstr ""
 
 #: packages/lib/constants/recipient-roles.ts
 msgctxt "Recipient role progressive verb"
@@ -10105,12 +11190,29 @@ msgstr "サイト設定"
 msgid "Skip"
 msgstr "スキップ"
 
+#. placeholder {0}: provider.label
+#: apps/remix/app/components/sources/imap-provider-picker.tsx
+msgid "So finden Sie Ihr App-Passwort bei {0}"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "So funktioniert es: Sie verbinden Ihr Postfach und wählen einen Zeitraum. Anschließend durchsucht NexaFile die Mails in diesem Zeitraum und schlägt Ihnen Rechnungs- und Beleg-Kandidaten vor. Sie prüfen die Treffer und entscheiden pro Zeile zwischen <0>Ins Archiv übernehmen</0> und <1>Ignorieren</1>. Erst mit <2>Bestätigen</2> werden Ihre Entscheidungen übernommen."
+msgstr ""
+
 #: apps/remix/app/components/general/user-profile-timur.tsx
 msgid "So könnte Ihr öffentliches NexaFile-Profil aussehen."
 msgstr ""
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "So sehen Sie sofort, aus welchen Zeiträumen die aktuellen Treffer stammen und wann zuletzt erneut gesucht wurde."
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
 msgid "Sobald ein IMAP-Konto verbunden ist, starten Sie gezielte Sync-Läufe für bestimmte Zeiträume. Gefundene Belege legt NexaFile im Eingang ab."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
+msgid "Sobald Sie @ tippen, wählen wir den passenden Anbieter automatisch aus."
 msgstr ""
 
 #: packages/ui/primitives/document-flow/missing-signature-field-dialog.tsx
@@ -10261,7 +11363,16 @@ msgstr "ドメインを半角スペース区切りで入力します。空のま
 msgid "Spanish"
 msgstr "スペイン語"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "Später"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "Später entscheiden — überspringen"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
 msgid "Speichern fehlgeschlagen"
 msgstr ""
 
@@ -10273,8 +11384,8 @@ msgstr ""
 msgid "SSO"
 msgstr "SSO"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Starten Sie in den Quellen-Einstellungen einen Sync-Lauf für einen bestimmten Zeitraum, um Belege aus Ihrem Postfach einzulesen."
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "Startet die GoBD-10-Jahres-Frist und sperrt das Dokument unwiderruflich. Vorher können Sie noch Felder korrigieren."
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/admin+/_layout.tsx
@@ -10292,13 +11403,18 @@ msgstr "統計"
 #: apps/remix/app/components/tables/organisation-insights-table.tsx
 #: apps/remix/app/routes/_authenticated+/admin+/documents._index.tsx
 #: apps/remix/app/routes/_authenticated+/admin+/email-domains._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.webhooks._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.webhooks.$id._index.tsx
 #: apps/remix/app/routes/_internal+/[__htmltopdf]+/audit-log.tsx
 #: packages/lib/server-only/pdf/render-audit-logs.ts
 msgid "Status"
 msgstr "ステータス"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Status sehen"
+msgstr ""
 
 #. placeholder {0}: currentStepData.order
 #. placeholder {1}: envelopeEditorSteps.length
@@ -10311,12 +11427,22 @@ msgstr "ステップ {0}/{1}"
 msgid "Step <0>{step} of {maxStep}</0>"
 msgstr "ステップ <0>{step} / {maxStep}</0>"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Steuerpaket"
+#: apps/remix/app/components/discovery/first-run-checklist.tsx
+msgid "Steuerpaket bauen"
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Steuerunterlagen nachholen"
+#: apps/remix/app/components/dialogs/tax-package-confirm-button.tsx
+#: apps/remix/app/components/dialogs/tax-package-confirm-button.tsx
+#: apps/remix/app/components/discovery/first-run-checklist.tsx
+msgid "Steuerpaket erstellen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+msgid "Steuerpaket exportieren (DATEV-CSV)"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Steuerpaket vorbereiten"
 msgstr ""
 
 #: apps/remix/app/components/tables/admin-organisations-table.tsx
@@ -10463,20 +11589,12 @@ msgstr "パスキーを作成しました"
 msgid "Successfully created: {successCount}"
 msgstr "正常に作成: {successCount}"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Suchbegriff"
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "Suche jetzt starten?"
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Suche starten"
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Suche und Zeitraum"
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Suchen…"
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "Suche wird gestartet…"
 msgstr ""
 
 #: packages/email/templates/bulk-send-complete.tsx
@@ -10511,6 +11629,10 @@ msgstr "メールドメインを同期"
 msgid "Sync failed, changes not saved"
 msgstr "同期に失敗し、変更は保存されませんでした"
 
+#: apps/remix/app/components/discovery/background-sync-banner.tsx
+msgid "Sync läuft im Hintergrund"
+msgstr ""
+
 #: apps/remix/app/components/general/admin-license-card.tsx
 msgid "Sync license from server"
 msgstr "サーバーからライセンスを同期"
@@ -10521,10 +11643,6 @@ msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
 msgid "Sync-Lauf konnte nicht starten"
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Sync-Lauf starten"
 msgstr ""
 
 #: packages/lib/utils/document-audit-logs.ts
@@ -10542,9 +11660,21 @@ msgstr "システム要件"
 msgid "System Theme"
 msgstr "システムテーマ"
 
+#: apps/remix/app/components/sources/folder-diagnostics-card.tsx
+msgid "Tab „Labels\" → Reihe „Alle Nachrichten\" → Spalte „In IMAP anzeigen\" anhaken"
+msgstr ""
+
+#: apps/remix/app/components/sources/folder-diagnostics-card.tsx
+msgid "Tab „Weiterleitung und POP/IMAP\" → „Größenbeschränkung der Ordner\": „nicht beschränken (Standard)\" wählen"
+msgstr ""
+
 #: apps/remix/app/components/dialogs/admin-swap-subscription-dialog.tsx
 msgid "Target Organisation"
 msgstr "対象の組織"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
+msgid "Tastenkürzel:"
+msgstr ""
 
 #: apps/remix/app/components/tables/admin-user-teams-table.tsx
 #: apps/remix/app/components/tables/organisation-insights-table.tsx
@@ -10733,6 +11863,10 @@ msgstr "この組織グループが現在割り当てられているチーム"
 #: apps/remix/app/routes/_authenticated+/admin+/users.$id.tsx
 msgid "Teams that this user is a member of and their roles."
 msgstr "このユーザーが所属しているチームと、そのロールです。"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "Technische Details (für Admins)"
+msgstr ""
 
 #: apps/remix/app/components/dialogs/organisation-member-invite-dialog.tsx
 #: apps/remix/app/components/dialogs/public-profile-template-manage-dialog.tsx
@@ -11633,6 +12767,22 @@ msgstr "タイムゾーン"
 msgid "Time Zone"
 msgstr "タイムゾーン"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "Tipp:"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Tipp: Im Archiv können Sie Felder noch korrigieren. Wenn alles passt, klicken Sie dort auf „Endgültig archivieren\" — dann sind die Belege 10 Jahre lang sicher abgelegt."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+msgid "Tipp: Wenn Sie noch nicht wissen, womit anfangen — „Dokumente im Postfach finden\" ist der häufigste erste Schritt."
+msgstr ""
+
+#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
+msgid "Tippen Sie zur Bestätigung <0>{CONFIRM_PHRASE}</0> ein:"
+msgstr ""
+
 #: apps/remix/app/components/dialogs/envelope-rename-dialog.tsx
 #: apps/remix/app/components/embed/authoring/configure-document-view.tsx
 #: apps/remix/app/components/general/template/template-page-view-documents-table.tsx
@@ -11848,6 +12998,12 @@ msgstr "リクエストが多すぎます"
 msgid "Top"
 msgstr "上"
 
+#. placeholder {0}: correspondentSummary.entries.length
+#. placeholder {1}: correspondentSummary.totalDistinct
+#: apps/remix/app/components/discovery/correspondent-summary-card.tsx
+msgid "Top {0} von {1}"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/admin+/stats.tsx
 msgid "Total Documents"
 msgstr "文書総数"
@@ -11950,6 +13106,14 @@ msgstr "タイプ入力の署名"
 msgid "Typed signatures are not allowed. Please draw your signature."
 msgstr "タイプ入力された署名は使用できません。署名を描画してください。"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Übersicht"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
+msgid "Überspringen"
+msgstr ""
+
 #: apps/remix/app/routes/_unauthenticated+/verify-email._index.tsx
 msgid "Uh oh! Looks like you're missing a token"
 msgstr "トークンがありません"
@@ -12041,6 +13205,10 @@ msgstr "サインインできませんでした"
 msgid "Unauthorized"
 msgstr "権限がありません"
 
+#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
+msgid "Unbekannter Fehler"
+msgstr ""
+
 #: apps/remix/app/components/general/stack-avatars-with-tooltip.tsx
 msgid "Uncompleted"
 msgstr "未完了"
@@ -12096,6 +13264,10 @@ msgstr "ピン留めを解除"
 #: apps/remix/app/routes/_authenticated+/admin+/unsealed-documents._index.tsx
 msgid "Unsealed Documents"
 msgstr "未封印の文書"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Unterschrieben"
+msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/vorlagen+/gobd+/_index.tsx
 msgid "Unterschriebene Verträge sind <0>steuerrelevante Belege</0> — das Finanzamt darf sie bis zu 10 Jahre später prüfen. Hier finden Sie alle Bausteine, die NexaFile für eine <1>GoBD-orientierte Archivierung</1> mitbringt: Erklärungen, Vorlagen, Tools, FAQ."
@@ -12482,11 +13654,11 @@ msgid "Value"
 msgstr "値"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Verarbeitet"
+msgid "Verbinden Sie ein E-Mail-Postfach, damit wir Belege automatisch finden können."
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Verbinden Sie Ihre erste Dokumentenquelle"
+#: apps/remix/app/components/discovery/first-run-checklist.tsx
+msgid "Verbinden Sie Ihr E-Mail-Postfach via IMAP."
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
@@ -12498,6 +13670,7 @@ msgstr ""
 msgid "Verbindung erfolgreich"
 msgstr ""
 
+#: apps/remix/app/components/sources/folder-diagnostics-card.tsx
 #: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
 msgid "Verbindung fehlgeschlagen"
@@ -12506,6 +13679,10 @@ msgstr ""
 #: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
 msgid "Verbindung testen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "Verbunden mit <0>{sourceLabel}</0>"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
@@ -12557,6 +13734,18 @@ msgstr "文書をアップロードするにはメールアドレスを確認し
 msgid "Verify your team email address"
 msgstr "チームメールアドレスを確認"
 
+#. placeholder {0}: formatDate(env.sentAt ?? env.createdAt, i18n.locale)
+#. placeholder {1}: env.signedRecipients
+#. placeholder {2}: env.totalRecipients
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Verschickt am {0} · {1} von {2} Empfängern unterschrieben"
+msgstr ""
+
+#: apps/remix/app/components/discovery/sync-overview-card.tsx
+msgid "Verteilung pro Jahr"
+msgstr ""
+
 #: apps/remix/app/components/forms/editor/editor-field-checkbox-form.tsx
 #: apps/remix/app/components/forms/editor/editor-field-radio-form.tsx
 #: packages/ui/primitives/document-flow/field-items-advanced-settings/checkbox-field.tsx
@@ -12566,6 +13755,18 @@ msgstr "縦"
 #: apps/remix/app/components/forms/editor/editor-field-generic-field-forms.tsx
 msgid "Vertical Align"
 msgstr "縦位置揃え"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+msgid "Verträge selbst unterschreiben oder zur Unterschrift an Empfänger senden — Sie sehen jederzeit, was offen ist und wer schon unterschrieben hat."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+msgid "Verträge warten auf Empfänger-Unterschriften"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+msgid "Verträge warten seit über einer Woche auf Empfänger-Unterschriften"
+msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/vorlagen+/_index.tsx
 msgid "Vertragsvorlagen für deutsche Unternehmen"
@@ -12752,13 +13953,38 @@ msgstr "閲覧中"
 msgid "Visibility"
 msgstr "公開範囲"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Vollständig"
+#: apps/remix/app/components/dialogs/smart-bulk-accept-dialog.tsx
+msgid "Vollständige Belege auf einen Klick"
+msgstr ""
+
+#: apps/remix/app/components/dialogs/smart-bulk-accept-dialog.tsx
+msgid "Vollständige Belege auf einen Klick akzeptieren"
+msgstr ""
+
+#: apps/remix/app/components/discovery/sync-overview-card.tsx
+msgid "Vollständige in einem Klick"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
 msgid "Von"
+msgstr ""
+
+#. placeholder {0}: visibleDocs.length
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "von {0} markiert"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "von {totalCount} Dokumenten"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Vor dem Bestätigen passiert nichts dauerhaft. Übernommene Belege bleiben im Archiv noch korrigierbar."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "Voriger Beleg"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/vorlagen+/_index.tsx
@@ -12769,8 +13995,32 @@ msgstr ""
 msgid "Vorletztes Jahr"
 msgstr ""
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
+msgid "Vorschau"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
+msgid "Vorschau nicht verfügbar — bitte Anhang öffnen."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+msgid "Wählen Sie ein bereits verbundenes Postfach für einen neuen Lauf — oder hängen Sie weiter unten ein zusätzliches Postfach an."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "Wählen Sie ein verbundenes Postfach."
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
 msgid "Wählen Sie einen Zeitraum aus. Belege aus diesem Zeitraum werden geprüft und in den Eingang importiert. Bereits importierte Belege werden automatisch übersprungen."
+msgstr ""
+
+#: apps/remix/app/components/discovery/first-run-checklist.tsx
+msgid "Wählen Sie einen Zeitraum und lassen Sie NexaFile Ihr Postfach durchsuchen."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+msgid "Wählen Sie, was heute ansteht — wir führen Sie Schritt für Schritt durch."
 msgstr ""
 
 #: apps/remix/app/components/general/stack-avatars-with-tooltip.tsx
@@ -12819,8 +14069,32 @@ msgstr "警告: 最後の署名者がアシスタントです"
 msgid "Wartet auf ersten Sync"
 msgstr ""
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Wartet auf Unterschrift"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+msgid "Was als nächstes passiert"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "Was haben wir erkannt?"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/vorlagen+/gobd+/_index.tsx
 msgid "Was ist GoBD überhaupt?"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+msgid "Was liegt noch offen?"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+msgid "Was möchten Sie tun?"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/vorlagen+/gobd+/_index.tsx
@@ -13224,6 +14498,41 @@ msgstr "Webhook URL"
 msgid "Webhooks"
 msgstr "Webhook"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+msgid "Weiter"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Weitere Belege durchgehen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Weitere laden"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Weitere Treffer laden"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+msgid "Weiteres Postfach mit E-Mail-Adresse hinzufügen"
+msgstr ""
+
+#: apps/remix/app/components/sources/folder-diagnostics-card.tsx
+msgid "Welche Folder gibt Ihr Postfach via IMAP frei, und welche scannt NexaFile beim Sync? Wenn das Archiv hier nicht auftaucht, finden wir nur die aktuell ungelesenen Mails."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+msgid "Welches E-Mail-Postfach sollen wir durchsuchen?"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+msgid "Welches Postfach soll durchsucht werden?"
+msgstr ""
+
 #: apps/remix/app/routes/_unauthenticated+/articles.signature-disclosure.tsx
 msgid "Welcome"
 msgstr "ようこそ"
@@ -13247,6 +14556,22 @@ msgstr ""
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.sso.tsx
 msgid "Well-known URL is required"
 msgstr "Well-known URL は必須です"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Wenn der Vorschlag passt, müssen Sie nichts tun. Korrigieren Sie nur die Zeilen, die falsch einsortiert sind."
+msgstr ""
+
+#: apps/remix/app/components/dialogs/accept-discovery-document-button.tsx
+msgid "Wenn Sie jetzt endgültig archivieren, wird der Beleg <0>10 Jahre lang schreibgeschützt aufbewahrt</0> — wie es das Finanzamt verlangt (§ 147 AO)."
+msgstr ""
+
+#: apps/remix/app/components/dialogs/accept-discovery-document-button.tsx
+msgid "Wenn Sie noch unsicher sind, lassen Sie den Beleg in „Im Archiv (noch korrigierbar)\" liegen."
+msgstr ""
+
+#: apps/remix/app/components/discovery/correspondent-summary-card.tsx
+msgid "Wer hat Ihnen Belege geschickt?"
+msgstr ""
 
 #: apps/remix/app/routes/_recipient+/sign.$token+/waiting.tsx
 msgid "Were you trying to edit this document instead?"
@@ -13291,18 +14616,86 @@ msgstr "ホワイトラベリング、メンバー無制限など"
 msgid "Who do you want to remind?"
 msgstr "誰にリマインドを送りますか？"
 
+#: apps/remix/app/components/sources/imap-provider-picker.tsx
+msgid "Wichtig: Das normale Login-Passwort funktioniert nicht — Sie brauchen ein eigenes Passwort für externe Programme."
+msgstr ""
+
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page.tsx
 #: packages/ui/primitives/document-flow/field-item.tsx
 msgid "Width:"
 msgstr "幅:"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "Wie weit zurück sollen wir gehen?"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+msgid "Willkommen bei NexaFile!"
+msgstr ""
+
+#: apps/remix/app/components/dialogs/smart-bulk-accept-dialog.tsx
+msgid "Wir akzeptieren in einem Rutsch alle Belege, bei denen wir uns sicher sind: Anhang vorhanden, Betrag erkannt, Absender erkannt — und natürlich noch nicht akzeptiert."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+msgid "Wir durchsuchen den gewählten Zeitraum im verbundenen Postfach nach Rechnungs- und Beleg-Kandidaten. Andere Mails können dabei technisch mit geprüft werden, werden aber nicht als Beleg übernommen. Ihr Passwort wird verschlüsselt gespeichert und kann jederzeit in den Einstellungen wieder entfernt werden."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+msgid "Wir durchsuchen Ihr Postfach im Hintergrund und stellen die wahrscheinlichsten Rechnungs- und Beleg-Treffer für Sie zusammen."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Wir haben {totalHits} Treffer gefunden"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Wir haben {totalHits} Treffer im Zeitraum {latestCompletedRangeLabel} gefunden"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+msgid "Wir haben sie in Ihrem E-Mail-Postfach gefunden. Pro Beleg ein Klick: ins Archiv oder ignorieren."
+msgstr ""
+
+#. placeholder {0}: counts.archive
+#. placeholder {1}: counts.ignore
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Wir haben unsere Vorschläge bereits gesetzt: <0>{0} ins Archiv</0>, <1>{1} ignorieren</1>. Wenn Sie das anders sehen, klicken Sie pro Zeile rechts."
+msgstr ""
+
+#. placeholder {0}: counts.archive
+#. placeholder {1}: counts.ignore
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Wir übernehmen jetzt <0>{0} Belege</0> in den korrigierbaren Archiv-Stapel und markieren <1>{1} Mails</1> als kein Beleg."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
+msgid "Wir verbinden uns einmal mit Ihrem E-Mail-Postfach und finden alle Rechnungen automatisch — ideal, wenn Sie für die Steuer ein ganzes Jahr nachholen müssen."
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
 msgid "Wird abgebrochen…"
+msgstr ""
+
+#: apps/remix/app/components/sources/folder-diagnostics-card.tsx
+msgid "Wird gescannt"
+msgstr ""
+
+#: apps/remix/app/components/sources/folder-diagnostics-card.tsx
+msgid "Wird nicht gescannt"
+msgstr ""
+
+#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
+msgid "Wirklich alle Inhalte löschen?"
 msgstr ""
 
 #: apps/remix/app/routes/_unauthenticated+/articles.signature-disclosure.tsx
 msgid "Withdrawing Consent"
 msgstr "同意の撤回"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "Womit möchten Sie arbeiten?"
+msgstr ""
 
 #: apps/remix/app/components/forms/public-profile-form.tsx
 msgid "Write a description to display on your public profile"
@@ -14411,16 +15804,43 @@ msgstr "認証コード:"
 msgid "your-domain.com another-domain.com"
 msgstr "your-domain.com another-domain.com"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Zeitraum anwenden"
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "Zeitraum prüfen"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Zeitraum prüfen"
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
+msgid "Zeitraum wählen"
+msgstr ""
+
+#: apps/remix/app/components/discovery/sync-overview-card.tsx
+msgid "Zeitraum: {rangeText}"
+msgstr ""
+
+#: apps/remix/app/components/dialogs/tax-package-confirm-button.tsx
+msgid "ZIP erstellen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
+msgid "ZIP für Ihren Steuerberater — alle Belege aus dem Archiv und der endgültigen Ablage mit Original-Anhängen, Filter-Übersicht und CSV."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Zum Ignorieren"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Zum Ignorieren ausgewählt"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "Zum Signieren vorbereiten"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
+msgid "Zur Liste zurück"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
@@ -14428,5 +15848,14 @@ msgid "Zurück"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
 msgid "Zurück zur Liste"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
+msgid "Zurück zur Treffer-Liste"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Zurück zur Übersicht"
 msgstr ""

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120" fill="none">
+  <ellipse cx="80" cy="105" rx="50" ry="6" fill="#bae6fd" opacity="0.6"/>
+  <!-- Briefkasten -->
+  <rect x="50" y="40" width="60" height="50" rx="4" fill="#ffffff" stroke="#0284c7" stroke-width="2"/>
+  <rect x="50" y="40" width="60" height="14" rx="4" fill="#0284c7"/>
+  <rect x="60" y="44" width="40" height="6" rx="1" fill="#ffffff"/>
+  <!-- Schlitz im Deckel -->
+  <line x1="65" y1="62" x2="95" y2="62" stroke="#0284c7" stroke-width="2" stroke-linecap="round"/>
+  <!-- Briefe ragen heraus -->
+  <rect x="68" y="55" width="20" height="14" fill="#fef3c7" stroke="#f59e0b" stroke-width="1" transform="rotate(-8 78 62)"/>
+  <rect x="78" y="50" width="20" height="14" fill="#ffffff" stroke="#0284c7" stroke-width="1" transform="rotate(5 88 57)"/>
+  <!-- @ -->
+  <text x="80" y="35" font-family="ui-sans-serif, system-ui" font-size="20" fill="#0284c7" text-anchor="middle" font-weight="bold">@</text>
+</svg>

@@ -1,36 +1,42 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // © 2026 NexaStack, NexaSign contributors
+//
+// /find-documents — Wireframe-konforme Trefferliste (finden-ergebnisse.html).
+// Zeigt ausschliesslich Eingangs-Belege (status='inbox' + 'pending-manual').
+// Per-Zeile entscheidet der Nutzer client-seitig (Ins Archiv / Ignorieren),
+// am Ende ein Klick auf Bestätigen → Batch-Commit (bulkAccept + bulkIgnore).
+// Andere Status-Stages (Im Archiv, Endgültig archiviert) liegen unter /archiv.
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
 import {
-  AlertCircleIcon,
-  ArchiveIcon,
-  BarChart3Icon,
-  CalendarIcon,
   CheckCircleIcon,
   ClockIcon,
-  DownloadIcon,
+  ExternalLinkIcon,
   FileTextIcon,
-  InboxIcon,
+  LayoutDashboardIcon,
   Loader2Icon,
+  MailSearchIcon,
   MoreHorizontalIcon,
   PaperclipIcon,
-  PlayIcon,
-  PlugIcon,
-  SearchIcon,
-  Settings2Icon,
   XCircleIcon,
 } from 'lucide-react';
-import { Link, useParams } from 'react-router';
+import { Link, useParams, useSearchParams } from 'react-router';
 
 import { trpc } from '@nexasign/trpc/react';
-import type {
-  TDiscoveryDocumentAction,
-  TFindDiscoveryDocumentsResponse,
-} from '@nexasign/trpc/server/discovery-router/schema';
+import type { TFindDiscoveryDocumentsResponse } from '@nexasign/trpc/server/discovery-router/schema';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@nexasign/ui/primitives/alert-dialog';
 import { Badge } from '@nexasign/ui/primitives/badge';
 import { Button } from '@nexasign/ui/primitives/button';
 import { Card } from '@nexasign/ui/primitives/card';
@@ -42,1221 +48,272 @@ import {
   DropdownMenuTrigger,
 } from '@nexasign/ui/primitives/dropdown-menu';
 import { Input } from '@nexasign/ui/primitives/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@nexasign/ui/primitives/select';
-import { Skeleton } from '@nexasign/ui/primitives/skeleton';
-import { Tabs, TabsList, TabsTrigger } from '@nexasign/ui/primitives/tabs';
 import { useToast } from '@nexasign/ui/primitives/use-toast';
 
-import { AcceptDiscoveryDocumentButton } from '~/components/dialogs/accept-discovery-document-button';
-import { TaxPackageConfirmButton } from '~/components/dialogs/tax-package-confirm-button';
-import { BackgroundSyncBanner } from '~/components/discovery/background-sync-banner';
-import { FirstRunChecklist } from '~/components/discovery/first-run-checklist';
-import { SyncOverviewCard } from '~/components/discovery/sync-overview-card';
+import { CorrespondentSummaryCard } from '~/components/discovery/correspondent-summary-card';
+import { Illustration } from '~/components/general/illustration';
+import { GmailAllMailBanner } from '~/components/sources/gmail-allmail-banner';
+import { appMetaTags } from '~/utils/meta';
 
-// Vollständiger Status-Enum (matcht das tRPC-Schema). Tabs zeigen aber nur
-// die 4 Hauptzustände — IGNORED ist via Filter erreichbar, PROCESSED ist eine
-// Sammel-Kategorie.
-type DiscoveryStatus =
-  | 'inbox'
-  | 'pending-manual'
-  | 'accepted'
-  | 'archived'
-  | 'ignored'
-  | 'processed';
-// "all" ist die Default-Übersicht — alle Belege auf einen Blick, sortiert nach
-// Datum. Die anderen Tabs sind Workflow-Filter.
-type DiscoveryTab = 'all' | 'inbox' | 'pending-manual' | 'accepted' | 'archived';
-type FocusFilter =
-  | 'all'
-  | 'needs-review'
-  | 'downloadable'
-  | 'missing-amount'
-  | 'missing-invoice-number';
+export function meta() {
+  return appMetaTags(msg`Belege finden`);
+}
+
 type Document = TFindDiscoveryDocumentsResponse['documents'][number];
-type Source = TFindDiscoveryDocumentsResponse['sources'][number];
-
-const STATUS_TABS: ReadonlyArray<{ value: DiscoveryTab; label: ReturnType<typeof msg> }> = [
-  { value: 'all', label: msg`Alle` },
-  { value: 'inbox', label: msg`Eingang` },
-  { value: 'pending-manual', label: msg`Manuell zu ziehen` },
-  { value: 'accepted', label: msg`Akzeptiert` },
-  { value: 'archived', label: msg`Archiv` },
-];
-
-const TAX_SEARCH_TERM = 'Rechnung';
-const FOCUS_FILTERS: ReadonlyArray<{ value: FocusFilter; label: ReturnType<typeof msg> }> = [
-  { value: 'all', label: msg`Alle Treffer` },
-  { value: 'needs-review', label: msg`Offen` },
-  { value: 'downloadable', label: msg`Mit Anhang` },
-  { value: 'missing-amount', label: msg`Ohne Betrag` },
-  { value: 'missing-invoice-number', label: msg`Ohne Nr.` },
-];
-
-const formatRelativeTime = (date: Date, locale: string): string => {
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
-  const diffSeconds = Math.round((date.getTime() - Date.now()) / 1000);
-  const diffMinutes = Math.round(diffSeconds / 60);
-  const diffHours = Math.round(diffMinutes / 60);
-  const diffDays = Math.round(diffHours / 24);
-  if (Math.abs(diffSeconds) < 60) return rtf.format(diffSeconds, 'second');
-  if (Math.abs(diffMinutes) < 60) return rtf.format(diffMinutes, 'minute');
-  if (Math.abs(diffHours) < 24) return rtf.format(diffHours, 'hour');
-  return rtf.format(diffDays, 'day');
-};
+type Decision = 'archive' | 'ignore' | 'undecided';
+type FilterChip = 'all' | 'archive' | 'ignore' | 'undecided';
 
 const formatDate = (date: Date | null, locale: string): string => {
   if (!date) return '–';
-  return new Intl.DateTimeFormat(locale, {
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(date);
+};
+
+const formatDateRange = (from: Date, to: Date, locale: string): string => {
+  const inclusiveTo = new Date(to);
+  if (
+    inclusiveTo.getHours() === 0 &&
+    inclusiveTo.getMinutes() === 0 &&
+    inclusiveTo.getSeconds() === 0 &&
+    inclusiveTo.getMilliseconds() === 0
+  ) {
+    inclusiveTo.setDate(inclusiveTo.getDate() - 1);
+  }
+  const fmt = new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
-  }).format(date);
+  });
+  return `${fmt.format(from)} – ${fmt.format(inclusiveTo)}`;
 };
 
-const toDateInputValue = (date: Date): string => date.toISOString().slice(0, 10);
-
-const addDays = (value: string, days: number): Date => {
-  const date = new Date(`${value}T00:00:00`);
-  date.setDate(date.getDate() + days);
-  return date;
+const stripeColor = (decision: Decision): string => {
+  if (decision === 'archive') return 'bg-emerald-500';
+  if (decision === 'ignore') return 'bg-neutral-300';
+  return 'bg-amber-400';
 };
 
-const parseDateInput = (value: string): Date | null => {
-  if (!value) return null;
-  const date = new Date(`${value}T00:00:00`);
-  return Number.isNaN(date.getTime()) ? null : date;
+const decisionLabel = (decision: Decision, isManual: boolean): string => {
+  const prefix = isManual ? 'Von Ihnen gewählt' : 'Vorschlag';
+  if (decision === 'archive') return `${prefix}: ins Archiv`;
+  if (decision === 'ignore') return `${prefix}: ignorieren`;
+  return isManual ? 'Von Ihnen offen gelassen' : 'Noch offen';
 };
 
-const startOfYear = (year: number): string => `${year}-01-01`;
-const endOfYear = (year: number): string => `${year}-12-31`;
-
-const getDocumentWorkDate = (doc: Document): Date => doc.documentDate ?? doc.capturedAt;
-
-const getYearMonthKey = (date: Date): string =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-
-const monthKeyToRange = (key: string): { from: string; to: string } | null => {
-  const [yearValue, monthValue] = key.split('-').map(Number);
-  if (!yearValue || !monthValue || monthValue < 1 || monthValue > 12) return null;
-  const from = new Date(yearValue, monthValue - 1, 1);
-  const to = new Date(yearValue, monthValue, 0);
-  return { from: toDateInputValue(from), to: toDateInputValue(to) };
+const decisionPillClass = (decision: Decision): string => {
+  if (decision === 'archive') return 'bg-emerald-50 text-emerald-800 ring-emerald-200';
+  if (decision === 'ignore') return 'bg-neutral-100 text-neutral-700 ring-neutral-200';
+  return 'bg-amber-50 text-amber-900 ring-amber-200';
 };
 
-const hasDownloadableArchive = (doc: Document): boolean =>
-  doc.hasArchive && doc.attachmentCount > 0;
+/**
+ * Heuristik: einfache Signale (Reply-Mail, Newsletter, Bestellbestätigung,
+ * keine Beträge ohne Anhang) liefern den Default-Vorschlag pro Zeile. Wenn
+ * eines greift → "ignore", sonst "archive". Der User kann jederzeit
+ * überstimmen.
+ */
+const heuristicDefault = (doc: Document): Decision => {
+  const title = doc.title.toLowerCase();
+  const sender = (doc.correspondent ?? '').toLowerCase();
+  if (title.startsWith('aw:') || title.startsWith('re:') || title.startsWith('fwd:'))
+    return 'ignore';
+  if (sender.includes('newsletter') || title.includes('newsletter')) return 'ignore';
+  if (title.includes('bestellbestätigung') || title.includes('bestellbestaetigung'))
+    return 'ignore';
+  if (title.includes('webinar') || title.includes('aktion')) return 'ignore';
+  if (title.includes('sicherheitswarnung') || title.includes('passwort')) return 'ignore';
+  if (title.includes('benachrichtigung')) return 'ignore';
+  if (!doc.detectedAmount && doc.attachmentCount === 0) return 'ignore';
+  return 'archive';
+};
 
-const DocumentQualityBadges = ({ doc }: { doc: Document }) => {
-  const missingAmount = !doc.detectedAmount;
-  const missingInvoiceNumber = !doc.detectedInvoiceNumber;
-  const missingAttachment = !hasDownloadableArchive(doc);
+const heuristicHint = (doc: Document): string | null => {
+  const title = doc.title.toLowerCase();
+  const sender = (doc.correspondent ?? '').toLowerCase();
+  if (title.startsWith('aw:') || title.startsWith('re:') || title.startsWith('fwd:'))
+    return 'Antwort- oder Weiterleitungs-Mail — selbst kein Beleg.';
+  if (sender.includes('newsletter') || title.includes('newsletter'))
+    return 'Sieht nach Newsletter aus — Absender ist auf einer Werbe-Liste.';
+  if (title.includes('bestellbestätigung') || title.includes('bestellbestaetigung'))
+    return 'Eine Bestellbestätigung ist meist noch keine Rechnung.';
+  if (title.includes('webinar') || title.includes('aktion'))
+    return 'Marketing-Mail mit „Rechnung" im Betreff.';
+  if (title.includes('sicherheitswarnung') || title.includes('passwort'))
+    return 'System-Mail, kein Geschäftsbeleg.';
+  if (title.includes('benachrichtigung')) return 'Kalender- oder System-Benachrichtigung.';
+  if (!doc.detectedAmount && doc.attachmentCount === 0)
+    return 'Kein Betrag erkannt, kein Anhang — vermutlich kein echter Beleg.';
+  return null;
+};
 
-  if (!missingAmount && !missingInvoiceNumber && !missingAttachment) {
-    // Kein Icon — die Badge-Farbe (grün/default) trägt das positive Signal.
-    // Icon hier wäre Lärm in Tabellenzeilen mit ohnehin hoher Badge-Dichte.
-    return (
-      <Badge variant="default" size="small">
-        <Trans>Vollständig</Trans>
-      </Badge>
-    );
+const decisionReason = (doc: Document, decision: Decision): string => {
+  if (decision === 'undecided') {
+    return 'Diese Zeile bleibt unverändert, bis Sie selbst entscheiden.';
   }
 
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {missingAmount && (
-        <Badge variant="warning" size="small">
-          <AlertCircleIcon className="mr-1 h-3 w-3" aria-hidden />
-          <Trans>Betrag fehlt</Trans>
-        </Badge>
-      )}
-      {missingInvoiceNumber && (
-        <Badge variant="warning" size="small">
-          <AlertCircleIcon className="mr-1 h-3 w-3" aria-hidden />
-          <Trans>Nr. fehlt</Trans>
-        </Badge>
-      )}
-      {missingAttachment && (
-        <Badge variant="neutral" size="small">
-          <PaperclipIcon className="mr-1 h-3 w-3" aria-hidden />
-          <Trans>Kein Anhang</Trans>
-        </Badge>
-      )}
-    </div>
-  );
-};
-
-const StatusIcon = ({ status }: { status: DiscoveryStatus }) => {
-  if (status === 'pending-manual') return <ClockIcon className="h-4 w-4" aria-hidden />;
-  if (status === 'accepted' || status === 'processed')
-    return <CheckCircleIcon className="h-4 w-4" aria-hidden />;
-  if (status === 'archived') return <ArchiveIcon className="h-4 w-4" aria-hidden />;
-  return <InboxIcon className="h-4 w-4" aria-hidden />;
-};
-
-const statusLabel = (status: DiscoveryStatus): React.ReactNode => {
-  switch (status) {
-    case 'inbox':
-      return <Trans>Neu</Trans>;
-    case 'pending-manual':
-      return <Trans>Manuell</Trans>;
-    case 'accepted':
-      return <Trans>Akzeptiert</Trans>;
-    case 'archived':
-      return <Trans>Archiv</Trans>;
-    case 'ignored':
-      return <Trans>Ignoriert</Trans>;
-    case 'processed':
-      return <Trans>Verarbeitet</Trans>;
+  if (decision === 'ignore') {
+    return heuristicHint(doc) ?? 'Wir erkennen hier kein starkes Beleg-Signal.';
   }
+
+  if (doc.attachmentCount > 0 && doc.detectedAmount) {
+    return 'PDF-Anhang und Betrag erkannt — sehr wahrscheinlich ein echter Beleg.';
+  }
+  if (doc.attachmentCount > 0) {
+    return 'PDF-Anhang erkannt — bitte kurz prüfen, dann übernehmen.';
+  }
+  if (doc.detectedAmount) {
+    return 'Betrag erkannt, aber kein PDF — eventuell im Portal nachziehen.';
+  }
+  return 'Möglicher Beleg — bitte kurz prüfen, bevor Sie bestätigen.';
 };
 
 const DocumentRow = ({
   doc,
   locale,
-  onAction,
-  isPending,
+  decision,
+  isManual,
   isSelected,
+  isPending,
+  onChange,
   onToggleSelect,
 }: {
   doc: Document;
   locale: string;
-  onAction: (id: string, action: TDiscoveryDocumentAction) => void;
-  isPending: boolean;
+  decision: Decision;
+  isManual: boolean;
   isSelected: boolean;
-  onToggleSelect: (id: string) => void;
-}) => (
-  <Card
-    // Override des Card-Defaults (bg-background = cremefarben):
-    //   bg-white          — absolut weiss, hebt sich vom warmen Page-BG ab
-    //   border-neutral-300 — sichtbarer mittel-grauer Rand statt blass-cremefarben
-    //   shadow-sm         — leichtes Hochkant-Gefuehl, klar als „Karte" lesbar
-    // bei Auswahl zusaetzlich primary-Ring; hover etwas anheben statt nur Tint.
-    className={`flex flex-col gap-2 border-neutral-300 bg-white p-4 shadow-sm transition-all hover:border-neutral-400 hover:shadow-md ${
-      isSelected ? 'ring-2 ring-primary ring-offset-1' : ''
-    }`}
-  >
-    <div className="flex items-start gap-3">
-      {/* Multi-Select-Checkbox: outside des Detail-Links, damit Klick aufs
-          Häkchen den User NICHT zur Detail-Seite navigiert. */}
-      <div className="pt-1">
-        <Checkbox
-          checked={isSelected}
-          onCheckedChange={() => onToggleSelect(doc.id)}
-          aria-label={`Beleg „${doc.title}" auswählen`}
-        />
-      </div>
-
-      {/* Klickbarer Bereich → Detail-Seite. Akzeptieren-/Archivieren-Buttons
-          liegen ausserhalb dieses Links, damit deren Klicks nicht zur Detail-
-          Seite navigieren. */}
-      <Link
-        to={doc.id}
-        className="flex min-w-0 flex-1 items-start gap-3 rounded-md ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-      >
-        <FileTextIcon className="mt-1 h-5 w-5 flex-shrink-0 text-muted-foreground" aria-hidden />
-        <div className="min-w-0 flex-1">
-          <h3 className="truncate text-base font-semibold text-foreground">{doc.title}</h3>
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-            {doc.correspondent && <span>{doc.correspondent}</span>}
-            {doc.detectedInvoiceNumber && (
-              <span className="font-mono text-xs">{doc.detectedInvoiceNumber}</span>
-            )}
-            <span>{formatDate(doc.documentDate ?? doc.capturedAt, locale)}</span>
-            {doc.sourceLabel && (
-              <span className="inline-flex items-center gap-1 text-xs">
-                <InboxIcon className="h-3 w-3" aria-hidden />
-                {doc.sourceLabel}
-              </span>
-            )}
-            {/* Anhang-Indikator: nur wenn herunterladbares Archiv vorhanden.
-                Wenn Mail in der DB ist aber keine Files → kein Icon, nichts
-                Klickbares — User weiss visuell „hier gibt's nichts zum Laden". */}
-            {doc.hasArchive && doc.attachmentCount > 0 && (
-              <span
-                className="inline-flex items-center gap-1 text-xs font-medium text-foreground"
-                title={`${doc.attachmentCount} Anhang${
-                  doc.attachmentCount > 1 ? '"e' : ''
-                } verfügbar`}
-              >
-                <PaperclipIcon className="h-3 w-3" aria-hidden />
-                {doc.attachmentCount}
-              </span>
-            )}
-          </div>
-          <div className="mt-2">
-            <DocumentQualityBadges doc={doc} />
-          </div>
-        </div>
-      </Link>
-
-      <div className="flex flex-shrink-0 items-center gap-2">
-        <Badge variant="secondary">
-          <StatusIcon status={doc.status} />
-          <span className="ml-1.5">{statusLabel(doc.status)}</span>
-        </Badge>
-        {doc.status === 'inbox' && (
-          <>
-            <AcceptDiscoveryDocumentButton
-              variant="outline"
-              size="sm"
-              disabled={isPending}
-              onConfirm={() => onAction(doc.id, 'accept')}
-            />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={isPending}>
-                  <MoreHorizontalIcon className="h-4 w-4" aria-hidden />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onAction(doc.id, 'mark-pending-manual')}>
-                  <ClockIcon className="mr-2 h-4 w-4" aria-hidden />
-                  <Trans>Als manuell zu ziehen markieren</Trans>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onAction(doc.id, 'archive')}>
-                  <ArchiveIcon className="mr-2 h-4 w-4" aria-hidden />
-                  <Trans>Archivieren</Trans>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onAction(doc.id, 'ignore')}>
-                  <XCircleIcon className="mr-2 h-4 w-4" aria-hidden />
-                  <Trans>Ignorieren</Trans>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </>
-        )}
-        {doc.status === 'pending-manual' && (
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={isPending}
-            onClick={() => onAction(doc.id, 'archive')}
-          >
-            <ArchiveIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-            <Trans>Archivieren</Trans>
-          </Button>
-        )}
-      </div>
-    </div>
-    {doc.tags.length > 0 && (
-      <div className="flex flex-wrap gap-1.5 pl-9">
-        {doc.tags.map((tag) => (
-          <Badge key={tag} variant="neutral" className="text-xs font-normal">
-            {tag}
-          </Badge>
-        ))}
-      </div>
-    )}
-  </Card>
-);
-
-/**
- * Sticky Action-Bar am oberen Listen-Rand, sichtbar sobald >=1 Beleg
- * ausgewaehlt ist. Zeigt ehrlich, wie viele der ausgewaehlten Belege
- * tatsaechlich Files haben — wenn 0, ist der ZIP-Button disabled.
- */
-const BulkActionBar = ({
-  selectedCount,
-  downloadableCount,
-  onClear,
-  zipHref,
-}: {
-  selectedCount: number;
-  downloadableCount: number;
-  onClear: () => void;
-  zipHref: string;
-}) => {
-  const noneDownloadable = downloadableCount === 0;
-  return (
-    <div className="sticky top-16 z-40 flex flex-wrap items-center justify-between gap-3 rounded-md border border-primary/50 bg-primary/10 px-4 py-2 shadow-sm backdrop-blur md:top-[88px]">
-      <div className="flex flex-col gap-0.5">
-        <p className="text-sm font-medium text-foreground">
-          <Trans>{selectedCount} ausgewählt</Trans>
-        </p>
-        {downloadableCount < selectedCount && (
-          <p className="text-xs text-muted-foreground">
-            <Trans>
-              {downloadableCount} davon mit Anhang — ZIP enthält MANIFEST.txt mit Liste der
-              übersprungenen Mails.
-            </Trans>
-          </p>
-        )}
-      </div>
-      <div className="flex items-center gap-2">
-        {noneDownloadable ? (
-          <Button size="sm" disabled title="Keiner der ausgewählten Belege hat Anhänge">
-            <DownloadIcon className="mr-2 h-3.5 w-3.5" aria-hidden />
-            <Trans>Kein Anhang</Trans>
-          </Button>
-        ) : (
-          <Button asChild size="sm">
-            <a href={zipHref} download>
-              <DownloadIcon className="mr-2 h-3.5 w-3.5" aria-hidden />
-              <Trans>Anhänge + Mail als ZIP</Trans>
-            </a>
-          </Button>
-        )}
-        <Button variant="ghost" size="sm" onClick={onClear}>
-          <Trans>Auswahl aufheben</Trans>
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-const LoadingList = () => (
-  <div className="flex flex-col gap-3">
-    {Array.from({ length: 4 }).map((_, i) => (
-      <Skeleton key={i} className="h-24 w-full" />
-    ))}
-  </div>
-);
-
-const NoSourceEmptyState = () => (
-  <Card className="flex flex-col items-center gap-5 p-12 text-center">
-    <PlugIcon className="h-12 w-12 text-muted-foreground" aria-hidden />
-    <div className="max-w-md">
-      <h2 className="text-lg font-semibold">
-        <Trans>Verbinden Sie Ihre erste Dokumentenquelle</Trans>
-      </h2>
-      <p className="mt-2 text-sm text-muted-foreground">
-        <Trans>
-          Belege erscheinen hier, sobald Sie eine Quelle verbunden und einen Sync-Lauf gestartet
-          haben.
-        </Trans>
-      </p>
-    </div>
-    <Button asChild>
-      <Link to="/settings/sources">
-        <Trans>Quelle verbinden</Trans>
-      </Link>
-    </Button>
-  </Card>
-);
-
-const SourcesStatusBar = ({
-  sources,
-  activeRuns,
-  locale,
-}: {
-  sources: Source[];
-  activeRuns: ReadonlyArray<{
-    id: string;
-    sourceLabel: string;
-    mailsChecked: number;
-    documentsAuto: number;
-    documentsManual: number;
-    status: 'PENDING' | 'RUNNING';
-  }>;
-  locale: string;
-}) => {
-  const latestSync =
-    sources
-      .map((s) => s.lastSyncAt)
-      .filter((d): d is Date => d !== null)
-      .sort((a, b) => b.getTime() - a.getTime())[0] ?? null;
-
-  // Aktiver Run schlägt „letzter Sync"-Zeitstempel — Persona soll sehen,
-  // dass das Tool gerade arbeitet, nicht nur historische Stände.
-  if (activeRuns.length > 0) {
-    return (
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-sm">
-        <div className="flex flex-wrap items-center gap-3">
-          <Loader2Icon className="h-4 w-4 flex-shrink-0 animate-spin text-primary" aria-hidden />
-          <div className="flex flex-col">
-            {activeRuns.map((run) => {
-              const found = run.documentsAuto + run.documentsManual;
-              return (
-                <span key={run.id} className="text-foreground">
-                  <Trans>
-                    {run.sourceLabel}: {run.mailsChecked} Mails geprüft, {found} Belege gefunden
-                  </Trans>
-                </span>
-              );
-            })}
-          </div>
-        </div>
-        <Button asChild variant="ghost" size="sm" className="h-7 gap-1.5 px-2">
-          <Link to="/settings/sources">
-            <Settings2Icon className="h-3.5 w-3.5" aria-hidden />
-            <Trans>Quellen verwalten</Trans>
-          </Link>
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm text-muted-foreground">
-      <div className="flex items-center gap-2">
-        {latestSync ? (
-          <>
-            <CheckCircleIcon className="h-4 w-4 text-green-600" aria-hidden />
-            <span>
-              <Trans>Letzter Sync: {formatRelativeTime(latestSync, locale)}</Trans>
-            </span>
-          </>
-        ) : (
-          <>
-            <AlertCircleIcon className="h-4 w-4 text-amber-500" aria-hidden />
-            <span>
-              <Trans>Noch kein Sync gestartet</Trans>
-            </span>
-          </>
-        )}
-      </div>
-      <Button asChild variant="ghost" size="sm" className="h-7 gap-1.5 px-2">
-        <Link to="/settings/sources">
-          <Settings2Icon className="h-3.5 w-3.5" aria-hidden />
-          <Trans>Quellen verwalten</Trans>
-        </Link>
-      </Button>
-    </div>
-  );
-};
-
-const MailboxSearchPanel = ({
-  sources,
-  sourceId,
-  setSourceId,
-  fromDate,
-  setFromDate,
-  toDate,
-  setToDate,
-  searchTerm,
-  setSearchTerm,
-  onStart,
-  isPending,
-  lastSuccessfulSyncRangeTo,
-  defaultOpen,
-  locale,
-}: {
-  sources: Source[];
-  sourceId: string;
-  setSourceId: (value: string) => void;
-  fromDate: string;
-  setFromDate: (value: string) => void;
-  toDate: string;
-  setToDate: (value: string) => void;
-  searchTerm: string;
-  setSearchTerm: (value: string) => void;
-  onStart: () => void;
   isPending: boolean;
-  lastSuccessfulSyncRangeTo: Date | null;
-  defaultOpen: boolean;
-  locale: string;
+  onChange: (next: Decision) => void;
+  onToggleSelect: () => void;
 }) => {
-  // „Seit letztem Lauf"-Hinweis: macht den inkrementellen Default explizit
-  // sichtbar, damit der User nicht rätselt, warum „Von" auf einem konkreten
-  // Datum vorbelegt ist.
-  const incrementalHint = (() => {
-    if (!lastSuccessfulSyncRangeTo) return null;
-    const fmt = new Intl.DateTimeFormat(locale, {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-    return fmt.format(lastSuccessfulSyncRangeTo);
-  })();
+  const hint = decisionReason(doc, decision);
+  const dimmed = decision === 'ignore';
 
   return (
-    <details
-      className="mb-4 rounded-md border border-neutral-300 bg-white shadow-sm"
-      open={defaultOpen}
+    <li
+      className={`group relative flex items-stretch overflow-hidden rounded-md border shadow-sm transition-all hover:shadow-md ${
+        isSelected
+          ? 'border-primary ring-2 ring-primary/30'
+          : dimmed
+            ? 'border-neutral-200 bg-neutral-50/60'
+            : 'border-neutral-200 bg-white'
+      }`}
     >
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
-        <span className="text-sm font-semibold">
-          <Trans>Neuen Import starten</Trans>
-        </span>
-        <Button asChild variant="ghost" size="sm" className="h-7 px-2">
-          <Link to="/settings/sources">
-            <Settings2Icon className="mr-2 h-4 w-4" aria-hidden />
-            <Trans>Quellen</Trans>
-          </Link>
-        </Button>
-      </summary>
-
-      {incrementalHint && (
-        <p className="border-t bg-muted/30 px-4 py-2 text-xs text-muted-foreground">
-          <Trans>
-            Letzter erfolgreicher Lauf bis {incrementalHint}. „Von" ist auf dieses Datum vorbelegt —
-            der Import zieht nur das Delta.
-          </Trans>
-        </p>
-      )}
-
-      <div className="grid gap-3 border-t p-4 md:grid-cols-[1.4fr_1fr_1fr_1.2fr_auto] md:items-end">
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium">
-            <Trans>Quelle</Trans>
-          </span>
-          {/* Shadcn-Select statt nativem <select> — vermeidet OS-spezifische
-              Chrome-Drop-Down-Geometrie und matcht den Stil im IMAP-Dialog. */}
-          <Select value={sourceId} onValueChange={setSourceId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Quelle wählen" />
-            </SelectTrigger>
-            <SelectContent>
-              {sources.map((source) => (
-                <SelectItem key={source.id} value={source.id}>
-                  {source.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </label>
-
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium">
-            <Trans>Von</Trans>
-          </span>
-          <div className="relative">
-            <CalendarIcon
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-              aria-hidden
-            />
-            <Input
-              className="pl-9"
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-            />
-          </div>
-        </label>
-
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium">
-            <Trans>Bis</Trans>
-          </span>
-          <div className="relative">
-            <CalendarIcon
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-              aria-hidden
-            />
-            <Input
-              className="pl-9"
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-            />
-          </div>
-        </label>
-
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium">
-            <Trans>Suchbegriff</Trans>
-          </span>
-          <Input
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Rechnung, invoice, Beleg"
+      <span className={`w-1 shrink-0 ${stripeColor(decision)}`} aria-hidden />
+      <div className="flex flex-1 flex-wrap items-start gap-3 px-4 py-3">
+        <label className="flex cursor-pointer items-center pt-0.5">
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={onToggleSelect}
+            aria-label={`Beleg „${doc.title}" für Mehrfach-Aktion auswählen`}
+            className="h-5 w-5"
           />
         </label>
-
-        <Button onClick={onStart} disabled={isPending || !sourceId || !fromDate || !toDate}>
-          <PlayIcon className="mr-2 h-4 w-4" aria-hidden />
-          <Trans>Durchsuchen</Trans>
-        </Button>
-      </div>
-    </details>
-  );
-};
-
-/**
- * Onboarding-Block für Erststart (mind. eine Quelle verbunden, aber noch kein
- * erfolgreicher SyncRun und keine Belege in der DB). Statt eines stillen
- * Datums-Defaults zwingt dieser Block zu einer bewussten Entscheidung über die
- * Reichweite des Erst-Imports — Persona „Mehrere Steuerjahre nachholen" wählt
- * 3J/5J, Persona „Aktuelle Buchhaltung" wählt 1M/3M.
- */
-const OnboardingRangePicker = ({
-  onStart,
-  isPending,
-  canStart,
-}: {
-  onStart: (from: string, to: string) => void;
-  isPending: boolean;
-  canStart: boolean;
-}) => {
-  const today = toDateInputValue(new Date());
-  const fromYearsAgo = (years: number): string => {
-    const d = new Date();
-    d.setFullYear(d.getFullYear() - years);
-    return toDateInputValue(d);
-  };
-  const fromMonthsAgo = (months: number): string => {
-    const d = new Date();
-    d.setMonth(d.getMonth() - months);
-    return toDateInputValue(d);
-  };
-
-  const ranges: Array<{ label: string; from: string; hint: string }> = [
-    { label: 'Letzter Monat', from: fromMonthsAgo(1), hint: 'schnell, ca. 1–2 Min' },
-    { label: 'Letztes Quartal', from: fromMonthsAgo(3), hint: 'ca. 3–5 Min' },
-    { label: '1 Jahr', from: fromYearsAgo(1), hint: 'ca. 10–15 Min' },
-    { label: '2 Jahre', from: fromYearsAgo(2), hint: 'ca. 20–30 Min' },
-    { label: '3 Jahre', from: fromYearsAgo(3), hint: 'ca. 30–45 Min' },
-    { label: '5 Jahre', from: fromYearsAgo(5), hint: 'ca. 1–2 Std., Steuer-Nachhol' },
-  ];
-
-  return (
-    <Card className="mb-6 border-neutral-300 bg-white p-6 shadow-sm">
-      <h2 className="text-base font-semibold">
-        <Trans>Wie weit möchten Sie zurück?</Trans>
-      </h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        <Trans>
-          Der erste Import zieht alle Belege im gewählten Zeitraum. Folge-Läufe ziehen automatisch
-          nur das Delta seit dem letzten erfolgreichen Lauf.
-        </Trans>
-      </p>
-      <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-3">
-        {ranges.map((r) => (
-          <Button
-            key={r.label}
-            type="button"
-            variant="outline"
-            className="h-auto flex-col items-start gap-0.5 px-3 py-2.5 text-left"
-            disabled={isPending || !canStart}
-            onClick={() => onStart(r.from, today)}
-          >
-            <span className="text-sm font-semibold">{r.label}</span>
-            <span className="text-xs font-normal text-muted-foreground">{r.hint}</span>
-          </Button>
-        ))}
-      </div>
-      <p className="mt-3 text-xs text-muted-foreground">
-        <Trans>
-          Eigenes Datum? Im Panel „Neuen Import starten" oben können Sie „Von" und „Bis" frei
-          wählen.
-        </Trans>
-      </p>
-    </Card>
-  );
-};
-
-type CatchUpSummary = {
-  total: number;
-  accepted: number;
-  needsReview: number;
-  downloadable: number;
-  missingAmount: number;
-  missingInvoiceNumber: number;
-  months: Array<{ key: string; count: number }>;
-};
-
-const TaxCatchUpPanel = ({
-  summary,
-  focusSummary,
-  setFromDate,
-  setToDate,
-  setMailSearchTerm,
-  setStatus,
-  focusFilter,
-  setFocusFilter,
-  applyDateFilter,
-  setApplyDateFilter,
-  onMonthSelect,
-  onStart,
-  isPending,
-  canStart,
-  locale,
-  taxPackageHref,
-  dateRangeFrom,
-  dateRangeTo,
-}: {
-  summary: CatchUpSummary;
-  focusSummary: CatchUpSummary;
-  setFromDate: (value: string) => void;
-  setToDate: (value: string) => void;
-  setMailSearchTerm: (value: string) => void;
-  setStatus: (value: DiscoveryTab) => void;
-  focusFilter: FocusFilter;
-  setFocusFilter: (value: FocusFilter) => void;
-  applyDateFilter: boolean;
-  setApplyDateFilter: (value: boolean) => void;
-  onMonthSelect: (key: string) => void;
-  onStart: () => void;
-  isPending: boolean;
-  canStart: boolean;
-  locale: string;
-  taxPackageHref: string;
-  // Reicht den aktiven Datumsfilter durch — Tax-Package-Confirm zeigt den
-  // Range im Vorschau-Dialog. null wenn kein Filter aktiv.
-  dateRangeFrom: Date | null;
-  dateRangeTo: Date | null;
-}) => {
-  const { _ } = useLingui();
-  const currentYear = new Date().getFullYear();
-  const presets = [
-    { label: String(currentYear), from: startOfYear(currentYear), to: endOfYear(currentYear) },
-    {
-      label: String(currentYear - 1),
-      from: startOfYear(currentYear - 1),
-      to: endOfYear(currentYear - 1),
-    },
-    {
-      label: `${currentYear - 2}-${currentYear}`,
-      from: startOfYear(currentYear - 2),
-      to: endOfYear(currentYear),
-    },
-  ];
-
-  const setPreset = (from: string, to: string) => {
-    setFromDate(from);
-    setToDate(to);
-    setMailSearchTerm(TAX_SEARCH_TERM);
-    setApplyDateFilter(true);
-  };
-
-  const visibleMonthLabel = (key: string) => {
-    const [year, month] = key.split('-').map(Number);
-    return new Intl.DateTimeFormat(locale, { month: 'short', year: 'numeric' }).format(
-      new Date(year, month - 1, 1),
-    );
-  };
-
-  const getFocusCount = (value: FocusFilter): number => {
-    if (value === 'all') return focusSummary.total;
-    if (value === 'needs-review') return focusSummary.needsReview;
-    if (value === 'downloadable') return focusSummary.downloadable;
-    if (value === 'missing-amount') return focusSummary.missingAmount;
-    return focusSummary.missingInvoiceNumber;
-  };
-  const completionPercent =
-    summary.total > 0 ? Math.round((summary.accepted / summary.total) * 100) : 0;
-
-  const showReviewStep = summary.needsReview > 0;
-  const showMissingDataStep =
-    !showReviewStep && (summary.missingAmount > 0 || summary.missingInvoiceNumber > 0);
-  // showExportStep wurde entfernt — der Steuerpaket-CTA ist jetzt permanent
-  // unter dem „Nächster Schritt"-Block verankert (eigener Akzent-Container),
-  // nicht mehr conditional verschachtelt mit den Review-Workflow-Buttons.
-
-  const focusList = (value: FocusFilter) => {
-    setStatus('all');
-    setFocusFilter(value);
-  };
-
-  return (
-    // Werkzeug-Panel visuell zurueckgestellt (bg-muted/30, kein Schatten):
-    // die Dokument-Tabelle ist die primaere Oberflaeche, das Panel ist das
-    // Werkzeug. Gleiches bg-white wie die Tabelle wuerde beide auf Augenhoehe
-    // stellen — ungewollt fuer die Persona, die scannen will.
-    <Card className="mb-6 border-neutral-200 bg-muted/30 p-4 shadow-none">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="flex items-center gap-2 text-base font-semibold">
-            <BarChart3Icon className="h-4 w-4" aria-hidden />
-            <Trans>Steuerunterlagen nachholen</Trans>
-          </h2>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <Badge variant="secondary" size="small">
-              <Trans>{summary.total} Treffer</Trans>
-            </Badge>
-            <Badge variant="default" size="small">
-              <Trans>{summary.accepted} geprüft</Trans>
-            </Badge>
-            <Badge variant={summary.needsReview > 0 ? 'warning' : 'neutral'} size="small">
-              <Trans>{summary.needsReview} offen</Trans>
-            </Badge>
-            {(summary.missingAmount > 0 || summary.missingInvoiceNumber > 0) && (
-              <Badge variant="warning" size="small">
-                <Trans>{summary.missingAmount + summary.missingInvoiceNumber} Datenlücken</Trans>
-              </Badge>
-            )}
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {presets.map((preset) => (
-            <Button
-              key={preset.label}
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => setPreset(preset.from, preset.to)}
-            >
-              {preset.label}
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-4 rounded-md border bg-muted/20 p-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link
+          to={doc.id}
+          className="flex min-w-0 flex-1 items-start gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <FileTextIcon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-medium">
-                <Trans>Nächster Schritt</Trans>
-              </p>
-              <Badge variant="secondary" size="small">
-                {completionPercent}%
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <span className={`font-medium ${dimmed ? 'text-neutral-500' : 'text-foreground'}`}>
+                {doc.correspondent ?? doc.title}
+              </span>
+              {doc.detectedAmount && (
+                <span
+                  className={`text-sm tabular-nums ${dimmed ? 'text-neutral-400' : 'text-foreground'}`}
+                >
+                  {doc.detectedAmount}
+                </span>
+              )}
+              <span className="text-xs tabular-nums text-neutral-500">
+                {formatDate(doc.documentDate ?? doc.capturedAt, locale)}
+              </span>
+              {doc.hasArchive && doc.attachmentCount > 0 && (
+                <span
+                  className="inline-flex items-center gap-0.5 text-xs text-neutral-500"
+                  title="Anhang vorhanden"
+                >
+                  <PaperclipIcon className="h-3 w-3" aria-hidden />
+                  {doc.attachmentCount}
+                </span>
+              )}
+              {decision === 'undecided' && (
+                <span className="ml-1 rounded-sm bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-900">
+                  <Trans>Noch zu entscheiden</Trans>
+                </span>
+              )}
+              <Badge
+                variant={isManual ? 'secondary' : decision === 'undecided' ? 'warning' : 'neutral'}
+                size="small"
+                className={`ml-1 rounded-full ${decisionPillClass(decision)}`}
+              >
+                {decisionLabel(decision, isManual)}
               </Badge>
             </div>
-            <div className="mt-2 h-2 max-w-md overflow-hidden rounded-full bg-muted">
-              <div className="h-full bg-primary" style={{ width: `${completionPercent}%` }} />
+            <div
+              className={`mt-0.5 truncate text-sm group-hover:underline ${
+                dimmed ? 'text-neutral-500' : 'text-neutral-700'
+              }`}
+            >
+              {doc.title}
             </div>
+            <div className="mt-0.5 text-xs text-neutral-500">{hint}</div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {showReviewStep && (
-              <Button size="sm" onClick={() => focusList('needs-review')}>
-                <CheckCircleIcon className="mr-2 h-4 w-4" aria-hidden />
-                <Trans>Offene prüfen</Trans>
-              </Button>
-            )}
-            {showMissingDataStep && summary.missingAmount > 0 && (
-              <Button size="sm" variant="outline" onClick={() => focusList('missing-amount')}>
-                <Trans>Ohne Betrag</Trans>
-              </Button>
-            )}
-            {showMissingDataStep && summary.missingInvoiceNumber > 0 && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => focusList('missing-invoice-number')}
-              >
-                <Trans>Ohne Nr.</Trans>
-              </Button>
-            )}
-            {!showReviewStep && !showMissingDataStep && summary.downloadable === 0 && (
-              <Button size="sm" onClick={onStart} disabled={isPending || !canStart}>
-                <PlayIcon className="mr-2 h-4 w-4" aria-hidden />
-                <Trans>Suche starten</Trans>
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Steuerpaket-CTA permanent verankert — sichtbar sobald ueberhaupt
-          Belege mit Anhang da sind, unabhaengig davon ob noch Luecken offen
-          sind. Persona kann auch eine Teilmenge exportieren, ohne dass das
-          Tool sie zur Vollstaendigkeit zwingt. */}
-      {summary.downloadable > 0 && (
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-primary/30 bg-primary/10 px-4 py-3">
-          <p className="text-sm font-medium">
-            <Trans>{summary.downloadable} Belege mit Anhang bereit für Steuerpaket</Trans>
-          </p>
-          <TaxPackageConfirmButton
-            href={taxPackageHref}
-            totalCount={summary.total}
-            downloadableCount={summary.downloadable}
-            rangeFrom={dateRangeFrom}
-            rangeTo={dateRangeTo}
-            locale={locale}
-          />
-        </div>
-      )}
-
-      <div className="mt-4 flex flex-wrap gap-2 border-t pt-4">
-        {FOCUS_FILTERS.map((filter) => (
-          <Button
-            key={filter.value}
-            type="button"
-            size="sm"
-            variant={focusFilter === filter.value ? 'default' : 'outline'}
-            onClick={() => setFocusFilter(filter.value)}
-          >
-            {_(filter.label)}
-            <span className="ml-2 rounded-sm bg-background/70 px-1.5 py-0.5 text-xs text-foreground">
-              {getFocusCount(filter.value)}
-            </span>
-          </Button>
-        ))}
-      </div>
-
-      {/* Inneres `<details>` „Suche und Zeitraum" wurde entfernt — die
-          Funktion war doppelt mit dem `MailboxSearchPanel` oben (gleicher
-          Sync-Trigger) und mit der „In importierten Belegen suchen"-Eingabe
-          (Quick-Terms-Chips). Der ehemals dort lebende `applyDateFilter`-
-          Toggle wandert eine Zeile drüber in die Focus-Filter-Reihe. */}
-      <label className="mt-3 inline-flex items-center gap-2 text-sm">
-        <Checkbox
-          checked={applyDateFilter}
-          onCheckedChange={(checked) => setApplyDateFilter(checked === true)}
-          aria-label="Zeitraum auf Trefferliste anwenden"
-        />
-        <span className="text-muted-foreground">
-          <Trans>Trefferliste auf den oben gewählten Zeitraum eingrenzen</Trans>
-        </span>
-      </label>
-
-      {summary.months.length > 0 && (
-        <details className="mt-3 rounded-md border bg-muted/10">
-          <summary className="cursor-pointer px-3 py-2 text-sm font-medium">
-            <Trans>Monate</Trans>
-          </summary>
-          {/* Keine slice-Begrenzung: bei mehrjährigem Steuer-Nachhol-Use-Case
-              müssen 24+ Monate sichtbar sein. flex-wrap kümmert sich ums Layout. */}
-          <div className="flex flex-wrap gap-2 border-t p-3">
-            {summary.months.map((bucket) => (
-              <Button
-                key={bucket.key}
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => onMonthSelect(bucket.key)}
-              >
-                {visibleMonthLabel(bucket.key)} · {bucket.count}
-              </Button>
-            ))}
-          </div>
-        </details>
-      )}
-    </Card>
-  );
-};
-
-const NoResultsCard = ({
-  sources,
-  activeRuns,
-  locale,
-}: {
-  sources: Source[];
-  activeRuns: ReadonlyArray<{
-    id: string;
-    sourceLabel: string;
-    mailsChecked: number;
-    documentsAuto: number;
-    documentsManual: number;
-    status: 'PENDING' | 'RUNNING';
-  }>;
-  locale: string;
-}) => (
-  <div className="flex flex-col gap-4">
-    <SourcesStatusBar sources={sources} activeRuns={activeRuns} locale={locale} />
-    <Card className="flex flex-col items-center gap-3 p-12 text-center">
-      <InboxIcon className="h-12 w-12 text-muted-foreground" aria-hidden />
-      <div>
-        <h2 className="text-lg font-semibold">
-          <Trans>Keine Belege im aktuellen Bereich</Trans>
-        </h2>
-        <p className="mt-1 max-w-md text-sm text-muted-foreground">
-          <Trans>
-            Starten Sie in den Quellen-Einstellungen einen Sync-Lauf für einen bestimmten Zeitraum,
-            um Belege aus Ihrem Postfach einzulesen.
-          </Trans>
-        </p>
-      </div>
-      <Button asChild variant="outline" size="sm">
-        <Link to="/settings/sources">
-          <Settings2Icon className="mr-2 h-4 w-4" aria-hidden />
-          <Trans>Sync-Lauf starten</Trans>
         </Link>
-      </Button>
-    </Card>
-  </div>
-);
 
-// Tabellen-Ansicht für „Akzeptiert" und „Archiv". Im Gegensatz zur Card-Liste
-// (die für Eingang+Manuell wegen der Aktions-Buttons sinnvoller ist) brauchen
-// wir hier Lese-Übersicht über viele Belege + Export. CSV-Export läuft über
-// einen Server-Endpoint (find-documents.csv-export), damit alle gefilterten
-// Belege exportiert werden — nicht nur die aktuelle Page-Slice.
-const DocumentTable = ({
-  documents,
-  locale,
-  onAction,
-  isPending,
-  showAcceptedColumn,
-  showSourceColumn,
-  isSelected,
-  onToggleSelect,
-  onToggleSelectAll,
-  allSelected,
-  totalCount,
-  csvExportHref,
-}: {
-  documents: Document[];
-  locale: string;
-  onAction: (id: string, action: TDiscoveryDocumentAction) => void;
-  isPending: boolean;
-  showAcceptedColumn: boolean;
-  // Quelle-Spalte nur einblenden, wenn der User mehrere Quellen hat —
-  // bei einer einzigen IMAP-Box waere die Spalte konstant befuellt und
-  // damit nutzlos.
-  showSourceColumn: boolean;
-  isSelected: (id: string) => boolean;
-  onToggleSelect: (id: string) => void;
-  onToggleSelectAll: () => void;
-  allSelected: boolean;
-  // Gesamt-Anzahl gefilterter Belege (vom Server). Wenn > documents.length
-  // kommt der CSV-Export NICHT clientseitig aus dem aktuellen Page-Slice
-  // (das war die alte Falle), sondern aus dem Server-Endpoint, der alle
-  // gefilterten Belege liefert.
-  totalCount: number;
-  csvExportHref: string;
-}) => {
-  const intlDate = new Intl.DateTimeFormat(locale, {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="flex justify-end">
-        <Button asChild variant="outline" size="sm" disabled={documents.length === 0}>
-          <a href={csvExportHref} download>
-            <DownloadIcon className="mr-2 h-4 w-4" aria-hidden />
-            <Trans>CSV exportieren ({totalCount})</Trans>
-          </a>
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          <div
+            role="group"
+            aria-label="Entscheidung"
+            className="flex overflow-hidden rounded-md border border-neutral-300"
+          >
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={isPending}
+              onClick={() => onChange('archive')}
+              className={`rounded-none border-r border-neutral-300 px-3 ${
+                decision === 'archive'
+                  ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  : 'text-emerald-700 hover:bg-emerald-50'
+              }`}
+              aria-pressed={decision === 'archive'}
+            >
+              <CheckCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+              <Trans>Ins Archiv</Trans>
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={isPending}
+              onClick={() => onChange('ignore')}
+              className={`rounded-none px-3 ${
+                decision === 'ignore'
+                  ? 'bg-neutral-700 text-white hover:bg-neutral-800'
+                  : 'text-neutral-600 hover:bg-neutral-100'
+              }`}
+              aria-pressed={decision === 'ignore'}
+            >
+              <XCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+              <Trans>Ignorieren</Trans>
+            </Button>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={isPending}>
+                <MoreHorizontalIcon className="h-4 w-4" aria-hidden />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onChange('undecided')}>
+                <ClockIcon className="mr-2 h-4 w-4" aria-hidden />
+                <Trans>Noch nicht entscheiden</Trans>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
-      <div className="overflow-x-auto rounded-md border">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-            <tr>
-              <th className="w-10 px-3 py-2">
-                <Checkbox
-                  checked={documents.length > 0 && allSelected}
-                  onCheckedChange={onToggleSelectAll}
-                  aria-label="Alle auswählen"
-                />
-              </th>
-              <th className="px-3 py-2 font-medium">
-                <Trans>Datum</Trans>
-              </th>
-              <th className="px-3 py-2 font-medium">
-                <Trans>Korrespondent</Trans>
-              </th>
-              <th className="px-3 py-2 font-medium">
-                <Trans>Betreff</Trans>
-              </th>
-              <th className="px-3 py-2 font-medium">
-                <Trans>Betrag</Trans>
-              </th>
-              <th className="px-3 py-2 font-medium">
-                <Trans>Rechnungs-Nr.</Trans>
-              </th>
-              <th className="px-3 py-2 font-medium">
-                <Trans>Prüfung</Trans>
-              </th>
-              <th className="px-3 py-2 text-center font-medium" title="Anhang">
-                <PaperclipIcon className="mx-auto h-4 w-4" aria-hidden />
-              </th>
-              <th className="px-3 py-2 font-medium">
-                <Trans>Status</Trans>
-              </th>
-              {showSourceColumn && (
-                <th className="px-3 py-2 font-medium">
-                  <Trans>Quelle</Trans>
-                </th>
-              )}
-              {showAcceptedColumn && (
-                <th className="px-3 py-2 font-medium">
-                  <Trans>Akzeptiert</Trans>
-                </th>
-              )}
-              <th className="px-3 py-2 text-right font-medium">
-                <Trans>Aktion</Trans>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {documents.map((doc) => (
-              <tr
-                key={doc.id}
-                className={`border-t hover:bg-muted/30 ${isSelected(doc.id) ? 'bg-primary/5' : ''}`}
-              >
-                <td className="px-3 py-2 align-middle">
-                  <Checkbox
-                    checked={isSelected(doc.id)}
-                    onCheckedChange={() => onToggleSelect(doc.id)}
-                    aria-label={`Beleg „${doc.title}" auswählen`}
-                  />
-                </td>
-                <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
-                  {intlDate.format(doc.documentDate ?? doc.capturedAt)}
-                </td>
-                <td className="px-3 py-2">{doc.correspondent ?? '–'}</td>
-                <td className="min-w-0 max-w-[240px] truncate px-3 py-2">
-                  <Link to={doc.id} className="hover:underline">
-                    {doc.title}
-                  </Link>
-                </td>
-                <td className="whitespace-nowrap px-3 py-2 font-medium">
-                  {doc.detectedAmount ?? '–'}
-                </td>
-                <td className="whitespace-nowrap px-3 py-2 font-mono text-xs">
-                  {doc.detectedInvoiceNumber ?? '–'}
-                </td>
-                <td className="px-3 py-2">
-                  <div className="flex max-w-[160px] flex-wrap gap-1">
-                    <DocumentQualityBadges doc={doc} />
-                  </div>
-                </td>
-                <td className="px-3 py-2 text-center">
-                  {hasDownloadableArchive(doc) ? (
-                    <span
-                      className="inline-flex items-center gap-1 text-xs font-medium text-foreground"
-                      title={`${doc.attachmentCount} Anhang${
-                        doc.attachmentCount > 1 ? '"e' : ''
-                      } verfügbar`}
-                    >
-                      <PaperclipIcon className="h-3 w-3" aria-hidden />
-                      {doc.attachmentCount}
-                    </span>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">–</span>
-                  )}
-                </td>
-                <td className="whitespace-nowrap px-3 py-2">
-                  <Badge variant="secondary" className="text-xs font-normal">
-                    <StatusIcon status={doc.status} />
-                    <span className="ml-1.5">{statusLabel(doc.status)}</span>
-                  </Badge>
-                </td>
-                {showSourceColumn && (
-                  <td className="whitespace-nowrap px-3 py-2 text-xs text-muted-foreground">
-                    {doc.sourceLabel ?? '–'}
-                  </td>
-                )}
-                {showAcceptedColumn && (
-                  <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
-                    {doc.acceptedAt ? (
-                      <>
-                        {intlDate.format(doc.acceptedAt)}
-                        {doc.acceptedByName && (
-                          <span className="ml-1 text-xs">· {doc.acceptedByName}</span>
-                        )}
-                      </>
-                    ) : (
-                      '–'
-                    )}
-                  </td>
-                )}
-                <td className="whitespace-nowrap px-3 py-2 text-right">
-                  {doc.status === 'accepted' && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 px-2"
-                      disabled={isPending}
-                      onClick={() => onAction(doc.id, 'archive')}
-                    >
-                      <ArchiveIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-                      <Trans>Archivieren</Trans>
-                    </Button>
-                  )}
-                  <Button asChild size="sm" variant="ghost" className="h-7 px-2">
-                    <Link to={doc.id}>
-                      <Trans>Details</Trans>
-                    </Link>
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    </li>
   );
 };
 
@@ -1265,503 +322,954 @@ export default function FindDocumentsPage() {
   const { toast } = useToast();
   const params = useParams();
   const teamUrl = params.teamUrl ?? '';
-  // Default ist die Übersicht: alle Belege auf einen Blick, sortiert nach Datum.
-  // Workflow-Tabs (Eingang, Manuell, …) sind weiterhin erreichbar.
-  const [status, setStatus] = useState<DiscoveryTab>('all');
-  const [query, setQuery] = useState('');
-  const today = toDateInputValue(new Date());
-  const [sourceId, setSourceId] = useState('');
-  // Inkrementeller Sync ist Standard: `fromDate` wird in einem useEffect aus
-  // `lastSuccessfulSyncRangeTo` der gewählten Quelle gefüllt. Bei einer Quelle
-  // ohne erfolgreichen Lauf bleibt das Feld leer und der Onboarding-Block
-  // fragt explizit „Wie weit zurück?" — kein stummer Default, der jahrelange
-  // Re-Scans triggern oder den ersten Sync auf 30 Tage begrenzen würde.
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState(today);
-  const [mailSearchTerm, setMailSearchTerm] = useState('Rechnung');
-  const [applyDateFilter, setApplyDateFilter] = useState(false);
-  const [focusFilter, setFocusFilterState] = useState<FocusFilter>('all');
-  // Multi-Select-State pro Tab — beim Tab-Wechsel zurueckgesetzt.
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
   const utils = trpc.useUtils();
 
-  const dateFilterRange = useMemo(() => {
-    if (!applyDateFilter) return null;
-    const from = parseDateInput(fromDate);
-    const to = toDate ? addDays(toDate, 1) : null;
-    if (!from || !to || from >= to) return null;
-    return { from, to };
-  }, [applyDateFilter, fromDate, toDate]);
+  const [filter, setFilter] = useState<FilterChip>('all');
+  const [query, setQuery] = useState('');
+  // Lokale Entscheidungen pro Beleg-ID. Wird aus der Heuristik vorbefüllt,
+  // sobald die Liste lädt — und beim Bestätigen am Ende batch-committet.
+  const [decisions, setDecisions] = useState<Map<string, Decision>>(new Map());
+  // Sichtbar machen, was der Nutzer aktiv geaendert hat. Das reduziert
+  // Unsicherheit vor dem finalen Batch-Klick: Vorschlag vs. eigene Wahl.
+  const [manualDecisionIds, setManualDecisionIds] = useState<Set<string>>(new Set());
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  // Multi-Select für Bulk-Aktionen (z.B. mehrere Zeilen gleichzeitig von
+  // "Für Archivierung ausgewählt" auf "Zum Ignorieren ausgewählt" umstellen).
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // Erfolgs-Seite nach Bestätigen — zeigt Klartext-Confirmation statt Toast.
+  // archive/ignore: tatsaechlich vom Server akzeptiert (acceptedCount).
+  // archiveSkipped/ignoreSkipped: bereits frueher verarbeitet, Server hat sie
+  // uebersprungen — das verhindert die Wahrnehmung „doppelt im Archiv", wenn
+  // der User aus stale-Cache nochmal auf Confirm klickt.
+  const [successState, setSuccessState] = useState<{
+    archive: number;
+    ignore: number;
+    archiveSkipped: number;
+    ignoreSkipped: number;
+  } | null>(null);
 
-  const { data, isLoading } = trpc.discovery.findDocuments.useQuery({
-    status,
-    query: query.trim() || undefined,
-    qualityFilter: focusFilter === 'all' ? undefined : focusFilter,
-    documentDateFrom: dateFilterRange?.from,
-    documentDateTo: dateFilterRange?.to,
-  });
+  // URL-Param `correspondent`: wird vom Hub-Korrespondenten-Tab gesetzt, um
+  // die Trefferliste auf einen einzelnen Sender zu filtern.
+  const [searchParams] = useSearchParams();
+  const correspondentFilter = searchParams.get('correspondent') ?? undefined;
 
-  // Globaler Overview für die Wow-Card. Einmaliger Aggregat-Read, wird beim
-  // Abschluss eines Sync-Laufs invalidiert, damit die Card frische Zahlen
-  // zeigt. Skaliert linear mit der Anzahl Belege — siehe Router-Kommentar.
-  const { data: overview } = trpc.discovery.getOverview.useQuery();
+  // Trefferliste = Eingangs-Belege (inbox + pending-manual zusammen, weil das
+  // aus User-Sicht der "noch zu entscheidende"-Stapel ist).
+  // refetchOnMount: 'always' verhindert, dass nach Confirm + Navigation ein
+  // veralteter Cache mit den bereits akzeptierten Belegen zu sehen ist.
+  const reviewQueue = trpc.discovery.findDocuments.useInfiniteQuery(
+    {
+      status: 'all',
+      qualityFilter: 'needs-review',
+      query: query.trim() || undefined,
+      correspondent: correspondentFilter,
+    },
+    {
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+      refetchOnMount: 'always',
+    },
+  );
 
-  // Smart-Default-Filter: wenn die Persona Belege im Status „needs-review"
-  // hat (offen, noch nicht akzeptiert/ignoriert), beim ersten Page-Load
-  // automatisch auf diese Sub-Liste fokussieren — sie ist schließlich der
-  // Punkt, warum die Persona die Seite überhaupt aufmacht. Sobald der User
-  // den Filter manuell ändert, greift der Default nicht mehr (Ref-Lock).
-  const smartDefaultAppliedRef = useRef(false);
-  useEffect(() => {
-    if (smartDefaultAppliedRef.current) return;
-    if (!overview) return;
-    smartDefaultAppliedRef.current = true;
-    if (overview.needsReview > 0) {
-      setFocusFilterState('needs-review');
-    }
-  }, [overview]);
+  const allInboxDocs = useMemo(
+    () => (reviewQueue.data?.pages ?? []).flatMap((page) => page.documents),
+    [reviewQueue.data?.pages],
+  );
 
-  // Aktive Sync-Runs pollen — schmaler Endpoint, kein Discovery-Reader.
-  // Solange aktive Runs zurückkommen, alle 3 s neu fragen; sobald Liste leer,
-  // Discovery + Sources einmalig invalidieren, damit die fertigen Belege in
-  // der Liste auftauchen und der „letzter Sync"-Zeitstempel kippt.
+  const queueMeta = reviewQueue.data?.pages[0];
+  const totalHits = queueMeta?.total ?? 0;
+  const isLoading = reviewQueue.isLoading;
+
+  // Aktive Sync-Runs pollen.
   const { data: activeRuns } = trpc.discovery.getActiveSyncRuns.useQuery(undefined, {
-    refetchInterval: (query) => ((query.state.data?.length ?? 0) > 0 ? 3000 : false),
+    refetchInterval: (q) => ((q.state.data?.length ?? 0) > 0 ? 3000 : false),
   });
+  const { data: recentSyncRuns } = trpc.sources.listRecentSyncRuns.useQuery({ limit: 5 });
   const activeRunsCount = activeRuns?.length ?? 0;
-  const lastActiveRunsCountRef = useRef(activeRunsCount);
+  const hasConnectedSource = (queueMeta?.sources.length ?? 0) > 0;
+  const latestCompletedRun =
+    recentSyncRuns?.find((run) => run.status === 'SUCCESS' || run.status === 'FAILED') ?? null;
+  const latestCompletedRangeLabel = latestCompletedRun
+    ? formatDateRange(latestCompletedRun.rangeFrom, latestCompletedRun.rangeTo, i18n.locale)
+    : null;
+  const lastActiveCountRef = useRef(activeRunsCount);
   useEffect(() => {
-    if (lastActiveRunsCountRef.current > 0 && activeRunsCount === 0) {
+    if (lastActiveCountRef.current > 0 && activeRunsCount === 0) {
       void utils.discovery.findDocuments.invalidate();
       void utils.discovery.getOverview.invalidate();
     }
-    lastActiveRunsCountRef.current = activeRunsCount;
+    lastActiveCountRef.current = activeRunsCount;
   }, [activeRunsCount, utils.discovery.findDocuments, utils.discovery.getOverview]);
 
+  // Heuristik-Defaults setzen, sobald neue Belege geladen sind. Bestehende
+  // User-Overrides bleiben erhalten.
   useEffect(() => {
-    if (!sourceId && data?.sources[0]?.id) {
-      setSourceId(data.sources[0].id);
-    }
-  }, [data?.sources, sourceId]);
-
-  // Inkrementelles Default für Sync-Lauf: sobald `sourceId` feststeht und die
-  // Quelle einen erfolgreichen Lauf hat, schlagen wir „seit dem letzten Lauf
-  // bis heute" vor. User kann das jederzeit überschreiben (Presets, Eigenes
-  // Datum). Wenn die Quelle noch nie erfolgreich gelaufen ist, bleibt
-  // `fromDate` leer — der Onboarding-Block übernimmt dann die Erstauswahl.
-  const selectedSource = data?.sources.find((s) => s.id === sourceId) ?? null;
-  const lastSuccessfulRangeTo = selectedSource?.lastSuccessfulSyncRangeTo ?? null;
-  useEffect(() => {
-    if (!lastSuccessfulRangeTo) return;
-    setFromDate((current) => current || toDateInputValue(lastSuccessfulRangeTo));
-  }, [lastSuccessfulRangeTo]);
-
-  const updateStatusMutation = trpc.discovery.updateStatus.useMutation({
-    onSuccess: () => {
-      void utils.discovery.findDocuments.invalidate();
-    },
-    onError: (err) => {
-      toast({
-        title: _(msg`Aktion fehlgeschlagen`),
-        description: err.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const startSyncRunMutation = trpc.sources.startSyncRun.useMutation({
-    onSuccess: (run) => {
-      toast({
-        title: _(msg`Import gestartet`),
-        description: _(
-          msg`Der Lauf läuft im Hintergrund — diese Seite aktualisiert sich automatisch.`,
-        ),
-      });
-      void utils.discovery.findDocuments.invalidate();
-      void utils.discovery.getActiveSyncRuns.invalidate();
-      void utils.sources.listSyncRuns.invalidate({ sourceId: run.sourceId, limit: 10 });
-    },
-    onError: (err) => {
-      toast({
-        title: _(msg`Durchsuchung konnte nicht gestartet werden`),
-        description: err.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const handleAction = (id: string, action: TDiscoveryDocumentAction) => {
-    updateStatusMutation.mutate({ id, action });
-  };
-
-  const handleStartMailboxSearch = () => {
-    const from = new Date(`${fromDate}T00:00:00`);
-    const to = addDays(toDate, 1);
-
-    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from >= to) {
-      toast({
-        title: _(msg`Zeitraum prüfen`),
-        description: _(msg`Das Von-Datum muss vor dem Bis-Datum liegen.`),
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    startSyncRunMutation.mutate({
-      sourceId,
-      from,
-      to,
-      searchTerm: mailSearchTerm.trim() || undefined,
+    if (allInboxDocs.length === 0) return;
+    setDecisions((prev) => {
+      const next = new Map(prev);
+      let changed = false;
+      for (const doc of allInboxDocs) {
+        if (!next.has(doc.id)) {
+          next.set(doc.id, heuristicDefault(doc));
+          changed = true;
+        }
+      }
+      // IDs entfernen, die nicht mehr in der Liste sind (z.B. nach Sync).
+      for (const id of [...next.keys()]) {
+        if (!allInboxDocs.some((d) => d.id === id)) {
+          next.delete(id);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
     });
+    setManualDecisionIds((prev) => {
+      const validIds = new Set(allInboxDocs.map((doc) => doc.id));
+      const next = new Set([...prev].filter((id) => validIds.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [allInboxDocs]);
+
+  const bulkAcceptMutation = trpc.discovery.bulkAccept.useMutation();
+  const bulkIgnoreMutation = trpc.discovery.bulkIgnore.useMutation();
+  const isCommitting = bulkAcceptMutation.isPending || bulkIgnoreMutation.isPending;
+
+  const handleDecision = (id: string, next: Decision) => {
+    setDecisions((prev) => {
+      const map = new Map(prev);
+      map.set(id, next);
+      return map;
+    });
+    setManualDecisionIds((prev) => new Set(prev).add(id));
   };
 
-  const handleToggleSelect = (id: string) => {
+  const handleToggleSelect = (id: string) =>
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
+
+  const handleBulkDecision = (next: Decision) => {
+    setDecisions((prev) => {
+      const map = new Map(prev);
+      for (const id of selectedIds) map.set(id, next);
+      return map;
+    });
+    setManualDecisionIds((prev) => {
+      const nextIds = new Set(prev);
+      for (const id of selectedIds) nextIds.add(id);
+      return nextIds;
+    });
+    setSelectedIds(new Set());
   };
 
   const handleClearSelection = () => setSelectedIds(new Set());
 
-  const handleStatusChange = (next: DiscoveryTab) => {
-    setStatus(next);
-    setSelectedIds(new Set());
-  };
-
-  const handleFocusFilterChange = (next: FocusFilter) => {
-    setFocusFilterState(next);
-    setSelectedIds(new Set());
-  };
-
-  const handleMonthSelect = (key: string) => {
-    const range = monthKeyToRange(key);
-    if (!range) return;
-    setFromDate(range.from);
-    setToDate(range.to);
-    setApplyDateFilter(true);
-    setSelectedIds(new Set());
-  };
-
-  const hasAnySource = data?.hasAnySource ?? false;
-  const sources = data?.sources ?? [];
-  const visibleDocuments = data?.documents ?? [];
-  const catchUpSummary = useMemo<CatchUpSummary>(() => {
-    if (data?.summary) {
-      return data.summary;
+  // Bilanz aller Entscheidungen.
+  const counts = useMemo(() => {
+    let archive = 0,
+      ignore = 0,
+      undecided = 0;
+    for (const doc of allInboxDocs) {
+      const d = decisions.get(doc.id) ?? 'undecided';
+      if (d === 'archive') archive++;
+      else if (d === 'ignore') ignore++;
+      else undecided++;
     }
+    return { archive, ignore, undecided, total: allInboxDocs.length };
+  }, [allInboxDocs, decisions]);
+  const manualChangeCount = useMemo(
+    () => allInboxDocs.filter((doc) => manualDecisionIds.has(doc.id)).length,
+    [allInboxDocs, manualDecisionIds],
+  );
 
-    const months = new Map<string, number>();
-
-    visibleDocuments.forEach((doc) => {
-      const key = getYearMonthKey(getDocumentWorkDate(doc));
-      months.set(key, (months.get(key) ?? 0) + 1);
+  const visibleDocs = useMemo(() => {
+    if (filter === 'all') return allInboxDocs;
+    return allInboxDocs.filter((doc) => {
+      const d = decisions.get(doc.id) ?? 'undecided';
+      return d === filter;
     });
+  }, [allInboxDocs, decisions, filter]);
 
-    return {
-      total: data?.total ?? visibleDocuments.length,
-      accepted: visibleDocuments.filter(
-        (doc) => doc.status === 'accepted' || doc.status === 'archived',
-      ).length,
-      needsReview: visibleDocuments.filter(
-        (doc) => doc.status === 'inbox' || doc.status === 'pending-manual',
-      ).length,
-      downloadable: visibleDocuments.filter(hasDownloadableArchive).length,
-      missingAmount: visibleDocuments.filter((doc) => !doc.detectedAmount).length,
-      missingInvoiceNumber: visibleDocuments.filter((doc) => !doc.detectedInvoiceNumber).length,
-      months: Array.from(months.entries())
-        .sort(([a], [b]) => b.localeCompare(a))
-        .map(([key, count]) => ({ key, count })),
-    };
-  }, [data?.summary, data?.total, visibleDocuments]);
-  const focusSummary = useMemo<CatchUpSummary>(() => {
-    if (data?.focusSummary) {
-      return data.focusSummary;
+  const handleConfirm = async () => {
+    const archiveIds = allInboxDocs
+      .filter((d) => decisions.get(d.id) === 'archive')
+      .map((d) => d.id);
+    const ignoreIds = allInboxDocs.filter((d) => decisions.get(d.id) === 'ignore').map((d) => d.id);
+
+    if (archiveIds.length === 0 && ignoreIds.length === 0) return;
+
+    try {
+      // Server-Wahrheit verwenden — der Server-Filter ueberspringt bereits
+      // verarbeitete Belege. Wenn wir lokal "50 ins Archiv" angezeigt haetten,
+      // der Server aber 0 verarbeitet hat (weil schon laengst akzeptiert),
+      // darf die Erfolgsmeldung nicht von „50" sprechen — sonst entsteht der
+      // Eindruck, der Beleg waere ein zweites Mal im Archiv gelandet.
+      const [acceptResult, ignoreResult] = await Promise.all([
+        archiveIds.length > 0
+          ? bulkAcceptMutation.mutateAsync({ ids: archiveIds })
+          : Promise.resolve({ acceptedCount: 0, skippedIds: [] as string[] }),
+        ignoreIds.length > 0
+          ? bulkIgnoreMutation.mutateAsync({ ids: ignoreIds })
+          : Promise.resolve({ ignoredCount: 0, skippedIds: [] as string[] }),
+      ]);
+
+      setDecisions(new Map());
+      setManualDecisionIds(new Set());
+      // Erst Cache invalidieren (await), dann Erfolgs-View. Sonst zeigt der
+      // „Weitere Belege durchgehen"-Klick kurz die alte Liste.
+      await Promise.all([
+        utils.discovery.findDocuments.invalidate(),
+        utils.discovery.getOverview.invalidate(),
+      ]);
+      await reviewQueue.refetch();
+      setSuccessState({
+        archive: acceptResult.acceptedCount,
+        ignore: ignoreResult.ignoredCount,
+        archiveSkipped: acceptResult.skippedIds.length,
+        ignoreSkipped: ignoreResult.skippedIds.length,
+      });
+      setConfirmOpen(false);
+    } catch (err) {
+      toast({
+        title: _(msg`Bestätigen fehlgeschlagen`),
+        description: err instanceof Error ? err.message : 'Unbekannter Fehler',
+        variant: 'destructive',
+      });
     }
-    return catchUpSummary;
-  }, [catchUpSummary, data?.focusSummary]);
-
-  const isSelected = (id: string) => selectedIds.has(id);
-  const allVisibleSelected =
-    visibleDocuments.length > 0 && visibleDocuments.every((d) => selectedIds.has(d.id));
-  const handleToggleSelectAll = () => {
-    setSelectedIds((prev) => {
-      if (visibleDocuments.every((d) => prev.has(d.id))) {
-        // Alle abwählen die zur aktuellen Sicht gehören.
-        const next = new Set(prev);
-        visibleDocuments.forEach((d) => next.delete(d.id));
-        return next;
-      }
-      const next = new Set(prev);
-      visibleDocuments.forEach((d) => next.add(d.id));
-      return next;
-    });
   };
 
-  // Absoluter Pfad — relative URLs resolven hier ungewollt nach
-  // /t/{team}/zip-attachments (statt /t/{team}/find-documents/zip-attachments),
-  // weil die List-URL keinen Trailing-Slash hat.
-  const zipHref = `/t/${teamUrl}/find-documents/zip-attachments?ids=${Array.from(selectedIds).join(',')}`;
-  // Beide Server-Exports (Steuerpaket-ZIP, CSV) nutzen denselben Filter-
-  // Set wie die Liste — gleicher Query-String, anderer Endpoint.
-  const buildExportQs = () => {
-    const params = new URLSearchParams();
-    params.set('status', status);
-    if (query.trim()) {
-      params.set('query', query.trim());
-    }
-    if (focusFilter !== 'all') {
-      params.set('qualityFilter', focusFilter);
-    }
-    if (dateFilterRange) {
-      params.set('documentDateFrom', dateFilterRange.from.toISOString());
-      params.set('documentDateTo', dateFilterRange.to.toISOString());
-    }
-    return params.toString();
-  };
-  const exportQs = buildExportQs();
-  const taxPackageHref = `/t/${teamUrl}/find-documents/tax-package${
-    exportQs ? `?${exportQs}` : ''
-  }`;
-  const csvExportHref = `/t/${teamUrl}/find-documents/csv-export${exportQs ? `?${exportQs}` : ''}`;
-
-  return (
-    <div className="mx-auto w-full max-w-screen-xl px-4 py-8 md:px-8">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-          <Trans>Dokumente finden</Trans>
-        </h1>
-        <p className="mt-1 text-base text-muted-foreground">
-          <Trans>
-            Belege aus allen verbundenen Quellen an einem Ort — durchsuchbar und nach Status
-            gefiltert.
-          </Trans>
-        </p>
-      </header>
-
-      <BackgroundSyncBanner activeRuns={activeRuns ?? []} locale={i18n.locale} />
-
-      <FirstRunChecklist
-        hasSource={hasAnySource}
-        hasSuccessfulSync={(overview?.total ?? 0) > 0 || Boolean(lastSuccessfulRangeTo)}
-        hasReviewedAtLeastOne={(overview?.accepted ?? 0) > 0}
-        sourcesHref="/settings/sources"
-        reviewHref={`/t/${teamUrl}/find-documents/review`}
-        taxPackageHref={taxPackageHref}
-      />
-
-      {overview && overview.total > 0 && (
-        <SyncOverviewCard
-          overview={overview}
-          reviewHref={`/t/${teamUrl}/find-documents/review`}
-          locale={i18n.locale}
-        />
-      )}
-
-      {hasAnySource && (
-        <>
-          <MailboxSearchPanel
-            sources={sources}
-            sourceId={sourceId}
-            setSourceId={setSourceId}
-            fromDate={fromDate}
-            setFromDate={setFromDate}
-            toDate={toDate}
-            setToDate={setToDate}
-            searchTerm={mailSearchTerm}
-            setSearchTerm={setMailSearchTerm}
-            onStart={handleStartMailboxSearch}
-            isPending={startSyncRunMutation.isPending}
-            lastSuccessfulSyncRangeTo={lastSuccessfulRangeTo}
-            // Beim Erststart der Quelle das Panel offen rendern: Erstnutzer
-            // soll sofort sehen, wo er den Sync konfiguriert. Im laufenden
-            // Betrieb bleibt es eingeklappt, weil das Tax-Panel die Übersicht
-            // gibt.
-            defaultOpen={!lastSuccessfulRangeTo}
-            locale={i18n.locale}
+  // ERFOLGS-SEITE — wenn der User gerade bestätigt hat. Vollbild-Confirmation
+  // statt Toast — der GF braucht einen klaren "Geschafft!"-Moment.
+  if (successState) {
+    return (
+      <div className="mx-auto w-full max-w-2xl px-4 py-12 md:px-6">
+        <Card className="flex flex-col items-center gap-5 p-8 text-center md:p-12">
+          <Illustration
+            name="success-celebration"
+            alt="Geschafft"
+            tone="emerald"
+            className="h-40 w-full max-w-[240px]"
           />
-          {/* Erststart der Quelle: Onboarding-Range-Picker statt
-              TaxCatchUpPanel. Sobald ein erfolgreicher Lauf existiert, kippt
-              die Seite automatisch in den „laufender Betrieb"-Modus und
-              das TaxCatchUpPanel übernimmt. */}
-          {!lastSuccessfulRangeTo ? (
-            <OnboardingRangePicker
-              isPending={startSyncRunMutation.isPending}
-              canStart={Boolean(sourceId)}
-              onStart={(from, to) => {
-                setFromDate(from);
-                setToDate(to);
-                setMailSearchTerm(TAX_SEARCH_TERM);
-                // Sync direkt anstoßen — Persona soll nicht zweimal klicken.
-                if (!sourceId) return;
-                const fromD = new Date(`${from}T00:00:00`);
-                const toD = addDays(to, 1);
-                startSyncRunMutation.mutate({
-                  sourceId,
-                  from: fromD,
-                  to: toD,
-                  searchTerm: TAX_SEARCH_TERM,
-                });
-              }}
-            />
-          ) : (
-            <TaxCatchUpPanel
-              summary={catchUpSummary}
-              focusSummary={focusSummary}
-              setFromDate={setFromDate}
-              setToDate={setToDate}
-              setMailSearchTerm={setMailSearchTerm}
-              setStatus={handleStatusChange}
-              focusFilter={focusFilter}
-              setFocusFilter={handleFocusFilterChange}
-              applyDateFilter={applyDateFilter}
-              setApplyDateFilter={setApplyDateFilter}
-              onMonthSelect={handleMonthSelect}
-              onStart={handleStartMailboxSearch}
-              isPending={startSyncRunMutation.isPending}
-              canStart={Boolean(sourceId && fromDate && toDate)}
-              locale={i18n.locale}
-              taxPackageHref={taxPackageHref}
-              dateRangeFrom={dateFilterRange?.from ?? null}
-              dateRangeTo={dateFilterRange?.to ?? null}
-            />
-          )}
-        </>
-      )}
-
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        {/* Tab-Bar in einen horizontal-scrollenden Wrapper packen, damit auf
-            schmalen Viewports (<400px) die letzten Tabs nicht abgeschnitten
-            werden. min-w-max verhindert, dass die TabsList gestaucht wird.
-            mask-image gibt einen weichen Fade-out am rechten Rand, der
-            signalisiert „rechts geht's weiter". */}
-        <div className="-mx-4 overflow-x-auto px-4 [mask-image:linear-gradient(to_right,black_92%,transparent)] md:mx-0 md:px-0 md:[mask-image:none]">
-          <Tabs
-            value={status}
-            onValueChange={(v) => {
-              const tab = STATUS_TABS.find((t) => t.value === v);
-              if (tab) handleStatusChange(tab.value);
-            }}
-          >
-            <TabsList className="min-w-max">
-              {STATUS_TABS.map((tab) => (
-                <TabsTrigger key={tab.value} value={tab.value}>
-                  {_(tab.label)}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        </div>
-
-        <div className="relative max-w-sm flex-1 md:max-w-xs">
-          <SearchIcon
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden
-          />
-          <Input
-            className="pl-9"
-            placeholder={_(msg`In importierten Belegen suchen`)}
-            aria-label={_(msg`Volltextsuche in importierten Belegen`)}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </div>
-      </div>
-
-      <section aria-live="polite">
-        {isLoading && <LoadingList />}
-
-        {!isLoading && data && !hasAnySource && <NoSourceEmptyState />}
-
-        {!isLoading && data && hasAnySource && data.documents.length === 0 && (
-          <NoResultsCard sources={sources} activeRuns={activeRuns ?? []} locale={i18n.locale} />
-        )}
-
-        {!isLoading && data && data.documents.length > 0 && (
-          <div className="flex flex-col gap-4">
-            <SourcesStatusBar
-              sources={sources}
-              activeRuns={activeRuns ?? []}
-              locale={i18n.locale}
-            />
-            {selectedIds.size > 0 && (
-              <BulkActionBar
-                selectedCount={selectedIds.size}
-                downloadableCount={
-                  visibleDocuments.filter(
-                    (d) => selectedIds.has(d.id) && d.hasArchive && d.attachmentCount > 0,
-                  ).length
-                }
-                onClear={handleClearSelection}
-                zipHref={zipHref}
-              />
-            )}
-            {/* "Alle" + akzeptiert + archiv ergibt typisch viele Belege —
-                Tabellenansicht ist da kompakter und scannbar. Eingang+Manuell
-                bleiben Card-Ansicht, weil dort die Action-Buttons (Akzeptieren
-                / Archivieren etc.) im Zentrum stehen. Auf Mobile (<md) immer
-                Cards: 9-Spalten-Tabelle mit horizontal-scroll ist auf 375px
-                nicht bedienbar. */}
-            {status === 'all' || status === 'accepted' || status === 'archived' ? (
-              <>
-                <div className="hidden md:block">
-                  <DocumentTable
-                    documents={data.documents}
-                    locale={i18n.locale}
-                    onAction={handleAction}
-                    isPending={updateStatusMutation.isPending}
-                    showAcceptedColumn={status !== 'all'}
-                    showSourceColumn={sources.length > 1}
-                    isSelected={isSelected}
-                    onToggleSelect={handleToggleSelect}
-                    onToggleSelectAll={handleToggleSelectAll}
-                    allSelected={allVisibleSelected}
-                    totalCount={data.total}
-                    csvExportHref={csvExportHref}
-                  />
-                </div>
-                <div className="flex flex-col gap-3 md:hidden">
-                  {data.documents.map((doc) => (
-                    <DocumentRow
-                      key={doc.id}
-                      doc={doc}
-                      locale={i18n.locale}
-                      onAction={handleAction}
-                      isPending={updateStatusMutation.isPending}
-                      isSelected={isSelected(doc.id)}
-                      onToggleSelect={handleToggleSelect}
-                    />
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {data.documents.map((doc) => (
-                  <DocumentRow
-                    key={doc.id}
-                    doc={doc}
-                    locale={i18n.locale}
-                    onAction={handleAction}
-                    isPending={updateStatusMutation.isPending}
-                    isSelected={isSelected(doc.id)}
-                    onToggleSelect={handleToggleSelect}
-                  />
-                ))}
-              </div>
-            )}
-            {data.total > data.documents.length && (
-              <p className="mt-2 text-center text-sm text-muted-foreground">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
+              {successState.archive === 0 && successState.ignore === 0 ? (
+                <Trans>Schon erledigt</Trans>
+              ) : (
+                <Trans>Geschafft!</Trans>
+              )}
+            </h1>
+            <p className="mt-2 text-base text-neutral-700">
+              {successState.archive === 0 && successState.ignore === 0 ? (
                 <Trans>
-                  {data.documents.length} von {data.total} angezeigt
+                  Alle ausgewählten Belege waren bereits verarbeitet — wir haben nichts doppelt
+                  abgelegt.
+                </Trans>
+              ) : successState.archive > 0 && successState.ignore > 0 ? (
+                <Trans>
+                  <strong>{successState.archive} Belege</strong> liegen jetzt sicher in Ihrem
+                  Archiv. <strong>{successState.ignore}</strong> haben Sie als kein-Beleg ignoriert.
+                </Trans>
+              ) : successState.archive > 0 ? (
+                <Trans>
+                  <strong>{successState.archive} Belege</strong> liegen jetzt sicher in Ihrem
+                  Archiv.
+                </Trans>
+              ) : (
+                <Trans>
+                  <strong>{successState.ignore} Mails</strong> als kein-Beleg ignoriert.
+                </Trans>
+              )}
+            </p>
+            {(successState.archiveSkipped > 0 || successState.ignoreSkipped > 0) && (
+              <p className="mt-2 text-sm text-neutral-500">
+                <Trans>
+                  Hinweis: {successState.archiveSkipped + successState.ignoreSkipped} Belege waren
+                  schon verarbeitet und wurden nicht doppelt abgelegt.
                 </Trans>
               </p>
             )}
           </div>
-        )}
-      </section>
+          <div className="flex flex-col items-stretch gap-2 sm:flex-row">
+            {successState.archive > 0 && (
+              <Button asChild>
+                <Link to={`/t/${teamUrl}/archiv`}>
+                  <CheckCircleIcon className="mr-2 h-4 w-4" aria-hidden />
+                  <Trans>Im Archiv anschauen</Trans>
+                </Link>
+              </Button>
+            )}
+            <Button asChild variant="outline">
+              <Link to={`/t/${teamUrl}/aufgaben`}>
+                <Trans>Zurück zur Übersicht</Trans>
+              </Link>
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setSuccessState(null);
+                void utils.discovery.findDocuments.invalidate();
+              }}
+            >
+              <Trans>Weitere Belege durchgehen</Trans>
+            </Button>
+          </div>
+          <p className="mt-4 max-w-md text-xs text-neutral-500">
+            <Trans>
+              Tipp: Im Archiv können Sie Felder noch korrigieren. Wenn alles passt, klicken Sie dort
+              auf „Endgültig archivieren" — dann sind die Belege 10 Jahre lang sicher abgelegt.
+            </Trans>
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-5xl space-y-5 px-4 pb-32 pt-6 md:px-6">
+      {/* HEADER mit deutlich sichtbarer Illustration */}
+      <header className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-white p-5">
+        <div className="flex items-center gap-4">
+          <Illustration
+            name="trefferliste-header"
+            alt="Belege aus dem Postfach"
+            tone="sky"
+            className="h-20 w-24 shrink-0"
+          />
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
+              {counts.total > 0 ? (
+                latestCompletedRangeLabel ? (
+                  <Trans>
+                    Wir haben {totalHits} Treffer im Zeitraum {latestCompletedRangeLabel} gefunden
+                  </Trans>
+                ) : (
+                  <Trans>Wir haben {totalHits} Treffer gefunden</Trans>
+                )
+              ) : (
+                <Trans>Belege aus dem Postfach</Trans>
+              )}
+            </h1>
+            <p className="mt-1 text-sm text-neutral-600">
+              <Trans>
+                So funktioniert es: Sie verbinden Ihr Postfach und wählen einen Zeitraum.
+                Anschließend durchsucht NexaFile die Mails in diesem Zeitraum und schlägt Ihnen
+                Rechnungs- und Beleg-Kandidaten vor. Sie prüfen die Treffer und entscheiden pro
+                Zeile zwischen <strong>Ins Archiv übernehmen</strong> und{' '}
+                <strong>Ignorieren</strong>. Erst mit <strong>Bestätigen</strong> werden Ihre
+                Entscheidungen übernommen.
+              </Trans>
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button asChild>
+            <Link to={hasConnectedSource ? 'range' : 'connect'}>
+              {activeRunsCount > 0 ? (
+                <Loader2Icon className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <MailSearchIcon className="mr-2 h-4 w-4" aria-hidden />
+              )}
+              {activeRunsCount > 0 ? (
+                <Trans>Lauf läuft… ({activeRunsCount})</Trans>
+              ) : (
+                <Trans>E-Mails erneut durchsuchen</Trans>
+              )}
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" size="sm">
+            <Link to="hub">
+              <LayoutDashboardIcon className="mr-2 h-4 w-4" aria-hidden />
+              <Trans>Übersicht</Trans>
+            </Link>
+          </Button>
+        </div>
+      </header>
+
+      {correspondentFilter && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm">
+          <span className="text-sky-900">
+            <Trans>
+              Filter aktiv: nur Belege von <strong>„{correspondentFilter}"</strong>
+            </Trans>
+          </span>
+          <Link
+            to={`/t/${teamUrl}/find-documents`}
+            className="text-xs text-sky-900 underline-offset-4 hover:underline"
+          >
+            <Trans>Filter entfernen</Trans>
+          </Link>
+        </div>
+      )}
+
+      {/* Gmail-Health-Banner: zeigt sich nur, wenn der letzte Lauf einer
+          Gmail-Source verdaechtig wenig Mails geprueft hat (= „All Mail"
+          nicht in IMAP freigegeben). Verlinkt direkt auf die Source-Detail-
+          Folder-Diagnose. */}
+      <GmailAllMailBanner sources={queueMeta?.sources ?? []} />
+
+      {/* Korrespondenten-Uebersicht: „wer hat Ihnen Belege geschickt".
+          Erscheint hier in der Trefferliste, weil das die Seite ist, auf die
+          der User nach Sync-Run faktisch landet. Klick auf eine Zeile setzt
+          den ?correspondent=…-Filter (Banner darueber). */}
+      <CorrespondentSummaryCard teamUrl={teamUrl} />
+
+      {recentSyncRuns && recentSyncRuns.length > 0 && (
+        <Card className="space-y-3 p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-neutral-900">
+                <Trans>Letzte Suchläufe</Trans>
+              </h2>
+              <p className="mt-0.5 text-xs text-neutral-600">
+                <Trans>
+                  So sehen Sie sofort, aus welchen Zeiträumen die aktuellen Treffer stammen und wann
+                  zuletzt erneut gesucht wurde.
+                </Trans>
+              </p>
+            </div>
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/settings/sources">
+                <Trans>Quellen öffnen</Trans>
+              </Link>
+            </Button>
+          </div>
+
+          <ul className="space-y-2">
+            {recentSyncRuns.map((run) => {
+              const importedCount = run.documentsAuto + run.documentsManual;
+              const statusLabel =
+                run.status === 'RUNNING' || run.status === 'PENDING'
+                  ? _(msg`läuft`)
+                  : run.status === 'SUCCESS'
+                    ? _(msg`fertig`)
+                    : run.status === 'FAILED'
+                      ? _(msg`fehlgeschlagen`)
+                      : _(msg`abgebrochen`);
+
+              return (
+                <li
+                  key={run.id}
+                  className="flex flex-wrap items-start justify-between gap-3 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="font-medium text-neutral-900">{run.sourceLabel}</span>
+                      <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-neutral-600">
+                        {statusLabel}
+                      </span>
+                    </div>
+                    <div className="mt-0.5 text-sm text-neutral-700">
+                      {formatDateRange(run.rangeFrom, run.rangeTo, i18n.locale)}
+                    </div>
+                    <div className="mt-0.5 text-xs text-neutral-500">
+                      <Trans>
+                        {importedCount} Treffer, {run.documentsIgnored} ignoriert,{' '}
+                        {run.documentsFailed} fehlgeschlagen, {run.mailsChecked} Mails geprüft
+                      </Trans>
+                    </div>
+                    <div className="mt-0.5 text-xs text-neutral-500">
+                      {run.finishedAt ? (
+                        <Trans>Beendet am {formatDate(run.finishedAt, i18n.locale)}</Trans>
+                      ) : (
+                        <Trans>Gestartet am {formatDate(run.startedAt, i18n.locale)}</Trans>
+                      )}
+                    </div>
+                    {run.errorMessage && (
+                      <div className="mt-1 text-xs text-red-700">{run.errorMessage}</div>
+                    )}
+                    {run.truncationReason && (
+                      <div className="mt-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-900">
+                        {run.truncationReason === 'BYTES_CAP' ? (
+                          <Trans>
+                            ⚠ Lauf vorzeitig beendet (Datenmenge-Limit erreicht). Es liegen noch
+                            ältere Mails im gewählten Zeitraum, die nicht geprüft wurden — bitte
+                            einen Folgelauf für den älteren Teil starten.
+                          </Trans>
+                        ) : (
+                          <Trans>
+                            ⚠ Lauf vorzeitig beendet (Mail-Anzahl-Limit erreicht). Bitte einen
+                            Folgelauf mit kürzerem Zeitraum starten.
+                          </Trans>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      )}
+
+      {/* STEP-INDICATOR */}
+      <nav aria-label="Fortschritt" className="flex items-center justify-between">
+        <ol className="flex flex-1 items-center gap-2 text-xs text-neutral-500">
+          <li className="flex flex-1 items-center gap-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-300 text-xs font-semibold text-white">
+              ✓
+            </span>
+            <span className="text-neutral-700">
+              <Trans>Postfach verbinden</Trans>
+            </span>
+            <span className="h-px flex-1 bg-neutral-300" />
+          </li>
+          <li className="flex flex-1 items-center gap-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-300 text-xs font-semibold text-white">
+              ✓
+            </span>
+            <span className="text-neutral-700">
+              <Trans>Zeitraum wählen</Trans>
+            </span>
+            <span className="h-px flex-1 bg-neutral-300" />
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-900 text-xs font-semibold text-white">
+              3
+            </span>
+            <span className="font-medium text-neutral-900">
+              <Trans>Belege durchgehen</Trans>
+            </span>
+          </li>
+        </ol>
+      </nav>
+
+      {counts.total > 0 && (
+        <Card className="grid gap-3 border-neutral-200 bg-neutral-50 p-4 text-sm md:grid-cols-3">
+          <div>
+            <div className="font-semibold text-neutral-900">
+              <Trans>1. Vorschläge prüfen</Trans>
+            </div>
+            <p className="mt-1 text-neutral-600">
+              <Trans>
+                Jede Zeile sagt Ihnen, warum NexaFile sie übernehmen oder ignorieren würde.
+              </Trans>
+            </p>
+          </div>
+          <div>
+            <div className="font-semibold text-neutral-900">
+              <Trans>2. Nur Ausnahmen ändern</Trans>
+            </div>
+            <p className="mt-1 text-neutral-600">
+              <Trans>
+                Wenn der Vorschlag passt, müssen Sie nichts tun. Korrigieren Sie nur die Zeilen, die
+                falsch einsortiert sind.
+              </Trans>
+            </p>
+          </div>
+          <div>
+            <div className="font-semibold text-neutral-900">
+              <Trans>3. Erst am Ende bestätigen</Trans>
+            </div>
+            <p className="mt-1 text-neutral-600">
+              <Trans>
+                Vor dem Bestätigen passiert nichts dauerhaft. Übernommene Belege bleiben im Archiv
+                noch korrigierbar.
+              </Trans>
+            </p>
+          </div>
+        </Card>
+      )}
+
+      {/* VORSCHLAGS-BAR mit Helfer-Illustration */}
+      {counts.total > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-md border border-neutral-200 bg-white px-4 py-3 text-sm">
+          <Illustration
+            name="heuristik-helper"
+            alt="Vorgesortiert"
+            tone="sky"
+            className="h-10 w-10 shrink-0"
+          />
+          <span className="flex-1 text-neutral-700">
+            <Trans>
+              Wir haben unsere Vorschläge bereits gesetzt:{' '}
+              <strong className="text-emerald-700">{counts.archive} ins Archiv</strong>,{' '}
+              <strong className="text-neutral-600">{counts.ignore} ignorieren</strong>. Wenn Sie das
+              anders sehen, klicken Sie pro Zeile rechts.
+            </Trans>
+          </span>
+        </div>
+      )}
+
+      {/* FILTER-CHIPS — Decision-Achse, vier Pillen. */}
+      {counts.total > 0 && (
+        <div className="flex flex-wrap items-center gap-1">
+          <FilterPill
+            active={filter === 'all'}
+            onClick={() => setFilter('all')}
+            label={<Trans>Alle</Trans>}
+            count={counts.total}
+          />
+          <FilterPill
+            active={filter === 'archive'}
+            onClick={() => setFilter('archive')}
+            label={<Trans>Für Archivierung ausgewählt</Trans>}
+            count={counts.archive}
+            color="emerald"
+          />
+          <FilterPill
+            active={filter === 'ignore'}
+            onClick={() => setFilter('ignore')}
+            label={<Trans>Zum Ignorieren ausgewählt</Trans>}
+            count={counts.ignore}
+            color="neutral"
+          />
+          {counts.undecided > 0 && (
+            <FilterPill
+              active={filter === 'undecided'}
+              onClick={() => setFilter('undecided')}
+              label={<Trans>Noch zu entscheiden</Trans>}
+              count={counts.undecided}
+              color="amber"
+            />
+          )}
+        </div>
+      )}
+
+      {/* SUCHE */}
+      {counts.total > 0 && (
+        <Input
+          type="search"
+          placeholder={_(msg`In der Liste suchen — Absender, Betreff, Rechnungs-Nr.`)}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="md:max-w-sm"
+        />
+      )}
+
+      {/* MULTI-SELECT-BULK-BAR — sticky oben, sichtbar sobald >=1 markiert. */}
+      {selectedIds.size > 0 && (
+        <div className="sticky top-2 z-10 flex flex-wrap items-center justify-between gap-3 rounded-md border border-neutral-900 bg-neutral-900 px-4 py-2.5 text-sm text-white shadow-md">
+          <div className="flex items-center gap-3">
+            <Checkbox
+              checked
+              onCheckedChange={handleClearSelection}
+              aria-label="Auswahl aufheben"
+              className="h-5 w-5 border-white/40 bg-white/10 data-[state=checked]:bg-white data-[state=checked]:text-neutral-900"
+            />
+            <span>
+              <strong>{selectedIds.size}</strong> <Trans>von {visibleDocs.length} markiert</Trans>
+            </span>
+            <button
+              className="text-xs text-neutral-300 underline-offset-2 hover:underline"
+              onClick={handleClearSelection}
+            >
+              <Trans>Aufheben</Trans>
+            </button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-neutral-300">
+              <Trans>Auswahl ändern auf:</Trans>
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleBulkDecision('archive')}
+              className="border-emerald-300 bg-emerald-600 text-white hover:bg-emerald-700"
+            >
+              <CheckCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+              <Trans>Für Archivierung</Trans>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleBulkDecision('ignore')}
+              className="border-neutral-500 bg-neutral-700 text-white hover:bg-neutral-800"
+            >
+              <XCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+              <Trans>Zum Ignorieren</Trans>
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => handleBulkDecision('undecided')}
+              className="text-neutral-300 hover:bg-white/10 hover:text-white"
+            >
+              <ClockIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+              <Trans>Noch zu entscheiden</Trans>
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* MASTER-CHECKBOX um alle sichtbaren auszuwählen. */}
+      {counts.total > 0 && visibleDocs.length > 0 && selectedIds.size === 0 && (
+        <label className="flex w-fit cursor-pointer items-center gap-2 rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50">
+          <Checkbox
+            checked={false}
+            onCheckedChange={() => setSelectedIds(new Set(visibleDocs.map((d) => d.id)))}
+            aria-label="Alle markieren"
+            className="h-5 w-5"
+          />
+          <Trans>Alle {visibleDocs.length} markieren</Trans>
+        </label>
+      )}
+
+      {/* LISTE */}
+      {isLoading ? (
+        <Card className="flex items-center justify-center py-12 text-neutral-500">
+          <Loader2Icon className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+          <Trans>Belege werden geladen…</Trans>
+        </Card>
+      ) : counts.total === 0 ? (
+        <EmptyState hasSources={(queueMeta?.sources.length ?? 0) > 0} />
+      ) : visibleDocs.length === 0 ? (
+        <Card className="px-6 py-12 text-center text-sm text-neutral-500">
+          <Trans>Keine Treffer in dieser Sicht.</Trans>
+        </Card>
+      ) : (
+        <>
+          <ul className="space-y-2">
+            {visibleDocs.map((doc) => (
+              <DocumentRow
+                key={doc.id}
+                doc={doc}
+                locale={i18n.locale}
+                decision={decisions.get(doc.id) ?? 'undecided'}
+                isManual={manualDecisionIds.has(doc.id)}
+                isSelected={selectedIds.has(doc.id)}
+                isPending={isCommitting}
+                onChange={(next) => handleDecision(doc.id, next)}
+                onToggleSelect={() => handleToggleSelect(doc.id)}
+              />
+            ))}
+          </ul>
+          <div className="text-center text-xs text-neutral-500">
+            <Trans>
+              {visibleDocs.length} von {totalHits} geladen
+            </Trans>
+          </div>
+          {reviewQueue.hasNextPage && (
+            <div className="flex justify-center pt-2">
+              <Button
+                variant="outline"
+                onClick={() => void reviewQueue.fetchNextPage()}
+                disabled={reviewQueue.isFetchingNextPage}
+              >
+                {reviewQueue.isFetchingNextPage ? (
+                  <Loader2Icon className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                ) : null}
+                <Trans>Weitere Treffer laden</Trans>
+              </Button>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* BESTÄTIGEN-BAR — sticky bottom, immer sichtbar wenn Treffer da sind. */}
+      {counts.total > 0 && (
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-neutral-200 bg-white shadow-lg">
+          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
+            <div className="text-sm">
+              <div className="font-medium text-neutral-900">
+                <span className="text-emerald-700">
+                  <Trans>{counts.archive} ins Archiv</Trans>
+                </span>{' '}
+                ·{' '}
+                <span className="text-neutral-600">
+                  <Trans>{counts.ignore} ignorieren</Trans>
+                </span>
+                {counts.undecided > 0 && (
+                  <>
+                    {' '}
+                    ·{' '}
+                    <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-900">
+                      <Trans>{counts.undecided} noch zu entscheiden</Trans>
+                    </span>
+                  </>
+                )}
+              </div>
+              <div className="mt-0.5 text-xs text-neutral-500">
+                {counts.undecided > 0 ? (
+                  <>
+                    <Trans>
+                      Bitte erst die offenen Zeilen entscheiden — sonst geht uns ein Beleg verloren.
+                    </Trans>{' '}
+                    <button
+                      onClick={() => setFilter('undecided')}
+                      className="font-medium text-amber-700 underline-offset-2 hover:underline"
+                    >
+                      <Trans>Offene Zeilen anzeigen →</Trans>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Trans>
+                      Beim Bestätigen landen die {counts.archive} Belege im Archiv (noch
+                      korrigierbar). Endgültig archivieren ist Stufe 2 im Archiv-Tab.
+                    </Trans>{' '}
+                    {manualChangeCount > 0 && (
+                      <span>
+                        <Trans>{manualChangeCount} Entscheidungen haben Sie aktiv geändert.</Trans>
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                <Button
+                  size="lg"
+                  disabled={
+                    isCommitting ||
+                    counts.undecided > 0 ||
+                    (counts.archive === 0 && counts.ignore === 0)
+                  }
+                  onClick={() => setConfirmOpen(true)}
+                >
+                  {isCommitting ? (
+                    <Loader2Icon className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                  ) : (
+                    <CheckCircleIcon className="mr-2 h-4 w-4" aria-hidden />
+                  )}
+                  <Trans>Bestätigen — Entscheidungen übernehmen →</Trans>
+                </Button>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      <Trans>Entscheidungen übernehmen?</Trans>
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="space-y-3">
+                      <span className="block">
+                        <Trans>
+                          Wir übernehmen jetzt <strong>{counts.archive} Belege</strong> in den
+                          korrigierbaren Archiv-Stapel und markieren{' '}
+                          <strong>{counts.ignore} Mails</strong> als kein Beleg.
+                        </Trans>
+                      </span>
+                      <span className="block">
+                        <Trans>
+                          Das ist noch nicht die endgültige Archivierung. Übernommene Belege können
+                          Sie im Archiv weiter prüfen und korrigieren.
+                        </Trans>
+                      </span>
+                      {counts.ignore > 0 && (
+                        <span className="block rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-neutral-700">
+                          <Trans>
+                            Ignorierte Mails verschwinden aus dieser Arbeitsliste. Falls Sie
+                            unsicher sind, brechen Sie ab und setzen die Zeile auf „Noch nicht
+                            entscheiden".
+                          </Trans>
+                        </span>
+                      )}
+                      {manualChangeCount > 0 && (
+                        <span className="block text-sky-800">
+                          <Trans>
+                            {manualChangeCount} Entscheidungen stammen von Ihnen, der Rest sind
+                            NexaFile-Vorschläge.
+                          </Trans>
+                        </span>
+                      )}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isCommitting}>
+                      <Trans>Nochmal prüfen</Trans>
+                    </AlertDialogCancel>
+                    <AlertDialogAction onClick={() => void handleConfirm()} disabled={isCommitting}>
+                      {isCommitting && (
+                        <Loader2Icon className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                      )}
+                      <Trans>Ja, übernehmen</Trans>
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+const FilterPill = ({
+  active,
+  onClick,
+  label,
+  count,
+  color,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: React.ReactNode;
+  count: number;
+  color?: 'emerald' | 'neutral' | 'amber';
+}) => {
+  const inactiveColor =
+    color === 'emerald'
+      ? 'text-emerald-700 hover:bg-emerald-50'
+      : color === 'amber'
+        ? 'text-amber-700 hover:bg-amber-50'
+        : color === 'neutral'
+          ? 'text-neutral-600 hover:bg-neutral-100'
+          : 'text-neutral-600 hover:bg-neutral-100';
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+        active ? 'bg-neutral-900 text-white' : inactiveColor
+      }`}
+    >
+      {label}
+      <span className={`ml-1.5 ${active ? 'text-neutral-300' : 'text-neutral-400'}`}>{count}</span>
+    </button>
+  );
+};
+
+const EmptyState = ({ hasSources }: { hasSources: boolean }) => {
+  if (!hasSources) {
+    return (
+      <Card className="flex flex-col items-center gap-4 px-6 py-12 text-center">
+        <Illustration
+          name="empty-mailbox"
+          alt="Noch kein Postfach verbunden"
+          tone="sky"
+          className="h-32 w-full max-w-[200px]"
+        />
+        <h2 className="text-lg font-semibold">
+          <Trans>Noch keine Quelle verbunden</Trans>
+        </h2>
+        <p className="max-w-md text-sm text-neutral-600">
+          <Trans>
+            Verbinden Sie ein E-Mail-Postfach, damit wir Belege automatisch finden können.
+          </Trans>
+        </p>
+        <Button asChild>
+          <Link to="connect">
+            <ExternalLinkIcon className="mr-2 h-4 w-4" aria-hidden />
+            <Trans>Postfach verbinden</Trans>
+          </Link>
+        </Button>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="flex flex-col items-center gap-4 px-6 py-12 text-center">
+      <Illustration
+        name="all-done"
+        alt="Alles entschieden"
+        tone="emerald"
+        className="h-32 w-full max-w-[200px]"
+      />
+      <h2 className="text-lg font-semibold">
+        <Trans>Alles entschieden</Trans>
+      </h2>
+      <p className="max-w-md text-sm text-neutral-600">
+        <Trans>
+          Keine Belege warten mehr auf eine Entscheidung. Was schon übernommen ist, finden Sie im
+          Archiv-Tab.
+        </Trans>
+      </p>
+      <Button asChild variant="outline">
+        <Link to="connect">
+          <MailSearchIcon className="mr-2 h-4 w-4" aria-hidden />
+          <Trans>Neuen Lauf starten</Trans>
+        </Link>
+      </Button>
+    </Card>
+  );
+};

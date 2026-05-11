@@ -14,7 +14,7 @@ import {
   PlugIcon,
   PlusIcon,
 } from 'lucide-react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 
 import { trpc } from '@nexasign/trpc/react';
 import type { TSourceListItem } from '@nexasign/trpc/server/sources-router/schema';
@@ -129,15 +129,47 @@ const AddImapSourceDialog = ({
 }) => {
   const { _ } = useLingui();
   const { toast } = useToast();
-  const [open, setOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialProvider = searchParams.get('provider');
+  const initialEmail = searchParams.get('email');
+  const [open, setOpen] = useState(Boolean(initialProvider) || Boolean(initialEmail));
   const [label, setLabel] = useState('');
   const [teamId, setTeamId] = useState<string>(
     availableTeams[0] ? String(availableTeams[0].id) : '',
   );
-  const [providerId, setProviderId] = useState<string | null>(null);
+  const [providerId, setProviderId] = useState<string | null>(() => {
+    if (initialProvider) {
+      const p = getProviderById(initialProvider);
+      if (p) return p.id;
+    }
+    if (initialEmail) {
+      const p = detectProviderByEmail(initialEmail);
+      if (p) return p.id;
+    }
+    return null;
+  });
+
+  // Wenn ?provider=… oder ?email=… mitkommt: passenden Port setzen, Email
+  // ins Username-Feld vorfuellen, und die Params sauber aus der URL entfernen,
+  // damit ein Reload den Dialog nicht erneut aufpoppt und das Vorausfuellen
+  // nicht doppelt anwendet.
+  useEffect(() => {
+    if (!initialProvider && !initialEmail) return;
+    const provider = initialProvider
+      ? getProviderById(initialProvider)
+      : initialEmail
+        ? (detectProviderByEmail(initialEmail) ?? null)
+        : null;
+    if (provider) setPort(provider.port);
+    const next = new URLSearchParams(searchParams);
+    next.delete('provider');
+    next.delete('email');
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [customHost, setCustomHost] = useState('');
   const [port, setPort] = useState<number>(993);
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState(() => initialEmail ?? '');
   const [password, setPassword] = useState('');
   const [tlsVerify, setTlsVerify] = useState(true);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -301,11 +333,11 @@ const AddImapSourceDialog = ({
               type="email"
               value={username}
               autoComplete="off"
-              placeholder="dein.name@beispiel.de"
+              placeholder="ihr.name@beispiel.de"
               onChange={(e) => setUsername(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              <Trans>Sobald du @ tippst, wählen wir den passenden Anbieter automatisch aus.</Trans>
+              <Trans>Sobald Sie @ tippen, wählen wir den passenden Anbieter automatisch aus.</Trans>
             </p>
           </div>
 
@@ -356,8 +388,8 @@ const AddImapSourceDialog = ({
               <p className="text-xs text-muted-foreground">
                 <Trans>
                   Achtung: Bei den meisten Anbietern ist das nicht das normale Login-Passwort,
-                  sondern ein eigens generiertes „App-Passwort". Wähl oben deinen Anbieter und du
-                  bekommst die genaue Anleitung.
+                  sondern ein eigens generiertes „App-Passwort". Wählen Sie oben Ihren Anbieter und
+                  Sie bekommen die genaue Anleitung.
                 </Trans>
               </p>
             )}

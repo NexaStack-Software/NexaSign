@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // © 2026 NexaStack, NexaSign contributors
+import { Prisma } from '@prisma/client';
 import { ImapFlow } from 'imapflow';
 import { createHash } from 'node:crypto';
 
@@ -14,6 +15,7 @@ import type {
   SyncRangeContext,
   SyncRangeProgress,
   SyncRangeResult,
+  SyncTruncationReason,
   TestConnectionInput,
   TestConnectionResult,
 } from '../types';
@@ -39,9 +41,20 @@ import { type ImapAccountConfig, ZImapAccountConfigSchema } from './types';
 const CONNECT_TIMEOUT_MS = 10_000;
 const GREETING_TIMEOUT_MS = 30_000;
 
-// Bei Gmail ist „Alle Nachrichten" eine Sammelansicht über INBOX + Archiv +
-// Sent — wenn vorhanden, reicht uns diese eine Mailbox.
-const GMAIL_UNIFIED = ['[Gmail]/Alle Nachrichten', '[Gmail]/All Mail'] as const;
+// Bei Gmail ist die Sammelansicht (INBOX + Archiv + Sent) je nach Konto-
+// Sprache und Erstellungs-Aera anders benannt. RFC 6154 \All-Flag ist der
+// einzige verlaessliche Marker — Pfadnamen sind nur Fallback fuer Server,
+// die das Special-Use-Flag nicht exposen. Reihenfolge nach Haeufigkeit:
+//   - "Alle E-Mails"       deutsch (aktuell, seit ca. 2018)
+//   - "Alle Nachrichten"   deutsch (aelter)
+//   - "All Mail"           englisch (Standard)
+const GMAIL_UNIFIED = [
+  '[Gmail]/Alle E-Mails',
+  '[Gmail]/Alle Nachrichten',
+  '[Gmail]/All Mail',
+  '[Google Mail]/All Mail',
+  '[Google Mail]/Alle E-Mails',
+] as const;
 
 // Heuristik für Belege/Archive bei Nicht-Gmail-Providern. Persona archiviert
 // Rechnungen häufig in eigene Ordner (Outlook-Regel, manuelle Ablage). Wer
@@ -66,8 +79,13 @@ const ARCHIVE_FOLDER_PATTERNS: ReadonlyArray<RegExp> = [
 const ARCHIVE_SPECIAL_USE = new Set(['\\All', '\\Archive']);
 
 const PROGRESS_REPORT_EVERY = 25;
-const MAX_MAILS_PER_SYNC = 500;
-const MAX_BYTES_PER_SYNC = 20 * 1024 * 1024;
+// Sicherheitsgrenzen pro Sync-Lauf. Werte mehrfach iteriert: 500 Mails / 20 MB
+// war zu eng (Cap nach ~300 Mails), 10k / 500 MB hat nur ein halbes Gmail-Jahr
+// geschafft. Aktuell: 2 GB / 30k Mails — typisches 1-3-Jahre-Gmail-Archiv geht
+// in einem Lauf. Wenn doch geschnitten wird, wird das in `truncationReason`
+// vermerkt, statt still als SUCCESS zu enden.
+const MAX_MAILS_PER_SYNC = 30_000;
+const MAX_BYTES_PER_SYNC = 2 * 1024 * 1024 * 1024;
 
 const parseConfig = (raw: unknown): ImapAccountConfig => {
   return ZImapAccountConfigSchema.parse(raw);
@@ -107,14 +125,23 @@ const buildClient = (config: ImapAccountConfig): ImapFlow => {
  * Leeres Array bedeutet, der Adapter hat selbst INBOX nicht gefunden — wird
  * vom Aufrufer als hartes Fail behandelt.
  */
-export const pickMailboxes = async (client: ImapFlow): Promise<string[]> => {
+type MailboxListClient = {
+  list: () => Promise<Array<{ path: string; specialUse?: string | null }>>;
+};
+
+export const pickMailboxes = async (client: MailboxListClient): Promise<string[]> => {
   const list = await client.list();
   const known = list.map((entry) => ({
     path: entry.path,
     specialUse: entry.specialUse ?? null,
   }));
 
-  // Gmail-Sonderweg: wenn die Sammelansicht existiert, nur die nehmen.
+  // Sammelansicht via RFC-6154 \All-Flag — sprachunabhaengig, einzig verlaessliche
+  // Methode. ImapFlow liefert specialUse als String wie "\\All".
+  const allFlagFolder = known.find((e) => e.specialUse === '\\All');
+  if (allFlagFolder) return [allFlagFolder.path];
+
+  // Fallback: Pfadnamen-Heuristik fuer Server, die specialUse nicht exposen.
   for (const candidate of GMAIL_UNIFIED) {
     if (known.some((e) => e.path === candidate)) return [candidate];
   }
@@ -182,6 +209,9 @@ const syncRange = async (ctx: SyncRangeContext): Promise<SyncRangeResult> => {
   }
 
   const counters: SyncRangeProgress = {
+    // Wird gesetzt, sobald die UID-Liste vom IMAP-Search vorliegt; bis dahin
+    // null = „noch unbekannt", Frontend zeigt dann unbestimmten Indikator.
+    mailsTotal: null,
     mailsChecked: 0,
     documentsAuto: 0,
     documentsManual: 0,
@@ -197,6 +227,9 @@ const syncRange = async (ctx: SyncRangeContext): Promise<SyncRangeResult> => {
   let bytesProcessed = 0;
   let mailsTaken = 0;
   let cancelled = false;
+  // truncationReason wird gesetzt, sobald ein Cap greift. Frontend zeigt das
+  // als Hinweis-Banner statt den Lauf still als SUCCESS zu praesentieren.
+  let truncationReason: SyncTruncationReason = null;
 
   try {
     await client.connect();
@@ -210,7 +243,14 @@ const syncRange = async (ctx: SyncRangeContext): Promise<SyncRangeResult> => {
 
     for (const mailbox of mailboxes) {
       if (cancelled) break;
-      if (mailsTaken >= MAX_MAILS_PER_SYNC || bytesProcessed >= MAX_BYTES_PER_SYNC) break;
+      if (mailsTaken >= MAX_MAILS_PER_SYNC) {
+        truncationReason = 'MAILS_CAP';
+        break;
+      }
+      if (bytesProcessed >= MAX_BYTES_PER_SYNC) {
+        truncationReason = 'BYTES_CAP';
+        break;
+      }
 
       const lock = await client.getMailboxLock(mailbox);
       try {
@@ -232,6 +272,19 @@ const syncRange = async (ctx: SyncRangeContext): Promise<SyncRangeResult> => {
           .sort((a, b) => b - a)
           .slice(0, remainingBudget);
 
+        // Wenn der Folder mehr UIDs liefert, als wir noch ins Budget bekommen,
+        // ist das Mail-Cap getriggert. Wir markieren das hier proaktiv, denn
+        // der innere Loop laeuft sonst sauber durch und setzt es nicht mehr.
+        if (orderedUids.length < uids.length) {
+          truncationReason = 'MAILS_CAP';
+        }
+
+        // mailsTotal kumuliert den echten Search-Umfang, nicht nur die gekappte
+        // Verarbeitungsmenge. Sonst wirkt ein begrenzter Lauf im UI faelschlich
+        // wie vollstaendig abgeschlossen.
+        counters.mailsTotal = (counters.mailsTotal ?? 0) + uids.length;
+        await ctx.onProgress({ ...counters });
+
         for (let i = 0; i < orderedUids.length; i += 1) {
           // Cancel alle 10 Mails prüfen (DB-Roundtrip), nicht jedes Mal.
           if (i % 10 === 0 && (await ctx.isCancelled())) {
@@ -251,6 +304,7 @@ const syncRange = async (ctx: SyncRangeContext): Promise<SyncRangeResult> => {
               ? message.source
               : Buffer.from(message.source);
             if (bytesProcessed + raw.length > MAX_BYTES_PER_SYNC) {
+              truncationReason = 'BYTES_CAP';
               cancelled = true;
               break;
             }
@@ -286,6 +340,8 @@ const syncRange = async (ctx: SyncRangeContext): Promise<SyncRangeResult> => {
 
             const result = classifyAndExtract({
               senderDomain: parsed.fromDomain,
+              senderEmail: parsed.fromAddress,
+              userEmail: config.username,
               subject: parsed.subject,
               bodyText: parsed.bodyText,
               hasPdfAttachment: parsed.pdfAttachments.length > 0,
@@ -358,6 +414,8 @@ const syncRange = async (ctx: SyncRangeContext): Promise<SyncRangeResult> => {
                     sourceId: ctx.sourceId,
                     title: parsed.subject || primary.fileName,
                     correspondent: parsed.fromName || parsed.fromAddress,
+                    senderEmail: parsed.fromAddress,
+                    senderDomain: parsed.fromDomain,
                     documentDate: parsed.date,
                     capturedAt: new Date(),
                     status: 'INBOX',
@@ -417,6 +475,8 @@ const syncRange = async (ctx: SyncRangeContext): Promise<SyncRangeResult> => {
                     sourceId: ctx.sourceId,
                     title: parsed.subject || `Beleg-Hinweis von ${parsed.fromDomain}`,
                     correspondent: parsed.fromName || parsed.fromAddress,
+                    senderEmail: parsed.fromAddress,
+                    senderDomain: parsed.fromDomain,
                     documentDate: parsed.date,
                     capturedAt: new Date(),
                     status: 'PENDING_MANUAL',
@@ -474,11 +534,7 @@ const syncRange = async (ctx: SyncRangeContext): Promise<SyncRangeResult> => {
             // bedeutet das: ein paralleler Sync-Run hat den Datensatz zwischen unserem
             // findFirst() und create() bereits geschrieben. Kein Fehler — Idempotenz
             // greift, wir zaehlen es als ignored und machen weiter.
-            const code =
-              err && typeof err === 'object' && 'code' in err
-                ? (err as { code?: unknown }).code
-                : undefined;
-            if (code === 'P2002') {
+            if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
               counters.documentsIgnored += 1;
             } else {
               counters.documentsFailed += 1;
@@ -507,7 +563,84 @@ const syncRange = async (ctx: SyncRangeContext): Promise<SyncRangeResult> => {
   // Final-Progress-Report.
   await ctx.onProgress({ ...counters });
 
-  return counters;
+  return { ...counters, truncationReason };
+};
+
+/**
+ * Diagnose-Helfer: listet alle IMAP-Folder des Accounts und ermittelt, welche
+ * davon der Sync-Adapter wirklich scannen wuerde. Wird vom Frontend genutzt,
+ * damit die Persona sieht „Wir scannen INBOX, aber dein Gmail-Archiv liegt in
+ * '[Gmail]/Alle Nachrichten' und das ist nicht freigegeben — hier die Schritte
+ * zum Aktivieren."
+ *
+ * Wirft, wenn Connect/Login fehlschlaegt; Caller fängt und meldet als Toast.
+ */
+export type ImapFolderInfo = {
+  path: string;
+  specialUse: string | null;
+  scanned: boolean;
+};
+
+export type InspectFoldersResult = {
+  folders: ImapFolderInfo[];
+  scannedPaths: string[];
+  isGmailHost: boolean;
+  gmailAllMailVisible: boolean;
+};
+
+export const inspectFolders = async (rawConfig: unknown): Promise<InspectFoldersResult> => {
+  const config = parseConfig(rawConfig);
+
+  const hostCheck = await validateImapHost(config.host, config.port);
+  if (!hostCheck.ok) {
+    throw new Error(hostCheck.reason ?? 'Host nicht erlaubt.');
+  }
+
+  const client = buildClient(config);
+  try {
+    await client.connect();
+    const list = await client.list();
+    const known = list.map((entry) => ({
+      path: entry.path,
+      specialUse: entry.specialUse ?? null,
+    }));
+
+    const scanned = await pickMailboxes(client);
+    const scannedSet = new Set(scanned);
+
+    const isGmailHost =
+      /(^|\.)imap\.gmail\.com$/i.test(config.host) || /(^|\.)gmail\.com$/i.test(config.host);
+    // „All Mail" gilt als freigegeben, sobald entweder das RFC-6154 \All-Flag
+    // an einem Folder haengt ODER ein bekannter Gmail-Pfadname matcht.
+    // Pfadnamen-Liste hier bewusst etwas breiter als GMAIL_UNIFIED, damit auch
+    // alte „[Google Mail]/…"-Konten ohne \All-Flag korrekt erkannt werden.
+    const ALL_MAIL_PATH_PATTERNS = [
+      /^\[Gmail\]\/(Alle E-Mails|Alle Nachrichten|All Mail)$/i,
+      /^\[Google Mail\]\/(Alle E-Mails|Alle Nachrichten|All Mail)$/i,
+    ];
+    const gmailAllMailVisible = known.some(
+      (e) => e.specialUse === '\\All' || ALL_MAIL_PATH_PATTERNS.some((rx) => rx.test(e.path)),
+    );
+
+    return {
+      folders: known.map((e) => ({
+        path: e.path,
+        specialUse: e.specialUse,
+        scanned: scannedSet.has(e.path),
+      })),
+      scannedPaths: scanned,
+      isGmailHost,
+      gmailAllMailVisible,
+    };
+  } finally {
+    if (client.usable) {
+      try {
+        await client.logout();
+      } catch {
+        /* ignore */
+      }
+    }
+  }
 };
 
 export const imapSourceAdapter: SourceAdapter = {

@@ -36,6 +36,7 @@ import { Skeleton } from '@nexasign/ui/primitives/skeleton';
 import { useToast } from '@nexasign/ui/primitives/use-toast';
 
 import { SettingsHeader } from '~/components/general/settings-header';
+import { FolderDiagnosticsCard } from '~/components/sources/folder-diagnostics-card';
 import { appMetaTags } from '~/utils/meta';
 
 export function meta() {
@@ -51,12 +52,21 @@ const formatDateTime = (date: Date | null, locale: string): string => {
 };
 
 const formatDateRange = (from: Date, to: Date, locale: string): string => {
+  const inclusiveTo = new Date(to);
+  if (
+    inclusiveTo.getHours() === 0 &&
+    inclusiveTo.getMinutes() === 0 &&
+    inclusiveTo.getSeconds() === 0 &&
+    inclusiveTo.getMilliseconds() === 0
+  ) {
+    inclusiveTo.setDate(inclusiveTo.getDate() - 1);
+  }
   const fmt = new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
   });
-  return `${fmt.format(from)} – ${fmt.format(to)}`;
+  return `${fmt.format(from)} – ${fmt.format(inclusiveTo)}`;
 };
 
 const toIsoDate = (d: Date): string => d.toISOString().slice(0, 10);
@@ -341,6 +351,10 @@ export default function SettingsSourceDetail() {
           </Button>
         </Card>
       )}
+
+      {/* IMAP-Folder-Diagnose — vor allem bei Gmail wichtig, sonst sieht
+          NexaFile nur die INBOX und uebersieht das ganze Archiv. */}
+      <FolderDiagnosticsCard sourceId={source.id} />
 
       {/* Sync-Lauf starten */}
       <Card className="mt-6 p-6">

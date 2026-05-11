@@ -57,8 +57,8 @@ export const ImapProviderPicker = ({ value, onValueChange, allowCustom }: Props)
       {isCustom && (
         <p className="text-xs text-muted-foreground">
           <Trans>
-            Du kannst Server, Port und Zugangsdaten manuell eintragen. Frag deinen Provider nach den
-            IMAP-Einstellungen, falls du sie nicht kennst.
+            Sie können Server, Port und Zugangsdaten manuell eintragen. Fragen Sie Ihren Provider
+            nach den IMAP-Einstellungen, falls Sie sie nicht kennen.
           </Trans>
         </p>
       )}
@@ -69,7 +69,7 @@ export const ImapProviderPicker = ({ value, onValueChange, allowCustom }: Props)
 const ProviderHelpCard = ({ provider }: { provider: ImapProvider }) => (
   <Card className="border-primary/30 bg-primary/5 p-3 text-xs">
     <p className="font-medium text-foreground">
-      <Trans>So findest du dein App-Passwort bei {provider.label}</Trans>
+      <Trans>So finden Sie Ihr App-Passwort bei {provider.label}</Trans>
     </p>
     <p className="mt-1 text-muted-foreground">{provider.appPasswordHelp}</p>
     {provider.appPasswordUrl && (
@@ -85,7 +85,7 @@ const ProviderHelpCard = ({ provider }: { provider: ImapProvider }) => (
     )}
     <p className="mt-2 text-muted-foreground">
       <Trans>
-        Wichtig: Das normale Login-Passwort funktioniert nicht — du brauchst ein eigenes Passwort
+        Wichtig: Das normale Login-Passwort funktioniert nicht — Sie brauchen ein eigenes Passwort
         für externe Programme.
       </Trans>
     </p>

@@ -14,8 +14,8 @@
 export type DiscoveryDocumentStatus =
   | 'inbox' // Neu eingegangen, noch nicht gesichtet
   | 'pending-manual' // Hinweis erkannt, Beleg muss manuell beschafft werden
-  | 'accepted' // User hat als Geschäftsbeleg akzeptiert (GoBD-WORM aktiv)
-  | 'archived' // Akzeptiert + archiviert (10-Jahres-Aufbewahrung läuft weiter)
+  | 'accepted' // Stufe 1: User hat als Geschäftsbeleg übernommen ("Zur Ablage bereit"). Editierbar, kein WORM.
+  | 'archived' // Stufe 2: User hat rechtssicher archiviert (archivedAt gesetzt → WORM aktiv, GoBD-Frist läuft)
   | 'ignored' // User hat als irrelevant markiert
   | 'processed'; // Sammel-Filter: accepted ∪ archived ∪ ignored ∪ signed
 
@@ -43,6 +43,9 @@ export type DiscoveryDocument = {
   detectedInvoiceNumber?: string | null;
   acceptedAt?: Date | null;
   acceptedByName?: string | null;
+  /** Stufe-2-Trigger (Rechtssicher archiviert / WORM-Lock). */
+  archivedAt?: Date | null;
+  archivedByName?: string | null;
   /**
    * Anzahl ATTACHMENT-Artifacts mit nicht-leerem archivePath. 0 = nichts
    * herunterladbar (entweder MANUAL ohne PDF oder vor-Archive-Sync-Datensatz).
@@ -92,6 +95,8 @@ export type DiscoveryPage = {
 export type DiscoverySummary = {
   total: number;
   accepted: number;
+  archived: number;
+  ignored: number;
   needsReview: number;
   downloadable: number;
   missingAmount: number;

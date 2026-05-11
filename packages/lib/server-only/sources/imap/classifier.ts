@@ -3,14 +3,31 @@
 import {
   IGNORE_KEYWORDS,
   KNOWN_RECHNUNG_DOMAINS,
+  NON_INVOICE_DOMAINS,
+  NON_INVOICE_SENDER_PATTERNS,
   PORTAL_HINTS,
   RECHNUNG_KEYWORDS,
+  STRONG_NEGATIVE_KEYWORDS,
+  STRONG_NEGATIVE_PATTERNS,
 } from './keywords';
 
 export type ClassificationVerdict = 'AUTO' | 'MANUAL' | 'IGNORE';
 
 export type MailFeatures = {
   senderDomain: string;
+  /** Volle Sender-E-Mail-Adresse, fuer harten Veto-Vergleich gegen die
+   *  NON_INVOICE_SENDER_PATTERNS-Liste. Optional, weil aeltere Aufrufer
+   *  sie noch nicht durchreichen. */
+  senderEmail?: string;
+  /** E-Mail-Adresse des Konto-Inhabers. Wenn die Mail vom Konto an sich
+   *  selbst gesendet wurde (Self-Forward, Notiz an mich), ist sie kein Beleg.
+   *  Optional aus dem gleichen Grund wie senderEmail. */
+  userEmail?: string;
+  /** Weitere E-Mail-Adressen, unter denen der gleiche Mensch verschickt
+   *  (z. B. private Gmail + Firmen-Adresse). Werden zusaetzlich zu
+   *  userEmail gegen den Absender geprueft. Case-insensitiv, normalisiert
+   *  wie userEmail. */
+  selfAliases?: ReadonlyArray<string>;
   subject: string;
   bodyText: string;
   hasPdfAttachment: boolean;
@@ -33,31 +50,125 @@ const isKnownSender = (senderDomain: string): boolean => {
   return KNOWN_RECHNUNG_DOMAINS.some((known) => lower === known || lower.endsWith(`.${known}`));
 };
 
+const isNonInvoiceSender = (senderEmail: string | undefined): boolean => {
+  if (!senderEmail) return false;
+  const lower = senderEmail.toLowerCase().trim();
+  return NON_INVOICE_SENDER_PATTERNS.some((pat) => pat === lower);
+};
+
+const isNonInvoiceDomain = (senderDomain: string): boolean => {
+  const lower = senderDomain.toLowerCase().trim();
+  return NON_INVOICE_DOMAINS.some((dom) => lower === dom || lower.endsWith(`.${dom}`));
+};
+
 /**
- * Beleg-Klassifizierung — Port aus rechnungen.py:classify().
+ * Normalisiert eine E-Mail-Adresse fuer Self-Sent-Vergleich:
+ * - case-fold + trim
+ * - Gmail-Quirk: googlemail.com === gmail.com (gleiche Inbox bei Google).
+ * - Gmail-Quirk: Punkte im Local-Part sind irrelevant (`e.b@gmail.com` ===
+ *   `eb@gmail.com`); ebenso Plus-Aliasse (`emil+invoice@gmail.com` ===
+ *   `emil@gmail.com`). Beides ist offizielles Gmail-Verhalten.
+ *
+ * Andere Provider (Outlook, Yahoo, custom) lassen wir unangetastet — dort
+ * waeren die gleichen Tricks falsch positiv.
+ */
+const normalizeAddressForSelfMatch = (raw: string): string => {
+  const lower = raw.toLowerCase().trim();
+  const at = lower.lastIndexOf('@');
+  if (at < 0) return lower;
+  let local = lower.slice(0, at);
+  let domain = lower.slice(at + 1);
+  if (domain === 'googlemail.com') domain = 'gmail.com';
+  if (domain === 'gmail.com') {
+    const plus = local.indexOf('+');
+    if (plus > 0) local = local.slice(0, plus);
+    local = local.replace(/\./g, '');
+  }
+  return `${local}@${domain}`;
+};
+
+const isSelfSent = (
+  senderEmail: string | undefined,
+  userEmail: string | undefined,
+  selfAliases: ReadonlyArray<string> | undefined,
+): boolean => {
+  if (!senderEmail) return false;
+  const sender = normalizeAddressForSelfMatch(senderEmail);
+  if (userEmail && sender === normalizeAddressForSelfMatch(userEmail)) return true;
+  if (!selfAliases || selfAliases.length === 0) return false;
+  return selfAliases.some((alias) => sender === normalizeAddressForSelfMatch(alias));
+};
+
+/**
+ * Beleg-Klassifizierung — Port aus rechnungen.py:classify(), inzwischen mit
+ * mehreren Verschaerfungs-Stufen ueber dem urspruenglichen OR-basierten
+ * Heuristik-Code.
  *
  *   AUTO   = Beleg-Hinweis erkannt UND PDF im Anhang.
  *   MANUAL = Beleg-Hinweis erkannt, aber kein PDF (User muss aus Portal ziehen).
- *   IGNORE = Werbung / Newsletter / nicht-Beleg.
+ *   IGNORE = Werbung / Newsletter / Service-Notification / Self-Forward.
+ *
+ * Entscheidungs-Reihenfolge (Veto-Stufen vor positiven Signalen):
+ *   1. Sender exakt in NON_INVOICE_SENDER_PATTERNS  → IGNORE (hart)
+ *   2. Self-Sent (sender == user)                   → IGNORE
+ *   3. Beleg-Signal vorhanden? (Keyword | PDF | Betrag im Body)
+ *        — wenn nicht: IGNORE
+ *   4. Bekannter Sender + Beleg-Signal              → AUTO/MANUAL
+ *      Unbekannter Sender + Beleg-Keyword (Subject/Body) + nicht Newsletter
+ *                                                    → AUTO/MANUAL
+ *      sonst                                         → IGNORE
  */
 export const classifyMail = (features: MailFeatures): ClassificationVerdict => {
+  // Stufe 1a: hartes Veto fuer bekannte Service-Adressen (Calendar/Ads/etc.)
+  if (isNonInvoiceSender(features.senderEmail)) {
+    return 'IGNORE';
+  }
+  // Stufe 1b: Domain pauschal nicht relevant (z. B. Mitfahrdienste)
+  if (isNonInvoiceDomain(features.senderDomain)) {
+    return 'IGNORE';
+  }
+  // Stufe 2: Self-Forward / Notiz an mich
+  if (isSelfSent(features.senderEmail, features.userEmail, features.selfAliases)) {
+    return 'IGNORE';
+  }
+
   const haystack = `${features.subject}\n${features.bodyText}`;
+
+  // Stufe 2b: Subject/Body enthaelt ein hartes Negativ-Pattern
+  // (Failed Payment, Sicherheitstoken, Konto gesperrt etc.). Schlaegt
+  // sogar bekannte Beleg-Sender, weil diese Mails auch von ihnen kein
+  // Beleg sind.
+  if (containsAny(haystack, STRONG_NEGATIVE_KEYWORDS)) {
+    return 'IGNORE';
+  }
+  // Stufe 2c: Regex-Patterns fuer „payment ... unsuccessful" / „Zahlung ... ist
+  // fehlgeschlagen" — Substring-Match in 2b laesst diese durch, weil Fuellwoerter
+  // zwischen den Schluesselwoertern stehen.
+  if (STRONG_NEGATIVE_PATTERNS.some((rx) => rx.test(haystack))) {
+    return 'IGNORE';
+  }
 
   const knownSender = isKnownSender(features.senderDomain);
   const hasRechnungKeyword = containsAny(haystack, RECHNUNG_KEYWORDS);
   const hasIgnoreKeyword = containsAny(haystack, IGNORE_KEYWORDS);
+  const hasAmount = extractAmount(haystack) !== null;
 
-  // Bekannter Absender ODER Beleg-Keyword reicht als Vor-Treffer.
-  const isRechnungsmail = knownSender || hasRechnungKeyword;
-
-  if (!isRechnungsmail) {
+  // Stufe 3: ohne irgendein Beleg-Signal raus, egal woher die Mail kommt.
+  // PDF-Anhang ist ein klares Signal, Beleg-Keyword auch, Betrag im Body
+  // ebenfalls (Anbieter wie Anthropic/OpenAI schicken Belege auch ohne
+  // explizites „Rechnung"-Wort, aber immer mit Betrag).
+  const hasInvoiceSignal = hasRechnungKeyword || features.hasPdfAttachment || hasAmount;
+  if (!hasInvoiceSignal) {
     return 'IGNORE';
   }
-  // Werbung mit Beleg-Keyword (z.B. „Rabatt-Newsletter") aussortieren.
-  // Bekannte Beleg-Sender überstimmen das.
+
+  // Stufe 4: Werbung mit Beleg-Keyword (z. B. „Rabatt-Newsletter") raus —
+  // bekannte Beleg-Sender ueberstimmen das, weil ihre echten Belege manchmal
+  // Marketing-Floskeln im Footer haben.
   if (hasIgnoreKeyword && !knownSender) {
     return 'IGNORE';
   }
+
   if (features.hasPdfAttachment) {
     return 'AUTO';
   }

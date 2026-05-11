@@ -124,15 +124,22 @@ export const run = async ({
   // Progress-Update: schreibt Counter regelmäßig in die DB, damit das UI
   // beim Polling den aktuellen Stand sieht.
   const onProgress = async (progress: {
+    mailsTotal?: number | null;
     mailsChecked: number;
     documentsAuto: number;
     documentsManual: number;
     documentsIgnored: number;
     documentsFailed: number;
   }): Promise<void> => {
+    // mailsTotal nur schreiben, wenn der Adapter es geliefert hat — sonst
+    // bestehenden Wert nicht ueberschreiben (null in der DB akzeptabel).
+    const { mailsTotal, ...rest } = progress;
     await prisma.syncRun.update({
       where: { id: syncRun.id },
-      data: progress,
+      data: {
+        ...rest,
+        ...(typeof mailsTotal === 'number' ? { mailsTotal } : {}),
+      },
     });
   };
 
@@ -162,6 +169,7 @@ export const run = async ({
           documentsManual: result.documentsManual,
           documentsIgnored: result.documentsIgnored,
           documentsFailed: result.documentsFailed,
+          truncationReason: result.truncationReason ?? null,
           finishedAt: new Date(),
         },
       }),

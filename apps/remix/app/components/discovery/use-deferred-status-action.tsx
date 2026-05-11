@@ -31,19 +31,23 @@ type Hooks = {
 };
 
 /**
- * Deferred-Commit-Pattern für Accept/Ignore von Discovery-Dokumenten.
+ * Deferred-Commit-Pattern für „Ins Archiv" / „Ignorieren" von Discovery-
+ * Dokumenten.
  *
- * Persona-Problem: Akzeptieren ist mit GoBD-WORM-Lock irreversibel — ein
- * versehentlicher Klick kostet 10 Jahre Aufbewahrungspflicht für eine
- * Werbe-Mail. Ignorieren ist zwar reversibel, aber „weg ist weg" für die
- * Zeit, in der der Beleg unsichtbar ist.
+ * Persona-Problem: ein versehentlicher Klick lässt einen Beleg aus der Liste
+ * verschwinden — der Nutzer erwartet eine Korrektur-Möglichkeit, bevor die
+ * Aktion final wird.
  *
- * Lösung: Wenn der User akzeptiert/ignoriert, blenden wir den Beleg sofort
- * in der UI weg (gefühlt „erledigt"), zeigen einen Toast mit „Rückgängig"-
- * Button und fire-en die eigentliche Mutation erst nach 5 s. Bricht der User
- * in dem Fenster ab, kommt er sauber zurück. Beim Verlassen der Seite
- * werden offene Aktionen zur Sicherheit synchron in den Mutation-Pool
- * gegeben — also nichts geht verloren.
+ * Lösung: Wenn der User „Ins Archiv" oder „Ignorieren" klickt, blenden wir
+ * den Beleg sofort in der UI weg (gefühlt „erledigt"), zeigen einen Toast
+ * mit „Rückgängig"-Button und fire-en die eigentliche Mutation erst nach
+ * 5 s. Bricht der User in dem Fenster ab, kommt er sauber zurück. Beim
+ * Verlassen der Seite werden offene Aktionen zur Sicherheit synchron in den
+ * Mutation-Pool gegeben — also nichts geht verloren.
+ *
+ * Hinweis: „Ins Archiv" ist seit der Zwei-Stufen-Trennung (acceptedAt vs.
+ * archivedAt) nicht mehr WORM-irreversibel. WORM startet erst durch ein
+ * separates „Rechtssicher archivieren" im Archiv-Tab.
  */
 export const useDeferredStatusAction = ({ onCommitted, onError }: Hooks = {}) => {
   const { _ } = useLingui();
@@ -92,7 +96,7 @@ export const useDeferredStatusAction = ({ onCommitted, onError }: Hooks = {}) =>
 
       const title =
         action === 'accept'
-          ? _(msg`Akzeptiert (in 5 s endgültig)`)
+          ? _(msg`Ins Archiv übernommen (in 5 s endgültig)`)
           : _(msg`Ignoriert (in 5 s endgültig)`);
       const description = previewLabel ?? '';
 

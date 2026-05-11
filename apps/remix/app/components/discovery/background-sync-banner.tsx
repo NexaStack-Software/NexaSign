@@ -60,7 +60,7 @@ export const BackgroundSyncBanner = ({ activeRuns, locale }: Props) => {
       try {
         if (isNotificationApiAvailable() && Notification.permission === 'granted') {
           const note = new Notification('NexaFile — Sync abgeschlossen', {
-            body: _(msg`Deine Belege sind bereit. Klick öffnet die Liste.`),
+            body: _(msg`Ihre Belege sind bereit. Klick öffnet die Liste.`),
             icon: '/static/favicon.ico',
             silent: false,
           });
@@ -129,7 +129,7 @@ export const BackgroundSyncBanner = ({ activeRuns, locale }: Props) => {
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
               <Trans>
-                Du kannst diese Seite jetzt schließen — wir laufen weiter und du siehst die Belege
+                Sie können diese Seite jetzt schließen — wir laufen weiter, und Sie sehen die Belege
                 beim nächsten Besuch.
               </Trans>
             </p>
@@ -162,22 +162,63 @@ export const BackgroundSyncBanner = ({ activeRuns, locale }: Props) => {
           ))}
       </div>
 
-      <ul className="space-y-1.5 border-t border-primary/20 pt-2 text-xs">
+      <ul className="space-y-2 border-t border-primary/20 pt-2 text-xs">
         {activeRuns.map((run) => {
           const elapsedMs = Date.now() - run.startedAt.getTime();
           const elapsedSec = Math.max(elapsedMs / 1000, 1);
           const ratePerMin = (run.mailsChecked / elapsedSec) * 60;
           const found = run.documentsAuto + run.documentsManual;
+
+          // ETA + Progress nur wenn der Adapter mailsTotal geliefert hat.
+          // Bis dahin zeigen wir „prüft noch …" als unbestimmten Indikator.
+          const total = run.mailsTotal ?? null;
+          const remaining = total !== null ? Math.max(total - run.mailsChecked, 0) : null;
+          const etaMin =
+            ratePerMin > 0 && remaining !== null ? Math.round(remaining / ratePerMin) : null;
+          const progressPct =
+            total !== null && total > 0
+              ? Math.min(100, Math.round((run.mailsChecked / total) * 100))
+              : null;
+
           return (
-            <li key={run.id} className="flex flex-wrap items-center justify-between gap-x-3">
-              <span className="font-medium text-foreground">{run.sourceLabel}</span>
-              <span className="tabular-nums text-muted-foreground">
-                <Trans>
-                  {numberFmt.format(run.mailsChecked)} Mails geprüft · {numberFmt.format(found)}{' '}
-                  Belege · {ratePerMin >= 10 ? Math.round(ratePerMin) : ratePerMin.toFixed(1)}{' '}
-                  Mails/Min
-                </Trans>
-              </span>
+            <li key={run.id} className="space-y-1">
+              <div className="flex flex-wrap items-center justify-between gap-x-3">
+                <span className="font-medium text-foreground">{run.sourceLabel}</span>
+                <span className="tabular-nums text-muted-foreground">
+                  {total !== null ? (
+                    <Trans>
+                      {numberFmt.format(run.mailsChecked)} von {numberFmt.format(total)} Mails ·{' '}
+                      {numberFmt.format(found)} Belege · ca.{' '}
+                      {etaMin !== null && etaMin > 0
+                        ? etaMin >= 60
+                          ? `${Math.floor(etaMin / 60)} Std ${etaMin % 60} Min`
+                          : `${etaMin} Min`
+                        : 'fast fertig'}{' '}
+                      verbleibend
+                    </Trans>
+                  ) : (
+                    <Trans>
+                      {numberFmt.format(run.mailsChecked)} Mails geprüft · {numberFmt.format(found)}{' '}
+                      Belege · {ratePerMin >= 10 ? Math.round(ratePerMin) : ratePerMin.toFixed(1)}{' '}
+                      Mails/Min · Gesamtumfang wird ermittelt
+                    </Trans>
+                  )}
+                </span>
+              </div>
+              {progressPct !== null && (
+                <div
+                  className="h-1.5 w-full overflow-hidden rounded-full bg-primary/15"
+                  role="progressbar"
+                  aria-valuenow={progressPct}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                >
+                  <div
+                    className="h-full bg-primary transition-[width] duration-300"
+                    style={{ width: `${progressPct}%` }}
+                  />
+                </div>
+              )}
             </li>
           );
         })}

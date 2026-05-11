@@ -41,6 +41,8 @@ export const ZDiscoveryDocumentSchema = z.object({
   detectedInvoiceNumber: z.string().nullable().optional(),
   acceptedAt: z.coerce.date().nullable().optional(),
   acceptedByName: z.string().nullable().optional(),
+  archivedAt: z.coerce.date().nullable().optional(),
+  archivedByName: z.string().nullable().optional(),
   // Anzahl ATTACHMENT-Artifacts mit nicht-leerem archivePath. Wenn 0 → Mail
   // hat keine herunterladbaren Anhänge (entweder MANUAL ohne PDF, oder vor-
   // Archive-Sync-Datensatz). Wird im Listen-Loader vorberechnet.
@@ -62,17 +64,28 @@ export const ZSourceSummarySchema = z.object({
   id: z.string(),
   kind: ZSourceKindSchema,
   label: z.string(),
+  // IMAP-Host der Quelle (z. B. „imap.gmail.com"). Frontend nutzt den Host
+  // u. a., um Gmail-spezifische Hinweise zu zeigen („All Mail freigeben").
+  // null bei nicht-IMAP-Quellen oder fehlgeschlagenem Decrypt.
+  host: z.string().nullable().optional(),
   lastSyncAt: z.coerce.date().nullable(),
   lastSyncStatus: ZSourceSyncStatusSchema.nullable(),
   // rangeTo des letzten erfolgreichen SyncRun. Frontend nutzt das als
   // inkrementelles Default für `fromDate` — neuer Lauf zieht „seit zuletzt".
   // null = noch nie erfolgreich gelaufen → Onboarding-Pfad.
   lastSuccessfulSyncRangeTo: z.coerce.date().nullable(),
+  lastSuccessfulSyncRangeFrom: z.coerce.date().nullable().optional(),
+  // Anzahl gepruefter Mails im letzten erfolgreichen Lauf. Verraet zusammen
+  // mit der Range-Spanne, ob der Lauf einen verdaechtig kleinen Folder hatte
+  // (typischer Gmail-„nur INBOX gescannt"-Fall).
+  lastSuccessfulSyncMailsChecked: z.number().int().nonnegative().nullable().optional(),
 });
 
 export const ZDiscoverySummarySchema = z.object({
   total: z.number().int().nonnegative(),
   accepted: z.number().int().nonnegative(),
+  archived: z.number().int().nonnegative(),
+  ignored: z.number().int().nonnegative(),
   needsReview: z.number().int().nonnegative(),
   downloadable: z.number().int().nonnegative(),
   missingAmount: z.number().int().nonnegative(),
@@ -118,6 +131,10 @@ export const ZDiscoveryDocumentActionSchema = z.enum([
   'mark-pending-manual',
   'archive',
   'ignore',
+  // Rückgängig-Aktion: „aus dem Archiv entfernen" — setzt einen ACCEPTED-Beleg
+  // zurück auf INBOX. Nur erlaubt solange archivedAt == null (also nicht
+  // endgültig archiviert / WORM-gesperrt).
+  'unaccept',
 ]);
 
 export const ZUpdateDiscoveryDocumentStatusRequestSchema = z.object({
@@ -198,6 +215,8 @@ export const ZGetDocumentDetailResponseSchema = z
       providerNativeId: z.string().nullable(),
       acceptedAt: z.coerce.date().nullable(),
       acceptedByName: z.string().nullable(),
+      archivedAt: z.coerce.date().nullable(),
+      archivedByName: z.string().nullable(),
       sourceLabel: z.string().nullable(),
       signingEnvelopeId: z.string().nullable(),
       canCreateSigningDocument: z.boolean(),
@@ -259,6 +278,10 @@ export const ZActiveSyncRunSchema = z.object({
   status: z.enum(['PENDING', 'RUNNING']),
   rangeFrom: z.coerce.date(),
   rangeTo: z.coerce.date(),
+  // Obergrenze: Anzahl Mails, die der IMAP-Search insgesamt gefunden hat.
+  // null = Adapter hat noch keinen Search-Result, Frontend zeigt unbestimmten
+  // Indikator. Wird im Verlauf des Laufs gesetzt und aendert sich nicht mehr.
+  mailsTotal: z.number().int().nonnegative().nullable(),
   mailsChecked: z.number().int().nonnegative(),
   documentsAuto: z.number().int().nonnegative(),
   documentsManual: z.number().int().nonnegative(),
@@ -287,6 +310,8 @@ export const ZGetOverviewResponseSchema = z.object({
   withAmount: z.number().int().nonnegative(),
   downloadable: z.number().int().nonnegative(),
   accepted: z.number().int().nonnegative(),
+  archived: z.number().int().nonnegative(),
+  ignored: z.number().int().nonnegative(),
   needsReview: z.number().int().nonnegative(),
   /** Summe der erkannten Brutto-Beträge in Cent (EUR-äquivalent, nicht währungs-konvertiert). */
   estimatedTotalCents: z.number().int().nonnegative(),
@@ -358,10 +383,49 @@ export const ZBulkAcceptResponseSchema = z.object({
   skippedIds: z.array(z.string()),
 });
 
+export const ZBulkArchiveRequestSchema = z.object({
+  ids: z.array(z.string()).min(1).max(2000),
+});
+
+export const ZBulkArchiveByFilterRequestSchema = z.object({
+  query: z.string().trim().optional(),
+});
+
+export const ZBulkArchiveResponseSchema = z.object({
+  archivedCount: z.number().int().nonnegative(),
+  skippedIds: z.array(z.string()),
+});
+
+export const ZBulkIgnoreRequestSchema = z.object({
+  ids: z.array(z.string()).min(1).max(2000),
+});
+
+export const ZBulkIgnoreResponseSchema = z.object({
+  ignoredCount: z.number().int().nonnegative(),
+  skippedIds: z.array(z.string()),
+});
+
+export const ZBulkUnacceptRequestSchema = z.object({
+  ids: z.array(z.string()).min(1).max(2000),
+});
+
+export const ZBulkUnacceptResponseSchema = z.object({
+  unacceptedCount: z.number().int().nonnegative(),
+  /** IDs die schon endgültig archiviert sind (WORM) und nicht entfernt werden dürfen. */
+  skippedIds: z.array(z.string()),
+});
+
 export type TSmartAcceptCriteria = z.infer<typeof ZSmartAcceptCriteriaSchema>;
 export type TSmartAcceptPreviewResponse = z.infer<typeof ZSmartAcceptPreviewResponseSchema>;
 export type TBulkAcceptRequest = z.infer<typeof ZBulkAcceptRequestSchema>;
 export type TBulkAcceptResponse = z.infer<typeof ZBulkAcceptResponseSchema>;
+export type TBulkArchiveRequest = z.infer<typeof ZBulkArchiveRequestSchema>;
+export type TBulkArchiveByFilterRequest = z.infer<typeof ZBulkArchiveByFilterRequestSchema>;
+export type TBulkArchiveResponse = z.infer<typeof ZBulkArchiveResponseSchema>;
+export type TBulkIgnoreRequest = z.infer<typeof ZBulkIgnoreRequestSchema>;
+export type TBulkIgnoreResponse = z.infer<typeof ZBulkIgnoreResponseSchema>;
+export type TBulkUnacceptRequest = z.infer<typeof ZBulkUnacceptRequestSchema>;
+export type TBulkUnacceptResponse = z.infer<typeof ZBulkUnacceptResponseSchema>;
 
 export const ZCreateSigningDocumentRequestSchema = z.object({
   id: z.string(),
@@ -374,3 +438,41 @@ export const ZCreateSigningDocumentResponseSchema = z.object({
 
 export type TCreateSigningDocumentRequest = z.infer<typeof ZCreateSigningDocumentRequestSchema>;
 export type TCreateSigningDocumentResponse = z.infer<typeof ZCreateSigningDocumentResponseSchema>;
+
+/**
+ * Aggregat „Wer hat mir Belege geschickt?" — gruppiert nach Korrespondent
+ * (was der Klassifikator als Sender-Name identifiziert hat) und zaehlt pro
+ * Eintrag, wieviele Belege mit PDF-Anhang vs. nur mit Portal-Hinweis (= ohne
+ * Anhang) vorliegen. Zweck: User kann pro Sender alle „Belege im Portal
+ * abholen" am Stueck bearbeiten, statt einzeln durch die Liste zu gehen.
+ *
+ * Status-Filter: nur ungelöschte (INBOX/PENDING_MANUAL/ACCEPTED/ARCHIVED).
+ * IGNORED-Belege fliegen raus — die hat der User oder der Klassifikator als
+ * „kein Beleg" markiert, sollen also nicht zaehlen.
+ */
+export const ZCorrespondentSummaryEntrySchema = z.object({
+  correspondent: z.string(),
+  /** Haeufigste Sender-Domain in dieser Korrespondenten-Gruppe (oder null,
+   *  wenn fuer keinen der Belege eine Domain bekannt ist). Frontend nutzt
+   *  sie, um den Portal-Direktlink zu setzen. */
+  senderDomain: z.string().nullable(),
+  /** Beispiel-Sender-Adresse aus der Gruppe. Anzeige im Detail-Tooltip. */
+  senderEmail: z.string().nullable(),
+  /** Portal-URL aus PORTAL_URLS_BY_DOMAIN, falls die Domain dort hinterlegt
+   *  ist. Frontend rendert den Button nur wenn !== null. */
+  portalUrl: z.string().nullable(),
+  portalLabel: z.string().nullable(),
+  total: z.number().int().nonnegative(),
+  withPdf: z.number().int().nonnegative(),
+  withoutPdf: z.number().int().nonnegative(),
+});
+
+export const ZGetCorrespondentSummaryResponseSchema = z.object({
+  entries: z.array(ZCorrespondentSummaryEntrySchema),
+  totalDistinct: z.number().int().nonnegative(),
+});
+
+export type TCorrespondentSummaryEntry = z.infer<typeof ZCorrespondentSummaryEntrySchema>;
+export type TGetCorrespondentSummaryResponse = z.infer<
+  typeof ZGetCorrespondentSummaryResponseSchema
+>;

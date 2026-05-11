@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" fill="none">
+  <ellipse cx="100" cy="105" rx="70" ry="6" fill="#fde68a" opacity="0.5"/>
+  <!-- Leeres Regal -->
+  <rect x="20" y="70" width="160" height="6" rx="2" fill="#f59e0b"/>
+  <rect x="20" y="40" width="160" height="6" rx="2" fill="#f59e0b"/>
+  <rect x="22" y="46" width="4" height="24" fill="#fbbf24"/>
+  <rect x="174" y="46" width="4" height="24" fill="#fbbf24"/>
+  <!-- Ein einsamer Ordner -->
+  <rect x="92" y="48" width="14" height="22" fill="#ffffff" stroke="#d97706" stroke-width="1.5"/>
+  <text x="100" y="62" font-family="ui-sans-serif, system-ui" font-size="9" fill="#d97706" text-anchor="middle">∅</text>
+  <!-- Staub-Partikel -->
+  <circle cx="50" cy="55" r="1.5" fill="#fbbf24" opacity="0.6"/>
+  <circle cx="155" cy="58" r="1" fill="#fbbf24" opacity="0.5"/>
+</svg>

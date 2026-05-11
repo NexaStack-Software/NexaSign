@@ -77,7 +77,7 @@ export const SmartBulkAcceptDialog = ({
             ? _(
                 msg`${result.skippedIds.length} bereits akzeptiert oder nicht eligibel — übersprungen.`,
               )
-            : _(msg`Alle Kandidaten wurden in das Steuerpaket übernommen.`),
+            : _(msg`Alle Kandidaten wurden in den korrigierbaren Archiv-Stapel übernommen.`),
       });
       void utils.discovery.findDocuments.invalidate();
       void utils.discovery.getOverview.invalidate();
@@ -129,8 +129,8 @@ export const SmartBulkAcceptDialog = ({
               </span>
               <span className="block text-amber-700 dark:text-amber-400">
                 <Trans>
-                  Achtung: Akzeptierte Belege unterliegen der 10-jährigen GoBD-Aufbewahrung und
-                  können danach nur noch archiviert, nicht mehr ignoriert werden.
+                  Akzeptieren ist noch nicht die endgültige Archivierung. Die Belege landen erst in
+                  „Im Archiv (noch korrigierbar)" und können dort weiter geprüft werden.
                 </Trans>
               </span>
             </AlertDialogDescription>
@@ -145,9 +145,9 @@ export const SmartBulkAcceptDialog = ({
           {data && data.totalCount === 0 && (
             <Card className="bg-muted/30 p-4 text-center text-sm">
               <Trans>
-                Aktuell gibt es keine Belege, die als „vollständig" gelten. Geh die offenen Belege
-                manuell durch — vielleicht fehlt nur der Betrag oder der Absender, und du kannst das
-                im Schnell-Review nachtragen.
+                Aktuell gibt es keine Belege, die als „vollständig" gelten. Gehen Sie die offenen
+                Belege manuell durch — vielleicht fehlt nur der Betrag oder der Absender, und Sie
+                können das im Schnell-Review nachtragen.
               </Trans>
             </Card>
           )}

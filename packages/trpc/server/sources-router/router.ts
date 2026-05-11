@@ -19,6 +19,10 @@ import {
   ZCreateImapSourceRequestSchema,
   ZDeleteSourceRequestSchema,
   ZDeleteSourceResponseSchema,
+  ZInspectImapFoldersRequestSchema,
+  ZInspectImapFoldersResponseSchema,
+  ZListRecentSyncRunsRequestSchema,
+  ZListRecentSyncRunsResponseSchema,
   ZListSourcesResponseSchema,
   ZListSyncRunsRequestSchema,
   ZListSyncRunsResponseSchema,
@@ -33,6 +37,62 @@ import {
 } from './schema';
 
 const MAX_IMAP_ACCOUNTS_PER_USER = 3;
+
+const ensureNoDuplicateImapSource = async ({
+  userId,
+  teamId,
+  host,
+  port,
+  username,
+  excludeSourceId,
+}: {
+  userId: number;
+  teamId: number;
+  host: string;
+  port: number;
+  username: string;
+  excludeSourceId?: string;
+}) => {
+  const existingSources = await prisma.source.findMany({
+    where: {
+      userId,
+      teamId,
+      kind: 'IMAP',
+      ...(excludeSourceId ? { id: { not: excludeSourceId } } : {}),
+    },
+    select: {
+      id: true,
+      label: true,
+      encryptedConfig: true,
+      encryptedConfigKeyVersion: true,
+    },
+  });
+
+  if (existingSources.length === 0) {
+    return;
+  }
+
+  const { decryptImapConfig } = await import('@nexasign/lib/server-only/sources/imap');
+  const normalizedHost = host.trim().toLowerCase();
+  const normalizedUsername = username.trim().toLowerCase();
+
+  for (const source of existingSources) {
+    const config = decryptImapConfig({
+      ciphertext: source.encryptedConfig,
+      keyVersion: source.encryptedConfigKeyVersion,
+    });
+
+    if (
+      config.host.trim().toLowerCase() === normalizedHost &&
+      config.port === port &&
+      config.username.trim().toLowerCase() === normalizedUsername
+    ) {
+      throw new AppError(AppErrorCode.UNAUTHORIZED, {
+        message: `Dieses Postfach ist bereits verbunden (${source.label}).`,
+      });
+    }
+  }
+};
 
 const requireOwnSource = async (sourceId: string, userId: number) => {
   const source = await prisma.source.findFirst({
@@ -200,6 +260,14 @@ export const sourcesRouter = router({
         tlsVerify: input.tlsVerify,
       });
 
+      await ensureNoDuplicateImapSource({
+        userId: ctx.user.id,
+        teamId: team.id,
+        host: input.host,
+        port: input.port,
+        username: input.username,
+      });
+
       const created = await prisma.source.create({
         data: {
           userId: ctx.user.id,
@@ -299,6 +367,16 @@ export const sourcesRouter = router({
           message: test.error ?? 'Verbindung fehlgeschlagen.',
         });
       }
+
+      await ensureNoDuplicateImapSource({
+        userId: ctx.user.id,
+        teamId: source.teamId,
+        host: merged.host,
+        port: merged.port,
+        username: merged.username,
+        excludeSourceId: source.id,
+      });
+
       const encrypted = encryptImapConfig(merged);
 
       await prisma.source.update({
@@ -382,6 +460,46 @@ export const sourcesRouter = router({
       return { reactivated: true };
     }),
 
+  /**
+   * Folder-Diagnose. Verbindet sich live mit dem IMAP-Account und liefert
+   * die rohe Folder-Liste + welche Folder der Sync-Adapter wirklich scannen
+   * würde + Gmail-spezifische Health-Flags. Frontend nutzt das, um der
+   * Persona zu zeigen, ob „[Gmail]/Alle Nachrichten" freigegeben ist —
+   * sonst sieht NexaFile nur die INBOX und der ganze archivierte Beleg-
+   * Bestand fehlt.
+   */
+  inspectImapFolders: authenticatedProcedure
+    .input(ZInspectImapFoldersRequestSchema)
+    .output(ZInspectImapFoldersResponseSchema)
+    .mutation(async ({ input, ctx }) => {
+      const source = await requireOwnSource(input.sourceId, ctx.user.id);
+
+      if (source.kind !== 'IMAP') {
+        throw new AppError(AppErrorCode.UNAUTHORIZED, {
+          message: 'Folder-Diagnose ist nur für IMAP-Quellen verfügbar.',
+        });
+      }
+
+      const { decryptImapConfig, inspectFolders } = await import(
+        '@nexasign/lib/server-only/sources/imap'
+      );
+      const config = decryptImapConfig({
+        ciphertext: source.encryptedConfig,
+        keyVersion: source.encryptedConfigKeyVersion,
+      });
+
+      try {
+        return await inspectFolders(config);
+      } catch (err) {
+        throw new AppError(AppErrorCode.UNAUTHORIZED, {
+          message:
+            err instanceof Error
+              ? `Verbindung fehlgeschlagen: ${err.message}`
+              : 'Unbekannter Verbindungsfehler.',
+        });
+      }
+    }),
+
   // ---------------- SyncRun-Endpunkte ----------------
 
   startSyncRun: authenticatedProcedure
@@ -450,6 +568,51 @@ export const sourcesRouter = router({
         orderBy: { startedAt: 'desc' },
         take: input.limit,
       });
+    }),
+
+  listRecentSyncRuns: authenticatedProcedure
+    .input(ZListRecentSyncRunsRequestSchema)
+    .output(ZListRecentSyncRunsResponseSchema)
+    .query(async ({ input, ctx }) => {
+      const runs = await prisma.syncRun.findMany({
+        where: {
+          source: {
+            userId: ctx.user.id,
+            ...(ctx.teamId ? { teamId: ctx.teamId } : {}),
+          },
+        },
+        orderBy: { startedAt: 'desc' },
+        take: input.limit,
+        select: {
+          id: true,
+          sourceId: true,
+          rangeFrom: true,
+          rangeTo: true,
+          searchTerm: true,
+          status: true,
+          mailsTotal: true,
+          mailsChecked: true,
+          documentsAuto: true,
+          documentsManual: true,
+          documentsIgnored: true,
+          documentsFailed: true,
+          errorMessage: true,
+          cancelRequested: true,
+          truncationReason: true,
+          startedAt: true,
+          finishedAt: true,
+          source: {
+            select: {
+              label: true,
+            },
+          },
+        },
+      });
+
+      return runs.map(({ source, ...run }) => ({
+        ...run,
+        sourceLabel: source.label,
+      }));
     }),
 
   cancelSyncRun: authenticatedProcedure
