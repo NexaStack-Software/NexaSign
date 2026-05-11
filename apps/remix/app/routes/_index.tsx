@@ -3,7 +3,6 @@ import { redirect } from 'react-router';
 import { extractCookieFromHeaders } from '@nexasign/auth/server/lib/utils/cookies';
 import { getOptionalSession } from '@nexasign/auth/server/lib/utils/get-session';
 import { getTeams } from '@nexasign/lib/server-only/team/get-teams';
-import { formatDocumentsPath } from '@nexasign/lib/utils/teams';
 import { ZTeamUrlSchema } from '@nexasign/trpc/server/team-router/schema';
 
 import type { Route } from './+types/_index';
@@ -45,7 +44,11 @@ export async function loader({ request }: Route.LoaderArgs) {
       throw redirect('/inbox');
     }
 
-    throw redirect(formatDocumentsPath(currentTeam.url));
+    // NexaFile: Aufgaben-Start als Landung — vier Klartext-Tiles statt einer
+    // Power-User-Dokumentenliste. formatDocumentsPath bleibt für interne Links
+    // unverändert (Signatur-Bereich), die Erstlandung hat aber ein eigenes
+    // Ziel.
+    throw redirect(`/t/${currentTeam.url}/aufgaben`);
   }
 
   throw redirect('/signin');

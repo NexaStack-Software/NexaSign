@@ -249,10 +249,10 @@ $nx_app_base  = $nx_is_demo
     <!-- Nav-Wrapper (equivalent zu AppNavDesktop) -->
     <div class="nx-nav-wrapper">
       <nav class="nx-primary-nav">
-        <a href="/vorlagen/" class="<?= nx_active('vorlagen', $section) ?>">Dokumente erstellen</a>
-        <a href="<?= htmlspecialchars($nx_app_base) ?>/find-documents">Dokumente finden</a>
-        <a href="<?= htmlspecialchars($nx_app_base) ?>/documents">Dokumente signieren</a>
-        <a href="/vorlagen/gobd/" class="<?= nx_active('gobd', $section) ?>">Dokumente archivieren</a>
+        <a href="/vorlagen/" class="<?= nx_active('vorlagen', $section) ?>">Erstellen</a>
+        <a href="<?= htmlspecialchars($nx_app_base) ?>/find-documents">Finden</a>
+        <a href="<?= htmlspecialchars($nx_app_base) ?>/documents">Signieren</a>
+        <a href="<?= htmlspecialchars($nx_app_base) ?>/archiv" class="<?= nx_active('gobd', $section) ?>">Archiv</a>
       </nav>
 
       <!-- Search-Button — Portal ins App-Command-Menu -->
@@ -300,8 +300,8 @@ $nx_app_base  = $nx_is_demo
   </div>
 </header>
 <nav class="nx-mobile-primary-nav" aria-label="Hauptnavigation">
-  <a href="/vorlagen/" class="<?= nx_active('vorlagen', $section) ?>">Dokumente erstellen</a>
-  <a href="<?= htmlspecialchars($nx_app_base) ?>/find-documents">Dokumente finden</a>
-  <a href="<?= htmlspecialchars($nx_app_base) ?>/documents">Dokumente signieren</a>
-  <a href="/vorlagen/gobd/" class="<?= nx_active('gobd', $section) ?>">Dokumente archivieren</a>
+  <a href="/vorlagen/" class="<?= nx_active('vorlagen', $section) ?>">Erstellen</a>
+  <a href="<?= htmlspecialchars($nx_app_base) ?>/find-documents">Finden</a>
+  <a href="<?= htmlspecialchars($nx_app_base) ?>/documents">Signieren</a>
+  <a href="<?= htmlspecialchars($nx_app_base) ?>/archiv" class="<?= nx_active('gobd', $section) ?>">Archiv</a>
 </nav>

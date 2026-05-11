@@ -33,7 +33,7 @@ export default function Layout() {
               alt="NexaFile"
               height={144}
               width={602}
-              style={{ height: '144px', width: 'auto', display: 'block' }}
+              style={{ width: '300px', height: 'auto', display: 'block' }}
             />
           </picture>
         </Link>
