@@ -22,6 +22,7 @@ import {
   MoreHorizontalIcon,
   PaperclipIcon,
   ShieldCheckIcon,
+  SparklesIcon,
   TriangleAlertIcon,
   XCircleIcon,
 } from 'lucide-react';
@@ -121,6 +122,9 @@ const confidenceClass = (doc: Document): string => {
 
 const needsHumanCheck = (doc: Document): boolean =>
   doc.confidenceLabel === 'low' || (doc.duplicateCount ?? 0) > 0;
+
+const ruleActionLabel = (action: 'archive' | 'ignore'): string =>
+  action === 'archive' ? 'künftig als Beleg vorschlagen' : 'künftig eher ignorieren';
 
 /**
  * Heuristik: einfache Signale (Reply-Mail, Newsletter, Bestellbestätigung,
@@ -429,6 +433,16 @@ export default function FindDocumentsPage() {
   const queueMeta = reviewQueue.data?.pages[0];
   const totalHits = queueMeta?.total ?? 0;
   const isLoading = reviewQueue.isLoading;
+  const hasConnectedSource = (queueMeta?.sources.length ?? 0) > 0;
+  const ruleSuggestionsQuery = trpc.discovery.getRuleSuggestions.useQuery(undefined, {
+    enabled: hasConnectedSource,
+  });
+  const ruleSuggestions = ruleSuggestionsQuery.data?.suggestions ?? [];
+  const updateRuleStatusMutation = trpc.discovery.updateRuleStatus.useMutation({
+    onSuccess: () => {
+      void utils.discovery.getRuleSuggestions.invalidate();
+    },
+  });
 
   // Aktive Sync-Runs pollen.
   const { data: activeRuns } = trpc.discovery.getActiveSyncRuns.useQuery(undefined, {
@@ -436,7 +450,6 @@ export default function FindDocumentsPage() {
   });
   const { data: recentSyncRuns } = trpc.sources.listRecentSyncRuns.useQuery({ limit: 5 });
   const activeRunsCount = activeRuns?.length ?? 0;
-  const hasConnectedSource = (queueMeta?.sources.length ?? 0) > 0;
   const latestCompletedRun =
     recentSyncRuns?.find((run) => run.status === 'SUCCESS' || run.status === 'FAILED') ?? null;
   const latestCompletedRangeLabel = latestCompletedRun
@@ -1032,6 +1045,84 @@ export default function FindDocumentsPage() {
           <Button size="sm" variant="outline" onClick={() => setFilter('needs-check')}>
             <Trans>Zu prüfende Treffer anzeigen</Trans>
           </Button>
+        </Card>
+      )}
+
+      {ruleSuggestions.length > 0 && (
+        <Card className="space-y-3 border-emerald-200 bg-emerald-50/70 p-4 text-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2 font-semibold text-emerald-950">
+                <SparklesIcon className="h-4 w-4" aria-hidden />
+                <Trans>NexaFile hat wiederkehrende Entscheidungen erkannt</Trans>
+              </div>
+              <p className="mt-1 text-emerald-900">
+                <Trans>
+                  Diese Regeln sparen künftig Klicks. Sie werden nur gespeichert, wenn Sie sie
+                  bewusst aktivieren.
+                </Trans>
+              </p>
+            </div>
+          </div>
+          <ul className="space-y-2">
+            {ruleSuggestions.map((rule) => {
+              const isPending = updateRuleStatusMutation.isPending;
+              return (
+                <li
+                  key={`${rule.scope}:${rule.pattern}:${rule.action}`}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-emerald-200 bg-white px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <div className="font-medium text-neutral-900">
+                      <Trans>
+                        Mails von <strong>{rule.label}</strong> {ruleActionLabel(rule.action)}
+                      </Trans>
+                    </div>
+                    <div className="mt-0.5 text-xs text-neutral-500">
+                      <Trans>
+                        Grundlage: {rule.evidenceCount} gleiche Entscheidungen · Sicherheit{' '}
+                        {rule.confidence}%
+                      </Trans>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {rule.status === 'active' ? (
+                      <Badge variant="secondary" size="small" className="rounded-full">
+                        <Trans>Regel aktiv</Trans>
+                      </Badge>
+                    ) : (
+                      <Button
+                        size="sm"
+                        disabled={isPending}
+                        onClick={() =>
+                          updateRuleStatusMutation.mutate({
+                            ...rule,
+                            status: 'active',
+                          })
+                        }
+                      >
+                        <ShieldCheckIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                        <Trans>Regel merken</Trans>
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={isPending}
+                      onClick={() =>
+                        updateRuleStatusMutation.mutate({
+                          ...rule,
+                          status: 'dismissed',
+                        })
+                      }
+                    >
+                      <Trans>Nicht vorschlagen</Trans>
+                    </Button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         </Card>
       )}
 

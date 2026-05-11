@@ -126,6 +126,41 @@ export const ZFindDiscoveryDocumentsResponseSchema = z.object({
   focusSummary: ZDiscoverySummarySchema.nullable().optional(),
 });
 
+export const ZDiscoveryRuleActionSchema = z.enum(['archive', 'ignore']);
+export const ZDiscoveryRuleStatusSchema = z.enum(['suggested', 'active', 'dismissed']);
+
+export const ZDiscoveryRuleSuggestionSchema = z.object({
+  id: z.string().nullable(),
+  scope: z.literal('sender-domain'),
+  pattern: z.string(),
+  label: z.string(),
+  action: ZDiscoveryRuleActionSchema,
+  status: ZDiscoveryRuleStatusSchema,
+  confidence: z.number().int().min(0).max(100),
+  evidenceCount: z.number().int().nonnegative(),
+  oppositeCount: z.number().int().nonnegative(),
+  lastMatchedAt: z.coerce.date().nullable(),
+});
+
+export const ZGetDiscoveryRuleSuggestionsResponseSchema = z.object({
+  suggestions: z.array(ZDiscoveryRuleSuggestionSchema),
+});
+
+export const ZUpdateDiscoveryRuleStatusRequestSchema = z.object({
+  scope: z.literal('sender-domain'),
+  pattern: z.string().trim().min(1).max(255),
+  action: ZDiscoveryRuleActionSchema,
+  status: z.enum(['active', 'dismissed']),
+  label: z.string().trim().min(1).max(255),
+  confidence: z.number().int().min(0).max(100),
+  evidenceCount: z.number().int().nonnegative(),
+  lastMatchedAt: z.coerce.date().nullable().optional(),
+});
+
+export const ZUpdateDiscoveryRuleStatusResponseSchema = z.object({
+  ok: z.boolean(),
+});
+
 export const ZGetDiscoveryDocumentRequestSchema = z.object({
   id: z.string(),
 });
@@ -244,6 +279,7 @@ export type TGetDocumentDetailResponse = z.infer<typeof ZGetDocumentDetailRespon
 
 export type TFindDiscoveryDocumentsRequest = z.infer<typeof ZFindDiscoveryDocumentsRequestSchema>;
 export type TFindDiscoveryDocumentsResponse = z.infer<typeof ZFindDiscoveryDocumentsResponseSchema>;
+export type TDiscoveryRuleSuggestion = z.infer<typeof ZDiscoveryRuleSuggestionSchema>;
 export type TGetDiscoveryDocumentRequest = z.infer<typeof ZGetDiscoveryDocumentRequestSchema>;
 export type TGetDiscoveryDocumentResponse = z.infer<typeof ZGetDiscoveryDocumentResponseSchema>;
 

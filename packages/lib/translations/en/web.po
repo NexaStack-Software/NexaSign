@@ -4492,6 +4492,10 @@ msgid "Diese Quelle ist gesperrt."
 msgstr "Diese Quelle ist gesperrt."
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Diese Regeln sparen künftig Klicks. Sie werden nur gespeichert, wenn Sie sie bewusst aktivieren."
+msgstr "Diese Regeln sparen künftig Klicks. Sie werden nur gespeichert, wenn Sie sie bewusst aktivieren."
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Diese Treffer haben niedrige Sicherheit oder mögliche Dubletten. Prüfen Sie sie zuerst, bevor Sie den Stapel übernehmen."
 msgstr "Diese Treffer haben niedrige Sicherheit oder mögliche Dubletten. Prüfen Sie sie zuerst, bevor Sie den Stapel übernehmen."
 
@@ -6670,6 +6674,12 @@ msgstr "Group Name"
 msgid "Groups"
 msgstr "Groups"
 
+#. placeholder {0}: rule.evidenceCount
+#. placeholder {1}: rule.confidence
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Grundlage: {0} gleiche Entscheidungen · Sicherheit {1}%"
+msgstr "Grundlage: {0} gleiche Entscheidungen · Sicherheit {1}%"
+
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-recipient-form.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-recipient-form.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-recipient-form.tsx
@@ -7781,6 +7791,12 @@ msgstr "Mail ohne Anhang"
 msgid "Mail-Inhalt"
 msgstr "Mail-Inhalt"
 
+#. placeholder {0}: rule.label
+#. placeholder {1}: ruleActionLabel(rule.action)
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Mails von <0>{0}</0> {1}"
+msgstr "Mails von <0>{0}</0> {1}"
+
 #: apps/remix/app/components/tables/admin-organisations-table.tsx
 #: apps/remix/app/components/tables/organisation-groups-table.tsx
 #: apps/remix/app/components/tables/organisation-teams-table.tsx
@@ -8306,6 +8322,10 @@ msgstr "NexaFile deckt vier Schritte für Sie ab: <0>Dokumente erstellen</0> aus
 msgid "NexaFile durchsucht jetzt das Postfach <0>{0}</0> nach Rechnungen und Belegen — im folgenden Zeitraum:"
 msgstr "NexaFile durchsucht jetzt das Postfach <0>{0}</0> nach Rechnungen und Belegen — im folgenden Zeitraum:"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "NexaFile hat wiederkehrende Entscheidungen erkannt"
+msgstr "NexaFile hat wiederkehrende Entscheidungen erkannt"
+
 #: apps/remix/app/routes/_authenticated+/vorlagen+/gobd+/_index.tsx
 msgid "NexaFile ist Open-Source (AGPL-3.0). Die Bereitstellung erfolgt ohne Gewährleistung."
 msgstr "NexaFile ist Open-Source (AGPL-3.0). Die Bereitstellung erfolgt ohne Gewährleistung."
@@ -8342,6 +8362,10 @@ msgstr "Next Recipient Email"
 #: apps/remix/app/components/general/document-signing/document-signing-complete-dialog.tsx
 msgid "Next Recipient Name"
 msgstr "Next Recipient Name"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Nicht vorschlagen"
+msgstr "Nicht vorschlagen"
 
 #: apps/remix/app/components/forms/branding-preferences-form.tsx
 #: apps/remix/app/components/forms/document-preferences-form.tsx
@@ -9923,6 +9947,14 @@ msgstr "Redirect URL"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/documents.$id.edit.tsx
 msgid "Redirecting"
 msgstr "Redirecting"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Regel aktiv"
+msgstr "Regel aktiv"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Regel merken"
+msgstr "Regel merken"
 
 #: apps/remix/app/components/forms/signup.tsx
 #: apps/remix/app/components/general/claim-account.tsx

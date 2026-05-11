@@ -4497,6 +4497,10 @@ msgid "Diese Quelle ist gesperrt."
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Diese Regeln sparen künftig Klicks. Sie werden nur gespeichert, wenn Sie sie bewusst aktivieren."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Diese Treffer haben niedrige Sicherheit oder mögliche Dubletten. Prüfen Sie sie zuerst, bevor Sie den Stapel übernehmen."
 msgstr ""
 
@@ -6675,6 +6679,12 @@ msgstr "Nom du groupe"
 msgid "Groups"
 msgstr "Groupes"
 
+#. placeholder {0}: rule.evidenceCount
+#. placeholder {1}: rule.confidence
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Grundlage: {0} gleiche Entscheidungen · Sicherheit {1}%"
+msgstr ""
+
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-recipient-form.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-recipient-form.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-recipient-form.tsx
@@ -7786,6 +7796,12 @@ msgstr ""
 msgid "Mail-Inhalt"
 msgstr ""
 
+#. placeholder {0}: rule.label
+#. placeholder {1}: ruleActionLabel(rule.action)
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Mails von <0>{0}</0> {1}"
+msgstr ""
+
 #: apps/remix/app/components/tables/admin-organisations-table.tsx
 #: apps/remix/app/components/tables/organisation-groups-table.tsx
 #: apps/remix/app/components/tables/organisation-teams-table.tsx
@@ -8311,6 +8327,10 @@ msgstr ""
 msgid "NexaFile durchsucht jetzt das Postfach <0>{0}</0> nach Rechnungen und Belegen — im folgenden Zeitraum:"
 msgstr ""
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "NexaFile hat wiederkehrende Entscheidungen erkannt"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/vorlagen+/gobd+/_index.tsx
 msgid "NexaFile ist Open-Source (AGPL-3.0). Die Bereitstellung erfolgt ohne Gewährleistung."
 msgstr ""
@@ -8347,6 +8367,10 @@ msgstr "Email du destinataire suivant"
 #: apps/remix/app/components/general/document-signing/document-signing-complete-dialog.tsx
 msgid "Next Recipient Name"
 msgstr "Nom du destinataire suivant"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Nicht vorschlagen"
+msgstr ""
 
 #: apps/remix/app/components/forms/branding-preferences-form.tsx
 #: apps/remix/app/components/forms/document-preferences-form.tsx
@@ -9928,6 +9952,14 @@ msgstr "URL de redirection"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/documents.$id.edit.tsx
 msgid "Redirecting"
 msgstr "Redirection"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Regel aktiv"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Regel merken"
+msgstr ""
 
 #: apps/remix/app/components/forms/signup.tsx
 #: apps/remix/app/components/general/claim-account.tsx

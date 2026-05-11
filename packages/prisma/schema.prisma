@@ -72,6 +72,7 @@ model User {
   sources                    Source[]
   triggeredSyncRuns          SyncRun[]
   discoveryAuditLogs         DiscoveryAuditLog[]
+  discoveryRules             DiscoveryRule[]
 
   verificationTokens VerificationToken[]
   apiTokens          ApiToken[]
@@ -442,8 +443,8 @@ model Envelope {
   documentMetaId String       @unique
   documentMeta   DocumentMeta @relation(fields: [documentMetaId], references: [id])
 
-  envelopeAttachments EnvelopeAttachment[]
-  discoverySourceDocument DiscoveryDocument? @relation("DiscoveryDocumentSigningEnvelope")
+  envelopeAttachments     EnvelopeAttachment[]
+  discoverySourceDocument DiscoveryDocument?   @relation("DiscoveryDocumentSigningEnvelope")
 
   @@index([type])
   @@index([status])
@@ -934,14 +935,15 @@ model Team {
 
   profile TeamProfile?
 
-  envelopes  Envelope[]
-  folders    Folder[]
-  apiTokens  ApiToken[]
-  webhooks   Webhook[]
-  teamGroups TeamGroup[]
+  envelopes          Envelope[]
+  folders            Folder[]
+  apiTokens          ApiToken[]
+  webhooks           Webhook[]
+  teamGroups         TeamGroup[]
   discoveryDocuments DiscoveryDocument[]
   discoveryAuditLogs DiscoveryAuditLog[]
   sources            Source[]
+  discoveryRules     DiscoveryRule[]
 
   organisationId String
   organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
@@ -1151,72 +1153,79 @@ enum DiscoveryDocumentStatus {
 }
 
 model DiscoveryDocument {
-  id             String                  @id @default(cuid())
-  teamId         Int
-  team           Team                    @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  uploadedById   Int?
-  uploadedBy     User?                   @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
-  sourceId       String?
-  source         Source?                 @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  id           String  @id @default(cuid())
+  teamId       Int
+  team         Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  uploadedById Int?
+  uploadedBy   User?   @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  sourceId     String?
+  source       Source? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
 
-  title          String
-  correspondent  String?
-  documentType   String?
-  documentDate   DateTime?
-  capturedAt     DateTime                @default(now())
+  title         String
+  correspondent String?
+  documentType  String?
+  documentDate  DateTime?
+  capturedAt    DateTime  @default(now())
 
-  status         DiscoveryDocumentStatus @default(INBOX)
+  status DiscoveryDocumentStatus @default(INBOX)
 
-  providerSource   String   // "local", "imap", "paperless", ...
+  providerSource   String // "local", "imap", "paperless", ...
   providerNativeId String?
 
-  contentType    String?
-  fileSize       Int?
-  tags           String[]
+  contentType String?
+  fileSize    Int?
+  tags        String[]
 
   // Strukturierte Felder aus der Klassifizierung.
-  detectedAmount         String?
-  detectedInvoiceNumber  String?
-  portalHint             String?
-  messageIdHash          String?
-  senderEmail            String?
-  senderDomain           String?
+  detectedAmount        String?
+  detectedInvoiceNumber String?
+  portalHint            String?
+  messageIdHash         String?
+  senderEmail           String?
+  senderDomain          String?
 
   // Mail-Body als Klartext (HTML-stripped) für UI-Anzeige. Begrenzt auf 1 MB.
   // Originale .eml + body.html liegen als Artifacts auf dem Filesystem.
-  bodyText      String?  @db.Text
+  bodyText    String? @db.Text
   // Hint für UI: HTML-Variante existiert als Datei, wird NICHT inline gerendert.
-  bodyHasHtml   Boolean  @default(false)
+  bodyHasHtml Boolean @default(false)
   // Pfad zum Filesystem-Ordner mit eml/body/attachments/metadata.
   // Relative zu NEXT_PRIVATE_DISCOVERY_ARCHIVE_PATH.
-  archivePath   String?
+  archivePath String?
 
   // GoBD-Lifecycle Stufe 1: User hat den Beleg übernommen. Noch korrigierbar.
-  acceptedAt    DateTime?
-  acceptedById  Int?
-  acceptedBy    User?    @relation("DiscoveryDocumentAcceptedBy", fields: [acceptedById], references: [id], onDelete: SetNull)
+  acceptedAt   DateTime?
+  acceptedById Int?
+  acceptedBy   User?     @relation("DiscoveryDocumentAcceptedBy", fields: [acceptedById], references: [id], onDelete: SetNull)
 
   // GoBD-Lifecycle Stufe 2: endgültig archiviert. Ab hier WORM/read-only.
-  archivedAt    DateTime?
-  archivedById  Int?
-  archivedBy    User?    @relation("DiscoveryDocumentArchivedBy", fields: [archivedById], references: [id], onDelete: SetNull)
+  archivedAt   DateTime?
+  archivedById Int?
+  archivedBy   User?     @relation("DiscoveryDocumentArchivedBy", fields: [archivedById], references: [id], onDelete: SetNull)
 
   // dataId ist optional, weil MANUAL-Belege (Beleg-Hinweis ohne PDF, User muss
   // im Portal nachziehen) keine Bytes haben. Lokale Uploads und IMAP-AUTO-
   // Imports haben weiterhin dataId.
-  dataId         String?       @unique
-  data           DocumentData? @relation(fields: [dataId], references: [id], onDelete: Cascade)
+  dataId String?       @unique
+  data   DocumentData? @relation(fields: [dataId], references: [id], onDelete: Cascade)
 
   // Optionaler Link in Schritt 3 des NexaFILE-Flows: aus einem gefundenen
   // Beleg wurde ein normales Signatur-Dokument erzeugt.
   signingEnvelopeId String?   @unique
   signingEnvelope   Envelope? @relation("DiscoveryDocumentSigningEnvelope", fields: [signingEnvelopeId], references: [id], onDelete: SetNull)
 
-  auditLogs      DiscoveryAuditLog[]
-  artifacts      DiscoveryArtifact[]
+  auditLogs DiscoveryAuditLog[]
+  artifacts DiscoveryArtifact[]
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Idempotenz-Constraint: pro Source darf jede Message-ID nur einmal vorkommen.
+  // Schliesst die Race-Luecke des App-seitigen findFirst-vor-create-Patterns im
+  // IMAP-Adapter (verifiziert 2026-04-30 nach doppelten Receipts in der Beleg-Inbox).
+  // Implementiert als PARTIAL-Unique-Index (excludes NULL) in der Migration
+  // 20260430080000_dedupe_discovery_documents — Prisma kann partial indexes nicht
+  // per @@unique-Direktive ausdruecken, daher hier nur als Kommentar dokumentiert.
 
   @@index([teamId, status])
   @@index([teamId, capturedAt])
@@ -1226,13 +1235,6 @@ model DiscoveryDocument {
   @@index([acceptedAt])
   @@index([archivedAt])
   @@index([senderDomain])
-
-  // Idempotenz-Constraint: pro Source darf jede Message-ID nur einmal vorkommen.
-  // Schliesst die Race-Luecke des App-seitigen findFirst-vor-create-Patterns im
-  // IMAP-Adapter (verifiziert 2026-04-30 nach doppelten Receipts in der Beleg-Inbox).
-  // Implementiert als PARTIAL-Unique-Index (excludes NULL) in der Migration
-  // 20260430080000_dedupe_discovery_documents — Prisma kann partial indexes nicht
-  // per @@unique-Direktive ausdruecken, daher hier nur als Kommentar dokumentiert.
 }
 
 enum DiscoveryArtifactKind {
@@ -1323,27 +1325,27 @@ enum SyncRunStatus {
 // Idempotenz beim Mehrfach-Trigger: messageIdHash auf DiscoveryDocument
 // verhindert Duplikate, wenn überlappende Zeiträume gewählt werden.
 model SyncRun {
-  id            String        @id @default(cuid())
+  id            String @id @default(cuid())
   sourceId      String
-  source        Source        @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  source        Source @relation(fields: [sourceId], references: [id], onDelete: Cascade)
   triggeredById Int
-  triggeredBy   User          @relation(fields: [triggeredById], references: [id], onDelete: Cascade)
+  triggeredBy   User   @relation(fields: [triggeredById], references: [id], onDelete: Cascade)
 
-  rangeFrom     DateTime
-  rangeTo       DateTime
-  searchTerm    String?
-  status        SyncRunStatus @default(PENDING)
+  rangeFrom  DateTime
+  rangeTo    DateTime
+  searchTerm String?
+  status     SyncRunStatus @default(PENDING)
 
-  mailsChecked      Int @default(0)
-  mailsTotal        Int?
-  documentsAuto     Int @default(0)
-  documentsManual   Int @default(0)
-  documentsIgnored  Int @default(0)
-  documentsFailed   Int @default(0)
+  mailsChecked     Int  @default(0)
+  mailsTotal       Int?
+  documentsAuto    Int  @default(0)
+  documentsManual  Int  @default(0)
+  documentsIgnored Int  @default(0)
+  documentsFailed  Int  @default(0)
 
-  errorMessage String?
+  errorMessage     String?
   truncationReason String?
-  cancelRequested Boolean @default(false)
+  cancelRequested  Boolean @default(false)
 
   startedAt  DateTime  @default(now())
   finishedAt DateTime?
@@ -1372,6 +1374,43 @@ enum DiscoveryAuditEvent {
   DISCOVERY_DOCUMENT_UNACCEPTED
   DISCOVERY_DOCUMENT_UPDATED
   DISCOVERY_SIGNING_DOCUMENT_CREATED
+}
+
+enum DiscoveryRuleScope {
+  SENDER_DOMAIN
+}
+
+enum DiscoveryRuleAction {
+  ARCHIVE
+  IGNORE
+}
+
+enum DiscoveryRuleStatus {
+  SUGGESTED
+  ACTIVE
+  DISMISSED
+}
+
+model DiscoveryRule {
+  id            String              @id @default(cuid())
+  teamId        Int
+  team          Team                @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId        Int
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scope         DiscoveryRuleScope
+  pattern       String
+  label         String
+  action        DiscoveryRuleAction
+  status        DiscoveryRuleStatus @default(SUGGESTED)
+  confidence    Int
+  evidenceCount Int
+  lastMatchedAt DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@unique([teamId, userId, scope, pattern, action])
+  @@index([teamId, userId, status])
+  @@index([teamId, userId, scope, pattern])
 }
 
 model DiscoveryAuditLog {

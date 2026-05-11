@@ -35,6 +35,7 @@ import {
   ZGetCorrespondentSummaryResponseSchema,
   ZGetDiscoveryDocumentRequestSchema,
   ZGetDiscoveryDocumentResponseSchema,
+  ZGetDiscoveryRuleSuggestionsResponseSchema,
   ZGetDocumentDetailRequestSchema,
   ZGetDocumentDetailResponseSchema,
   ZGetOverviewResponseSchema,
@@ -46,6 +47,8 @@ import {
   ZUpdateDetectedFieldsResponseSchema,
   ZUpdateDiscoveryDocumentStatusRequestSchema,
   ZUpdateDiscoveryDocumentStatusResponseSchema,
+  ZUpdateDiscoveryRuleStatusRequestSchema,
+  ZUpdateDiscoveryRuleStatusResponseSchema,
 } from './schema';
 
 const ACTION_STATUS_MAP = {
@@ -73,6 +76,134 @@ const buildArchiveSearchFilter = (query?: string) => {
     { correspondent: { contains: term, mode: 'insensitive' as const } },
     { detectedInvoiceNumber: { contains: term, mode: 'insensitive' as const } },
   ];
+};
+
+type RuleAction = 'archive' | 'ignore';
+
+const RULE_EVIDENCE_THRESHOLD = 2;
+
+const toRuleAction = (action: RuleAction) => (action === 'archive' ? 'ARCHIVE' : 'IGNORE');
+
+const toRuleStatus = (status: 'active' | 'dismissed') =>
+  status === 'active' ? 'ACTIVE' : 'DISMISSED';
+
+const buildSenderDomainRuleSuggestions = async ({
+  teamId,
+  userId,
+}: {
+  teamId: number;
+  userId: number;
+}) => {
+  const grouped = await prisma.discoveryDocument.groupBy({
+    by: ['senderDomain', 'status'],
+    where: {
+      teamId,
+      uploadedById: userId,
+      senderDomain: { not: null },
+      status: { in: ['ACCEPTED', 'SIGNED', 'ARCHIVED', 'IGNORED'] },
+    },
+    _count: { _all: true },
+    _max: { capturedAt: true },
+  });
+
+  const byDomain = new Map<
+    string,
+    { archive: number; ignore: number; lastMatchedAt: Date | null }
+  >();
+
+  for (const row of grouped) {
+    if (!row.senderDomain) continue;
+    const current = byDomain.get(row.senderDomain) ?? {
+      archive: 0,
+      ignore: 0,
+      lastMatchedAt: null,
+    };
+    if (row.status === 'IGNORED') current.ignore += row._count._all;
+    else current.archive += row._count._all;
+    if (
+      row._max.capturedAt &&
+      (!current.lastMatchedAt || row._max.capturedAt > current.lastMatchedAt)
+    ) {
+      current.lastMatchedAt = row._max.capturedAt;
+    }
+    byDomain.set(row.senderDomain, current);
+  }
+
+  const existingRules = await prisma.discoveryRule.findMany({
+    where: {
+      teamId,
+      userId,
+      scope: 'SENDER_DOMAIN',
+    },
+    select: {
+      id: true,
+      pattern: true,
+      action: true,
+      status: true,
+      confidence: true,
+      evidenceCount: true,
+      lastMatchedAt: true,
+    },
+  });
+  const existingByKey = new Map(
+    existingRules.map((rule) => [`${rule.pattern}:${rule.action}`, rule]),
+  );
+
+  return [...byDomain.entries()]
+    .flatMap(([domain, stats]) => {
+      const candidates: Array<{
+        action: RuleAction;
+        evidenceCount: number;
+        oppositeCount: number;
+      }> = [];
+      if (stats.archive >= RULE_EVIDENCE_THRESHOLD) {
+        candidates.push({
+          action: 'archive',
+          evidenceCount: stats.archive,
+          oppositeCount: stats.ignore,
+        });
+      }
+      if (stats.ignore >= RULE_EVIDENCE_THRESHOLD) {
+        candidates.push({
+          action: 'ignore',
+          evidenceCount: stats.ignore,
+          oppositeCount: stats.archive,
+        });
+      }
+
+      return candidates.map((candidate) => {
+        const action = toRuleAction(candidate.action);
+        const existing = existingByKey.get(`${domain}:${action}`);
+        const confidence = Math.max(
+          55,
+          Math.min(98, 65 + candidate.evidenceCount * 8 - candidate.oppositeCount * 18),
+        );
+        return {
+          id: existing?.id ?? null,
+          scope: 'sender-domain' as const,
+          pattern: domain,
+          label: domain,
+          action: candidate.action,
+          status:
+            existing?.status === 'ACTIVE'
+              ? ('active' as const)
+              : existing?.status === 'DISMISSED'
+                ? ('dismissed' as const)
+                : ('suggested' as const),
+          confidence: existing?.confidence ?? confidence,
+          evidenceCount: Math.max(existing?.evidenceCount ?? 0, candidate.evidenceCount),
+          oppositeCount: candidate.oppositeCount,
+          lastMatchedAt: existing?.lastMatchedAt ?? stats.lastMatchedAt,
+        };
+      });
+    })
+    .filter((suggestion) => suggestion.status !== 'dismissed')
+    .filter((suggestion) => suggestion.confidence >= 70)
+    .sort((a, b) => {
+      if (a.status !== b.status) return a.status === 'suggested' ? -1 : 1;
+      return b.confidence - a.confidence || b.evidenceCount - a.evidenceCount;
+    })
+    .slice(0, 5);
 };
 
 const getPrimaryPdfDocumentDataId = async (doc: {
@@ -251,6 +382,67 @@ export const discoveryRouter = router({
         teamId: teamId ?? undefined,
         userId: user.id,
       });
+    }),
+
+  getRuleSuggestions: authenticatedProcedure
+    .output(ZGetDiscoveryRuleSuggestionsResponseSchema)
+    .query(async ({ ctx }) => {
+      const { teamId, user } = ctx;
+      if (!teamId) {
+        return { suggestions: [] };
+      }
+
+      const suggestions = await buildSenderDomainRuleSuggestions({
+        teamId,
+        userId: user.id,
+      });
+
+      return { suggestions };
+    }),
+
+  updateRuleStatus: authenticatedProcedure
+    .input(ZUpdateDiscoveryRuleStatusRequestSchema)
+    .output(ZUpdateDiscoveryRuleStatusResponseSchema)
+    .mutation(async ({ input, ctx }) => {
+      const { teamId, user } = ctx;
+      if (!teamId) {
+        throw new AppError(AppErrorCode.UNAUTHORIZED, {
+          message: 'Regeln brauchen einen Team-Kontext.',
+        });
+      }
+
+      await prisma.discoveryRule.upsert({
+        where: {
+          teamId_userId_scope_pattern_action: {
+            teamId,
+            userId: user.id,
+            scope: 'SENDER_DOMAIN',
+            pattern: input.pattern,
+            action: toRuleAction(input.action),
+          },
+        },
+        create: {
+          teamId,
+          userId: user.id,
+          scope: 'SENDER_DOMAIN',
+          pattern: input.pattern,
+          label: input.label,
+          action: toRuleAction(input.action),
+          status: toRuleStatus(input.status),
+          confidence: input.confidence,
+          evidenceCount: input.evidenceCount,
+          lastMatchedAt: input.lastMatchedAt ?? null,
+        },
+        update: {
+          label: input.label,
+          status: toRuleStatus(input.status),
+          confidence: input.confidence,
+          evidenceCount: input.evidenceCount,
+          lastMatchedAt: input.lastMatchedAt ?? null,
+        },
+      });
+
+      return { ok: true };
     }),
 
   /**
