@@ -21,6 +21,8 @@ import {
   MailSearchIcon,
   MoreHorizontalIcon,
   PaperclipIcon,
+  ShieldCheckIcon,
+  TriangleAlertIcon,
   XCircleIcon,
 } from 'lucide-react';
 import { Link, useParams, useSearchParams } from 'react-router';
@@ -105,6 +107,18 @@ const decisionPillClass = (decision: Decision): string => {
   return 'bg-amber-50 text-amber-900 ring-amber-200';
 };
 
+const confidenceLabel = (doc: Document): string => {
+  if (doc.confidenceLabel === 'high') return 'Sehr sicher';
+  if (doc.confidenceLabel === 'medium') return 'Plausibel';
+  return 'Prüfen';
+};
+
+const confidenceClass = (doc: Document): string => {
+  if (doc.confidenceLabel === 'high') return 'bg-emerald-50 text-emerald-800 ring-emerald-200';
+  if (doc.confidenceLabel === 'medium') return 'bg-sky-50 text-sky-800 ring-sky-200';
+  return 'bg-amber-50 text-amber-900 ring-amber-200';
+};
+
 /**
  * Heuristik: einfache Signale (Reply-Mail, Newsletter, Bestellbestätigung,
  * keine Beträge ohne Anhang) liefern den Default-Vorschlag pro Zeile. Wenn
@@ -152,6 +166,10 @@ const decisionReason = (doc: Document, decision: Decision): string => {
 
   if (decision === 'ignore') {
     return heuristicHint(doc) ?? 'Wir erkennen hier kein starkes Beleg-Signal.';
+  }
+
+  if (doc.confidenceReasons?.length) {
+    return doc.confidenceReasons.join(' · ');
   }
 
   if (doc.attachmentCount > 0 && doc.detectedAmount) {
@@ -249,6 +267,15 @@ const DocumentRow = ({
               >
                 {decisionLabel(decision, isManual)}
               </Badge>
+              {typeof doc.confidence === 'number' && (
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${confidenceClass(doc)}`}
+                  title={`Trefferqualität: ${doc.confidence}/100`}
+                >
+                  <ShieldCheckIcon className="h-3 w-3" aria-hidden />
+                  {confidenceLabel(doc)} · {doc.confidence}%
+                </span>
+              )}
             </div>
             <div
               className={`mt-0.5 truncate text-sm group-hover:underline ${
@@ -258,6 +285,27 @@ const DocumentRow = ({
               {doc.title}
             </div>
             <div className="mt-0.5 text-xs text-neutral-500">{hint}</div>
+            {((doc.riskFlags?.length ?? 0) > 0 || (doc.duplicateCount ?? 0) > 0) && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {(doc.duplicateCount ?? 0) > 0 && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-900">
+                    <TriangleAlertIcon className="h-3 w-3" aria-hidden />
+                    {doc.duplicateCount === 1
+                      ? 'Mögliche Dublette in dieser Liste'
+                      : `${doc.duplicateCount} mögliche Dubletten in dieser Liste`}
+                  </span>
+                )}
+                {(doc.riskFlags ?? []).map((flag) => (
+                  <span
+                    key={flag}
+                    className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-700"
+                  >
+                    <TriangleAlertIcon className="h-3 w-3" aria-hidden />
+                    {flag}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </Link>
 
@@ -483,6 +531,24 @@ export default function FindDocumentsPage() {
     () => allInboxDocs.filter((doc) => manualDecisionIds.has(doc.id)).length,
     [allInboxDocs, manualDecisionIds],
   );
+  const qualityCounts = useMemo(() => {
+    let high = 0;
+    let medium = 0;
+    let low = 0;
+    let risks = 0;
+    let duplicates = 0;
+
+    for (const doc of allInboxDocs) {
+      if (doc.confidenceLabel === 'high') high++;
+      else if (doc.confidenceLabel === 'medium') medium++;
+      else low++;
+
+      if ((doc.riskFlags?.length ?? 0) > 0) risks++;
+      if ((doc.duplicateCount ?? 0) > 0) duplicates++;
+    }
+
+    return { high, medium, low, risks, duplicates };
+  }, [allInboxDocs]);
 
   const visibleDocs = useMemo(() => {
     if (filter === 'all') return allInboxDocs;
@@ -501,6 +567,7 @@ export default function FindDocumentsPage() {
     if (archiveIds.length === 0 && ignoreIds.length === 0) return;
 
     try {
+      const emptySkippedIds: string[] = [];
       // Server-Wahrheit verwenden — der Server-Filter ueberspringt bereits
       // verarbeitete Belege. Wenn wir lokal "50 ins Archiv" angezeigt haetten,
       // der Server aber 0 verarbeitet hat (weil schon laengst akzeptiert),
@@ -509,10 +576,10 @@ export default function FindDocumentsPage() {
       const [acceptResult, ignoreResult] = await Promise.all([
         archiveIds.length > 0
           ? bulkAcceptMutation.mutateAsync({ ids: archiveIds })
-          : Promise.resolve({ acceptedCount: 0, skippedIds: [] as string[] }),
+          : Promise.resolve({ acceptedCount: 0, skippedIds: emptySkippedIds }),
         ignoreIds.length > 0
           ? bulkIgnoreMutation.mutateAsync({ ids: ignoreIds })
-          : Promise.resolve({ ignoredCount: 0, skippedIds: [] as string[] }),
+          : Promise.resolve({ ignoredCount: 0, skippedIds: emptySkippedIds }),
       ]);
 
       setDecisions(new Map());
@@ -890,6 +957,45 @@ export default function FindDocumentsPage() {
             </Trans>
           </span>
         </div>
+      )}
+
+      {counts.total > 0 && (
+        <Card className="grid gap-3 border-sky-100 bg-sky-50/60 p-4 text-sm md:grid-cols-4">
+          <div>
+            <div className="text-xs font-medium uppercase tracking-wide text-sky-800">
+              <Trans>Trefferqualität</Trans>
+            </div>
+            <div className="mt-1 font-semibold text-neutral-900">
+              <Trans>{qualityCounts.high} sehr sicher</Trans>
+            </div>
+          </div>
+          <div>
+            <div className="text-xs font-medium uppercase tracking-wide text-sky-800">
+              <Trans>Plausibel</Trans>
+            </div>
+            <div className="mt-1 font-semibold text-neutral-900">
+              <Trans>{qualityCounts.medium} kurz prüfen</Trans>
+            </div>
+          </div>
+          <div>
+            <div className="text-xs font-medium uppercase tracking-wide text-amber-800">
+              <Trans>Unsicher</Trans>
+            </div>
+            <div className="mt-1 font-semibold text-neutral-900">
+              <Trans>{qualityCounts.low} manuell prüfen</Trans>
+            </div>
+          </div>
+          <div>
+            <div className="text-xs font-medium uppercase tracking-wide text-amber-800">
+              <Trans>Hinweise</Trans>
+            </div>
+            <div className="mt-1 font-semibold text-neutral-900">
+              <Trans>
+                {qualityCounts.risks} Risiken · {qualityCounts.duplicates} Dubletten
+              </Trans>
+            </div>
+          </div>
+        </Card>
       )}
 
       {/* FILTER-CHIPS — Decision-Achse, vier Pillen. */}

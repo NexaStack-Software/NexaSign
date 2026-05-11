@@ -19,6 +19,8 @@ export type DiscoveryDocumentStatus =
   | 'ignored' // User hat als irrelevant markiert
   | 'processed'; // Sammel-Filter: accepted ∪ archived ∪ ignored ∪ signed
 
+export type DiscoveryConfidenceLabel = 'high' | 'medium' | 'low';
+
 export type DiscoveryDocument = {
   /** Stabile, readerunabhängige ID */
   id: string;
@@ -41,6 +43,13 @@ export type DiscoveryDocument = {
   /** Optional in Listenansicht (vor allem bei akzeptierten Belegen). */
   detectedAmount?: string | null;
   detectedInvoiceNumber?: string | null;
+  /** Erklärbare Trefferqualität für Review-UX und spätere Automationsregeln. */
+  confidence?: number;
+  confidenceLabel?: DiscoveryConfidenceLabel;
+  confidenceReasons?: string[];
+  riskFlags?: string[];
+  duplicateCount?: number;
+  duplicateGroupKey?: string | null;
   acceptedAt?: Date | null;
   acceptedByName?: string | null;
   /** Stufe-2-Trigger (Rechtssicher archiviert / WORM-Lock). */

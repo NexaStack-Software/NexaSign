@@ -9,6 +9,7 @@ import { AppError, AppErrorCode } from '@nexasign/lib/errors/app-error';
 import { prisma } from '@nexasign/prisma';
 
 import type {
+  DiscoveryConfidenceLabel,
   DiscoveryContext,
   DiscoveryDocument,
   DiscoveryDocumentStatus,
@@ -70,6 +71,7 @@ type DbDiscoveryDocument = {
   tags: string[];
   detectedAmount: string | null;
   detectedInvoiceNumber: string | null;
+  senderDomain: string | null;
   acceptedAt: Date | null;
   acceptedBy: { name: string | null } | null;
   archivedAt: Date | null;
@@ -84,6 +86,14 @@ type DbDiscoveryDocument = {
   // im Archiv?" — wenn 0, dann gibt es nicht mal die Standard-Artifacts.
   artifacts: { id: string }[];
   _count: { artifacts: number };
+};
+
+type QualitySignals = {
+  confidence: number;
+  confidenceLabel: DiscoveryConfidenceLabel;
+  confidenceReasons: string[];
+  riskFlags: string[];
+  duplicateGroupKey: string | null;
 };
 
 const intersectStatus = (
@@ -120,6 +130,7 @@ const toDiscoveryDocument = (doc: DbDiscoveryDocument): DiscoveryDocument => {
   // Artifacts haben (z. B. ältere Sync-Stände ohne BODY_TEXT/METADATA).
   const attachmentCount = doc.artifacts.length;
   const hasArchive = doc.archivePath !== null && doc.archivePath !== '' && doc._count.artifacts > 0;
+  const quality = buildQualitySignals(doc, attachmentCount, hasArchive);
 
   return {
     id: doc.id,
@@ -133,6 +144,12 @@ const toDiscoveryDocument = (doc: DbDiscoveryDocument): DiscoveryDocument => {
     status: NATIVE_TO_UI_STATUS[doc.status] ?? 'inbox',
     detectedAmount: doc.detectedAmount,
     detectedInvoiceNumber: doc.detectedInvoiceNumber,
+    confidence: quality.confidence,
+    confidenceLabel: quality.confidenceLabel,
+    confidenceReasons: quality.confidenceReasons,
+    riskFlags: quality.riskFlags,
+    duplicateCount: 0,
+    duplicateGroupKey: quality.duplicateGroupKey,
     acceptedAt: doc.acceptedAt,
     acceptedByName: doc.acceptedBy?.name ?? null,
     archivedAt: doc.archivedAt,
@@ -143,6 +160,112 @@ const toDiscoveryDocument = (doc: DbDiscoveryDocument): DiscoveryDocument => {
     canCreateSigningDocument: doc.dataId !== null || hasArchive,
     sourceLabel: doc.source?.label ?? null,
   };
+};
+
+const clampConfidence = (value: number): number => Math.max(5, Math.min(99, value));
+
+const confidenceLabel = (confidence: number): DiscoveryConfidenceLabel => {
+  if (confidence >= 82) return 'high';
+  if (confidence >= 55) return 'medium';
+  return 'low';
+};
+
+const normalizeDuplicatePart = (value: string | null | undefined): string =>
+  (value ?? '')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+const duplicateGroupKeyFor = (doc: DbDiscoveryDocument): string | null => {
+  const invoice = normalizeDuplicatePart(doc.detectedInvoiceNumber);
+  if (!invoice) return null;
+  const sender =
+    normalizeDuplicatePart(doc.senderDomain) || normalizeDuplicatePart(doc.correspondent);
+  if (!sender) return `invoice:${invoice}`;
+  return `invoice:${sender}:${invoice}`;
+};
+
+const buildQualitySignals = (
+  doc: DbDiscoveryDocument,
+  attachmentCount: number,
+  hasArchive: boolean,
+): QualitySignals => {
+  const reasons: string[] = [];
+  const risks: string[] = [];
+  let score = 35;
+
+  if (attachmentCount > 0) {
+    score += 24;
+    reasons.push(
+      attachmentCount === 1 ? 'PDF/Anhang vorhanden' : `${attachmentCount} Anhänge vorhanden`,
+    );
+  } else {
+    score -= 18;
+    risks.push('Kein herunterladbarer Anhang');
+  }
+
+  if (doc.detectedAmount) {
+    score += 18;
+    reasons.push(`Betrag erkannt: ${doc.detectedAmount}`);
+  } else {
+    score -= 10;
+    risks.push('Kein Betrag erkannt');
+  }
+
+  if (doc.detectedInvoiceNumber) {
+    score += 13;
+    reasons.push(`Rechnungsnummer erkannt: ${doc.detectedInvoiceNumber}`);
+  } else {
+    risks.push('Keine Rechnungsnummer erkannt');
+  }
+
+  if (doc.correspondent) {
+    score += 6;
+    reasons.push(`Absender/Aussteller: ${doc.correspondent}`);
+  }
+
+  if (doc.senderDomain) {
+    score += 4;
+  }
+
+  if (hasArchive) {
+    score += 4;
+  }
+
+  if (doc.status === 'PENDING_MANUAL') {
+    score -= 8;
+    risks.push('Beleg muss wahrscheinlich im Portal nachgezogen werden');
+  }
+
+  const title = doc.title.toLowerCase();
+  if (title.startsWith('re:') || title.startsWith('aw:') || title.startsWith('fwd:')) {
+    score -= 18;
+    risks.push('Antwort oder Weiterleitung');
+  }
+
+  const confidence = clampConfidence(score);
+  return {
+    confidence,
+    confidenceLabel: confidenceLabel(confidence),
+    confidenceReasons: reasons.slice(0, 3),
+    riskFlags: risks.slice(0, 3),
+    duplicateGroupKey: duplicateGroupKeyFor(doc),
+  };
+};
+
+const attachDuplicateCounts = (documents: DiscoveryDocument[]): DiscoveryDocument[] => {
+  const counts = new Map<string, number>();
+  for (const doc of documents) {
+    if (!doc.duplicateGroupKey) continue;
+    counts.set(doc.duplicateGroupKey, (counts.get(doc.duplicateGroupKey) ?? 0) + 1);
+  }
+
+  return documents.map((doc) => ({
+    ...doc,
+    duplicateCount: doc.duplicateGroupKey ? (counts.get(doc.duplicateGroupKey) ?? 1) - 1 : 0,
+  }));
 };
 
 const getSummaryMonthKey = (doc: { documentDate: Date | null; capturedAt: Date }): string => {
@@ -252,7 +375,7 @@ export const dbDiscoveryReader: DiscoveryReader = {
     const slice = hasMore ? results.slice(0, PAGE_SIZE) : results;
 
     return {
-      documents: slice.map(toDiscoveryDocument),
+      documents: attachDuplicateCounts(slice.map(toDiscoveryDocument)),
       total,
       nextCursor: hasMore ? slice[slice.length - 1].id : null,
     };
@@ -273,6 +396,7 @@ export const dbDiscoveryReader: DiscoveryReader = {
         capturedAt: true,
         detectedAmount: true,
         detectedInvoiceNumber: true,
+        senderDomain: true,
         archivePath: true,
         artifacts: {
           where: { kind: 'ATTACHMENT' },

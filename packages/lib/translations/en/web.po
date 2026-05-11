@@ -353,12 +353,22 @@ msgstr "{0} ins Archiv"
 msgid "{0} invited you to {recipientActionVerb} a document"
 msgstr "{0} invited you to {recipientActionVerb} a document"
 
+#. placeholder {0}: qualityCounts.medium
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{0} kurz prüfen"
+msgstr "{0} kurz prüfen"
+
 #. placeholder {0}: numberFmt.format(run.mailsChecked)
 #. placeholder {1}: numberFmt.format(found)
 #. placeholder {2}: ratePerMin >= 10 ? Math.round(ratePerMin) : ratePerMin.toFixed(1)
 #: apps/remix/app/components/discovery/background-sync-banner.tsx
 msgid "{0} Mails geprüft · {1} Belege · {2} Mails/Min · Gesamtumfang wird ermittelt"
 msgstr "{0} Mails geprüft · {1} Belege · {2} Mails/Min · Gesamtumfang wird ermittelt"
+
+#. placeholder {0}: qualityCounts.low
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{0} manuell prüfen"
+msgstr "{0} manuell prüfen"
 
 #. placeholder {0}: counts.undecided
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
@@ -384,6 +394,17 @@ msgstr "{0} öffnen"
 #: packages/lib/server-only/document/resend-document.ts
 msgid "{0} on behalf of \"{1}\" has invited you to {recipientActionVerb} the document \"{2}\"."
 msgstr "{0} on behalf of \"{1}\" has invited you to {recipientActionVerb} the document \"{2}\"."
+
+#. placeholder {0}: qualityCounts.risks
+#. placeholder {1}: qualityCounts.duplicates
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{0} Risiken · {1} Dubletten"
+msgstr "{0} Risiken · {1} Dubletten"
+
+#. placeholder {0}: qualityCounts.high
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{0} sehr sicher"
+msgstr "{0} sehr sicher"
 
 #. placeholder {0}: organisation.name
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl._index.tsx
@@ -6760,6 +6781,10 @@ msgstr "Hinweis: {0} Belege waren schon verarbeitet und wurden nicht doppelt abg
 msgid "Hinweis: Der Export nimmt gefundene Belege auf, sobald sie akzeptiert wurden. Die Mail-Artefakte werden vom Host-Pfad <0>NEXASIGN_DISCOVERY_ARCHIVE_PATH</0> gelesen; Standard ist <1>/var/lib/nexasign-archive</1>."
 msgstr "Hinweis: Der Export nimmt gefundene Belege auf, sobald sie akzeptiert wurden. Die Mail-Artefakte werden vom Host-Pfad <0>NEXASIGN_DISCOVERY_ARCHIVE_PATH</0> gelesen; Standard ist <1>/var/lib/nexasign-archive</1>."
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Hinweise"
+msgstr "Hinweise"
+
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "Hochgeladener Beleg"
 msgstr "Hochgeladener Beleg"
@@ -9162,6 +9187,10 @@ msgstr "Place and configure form fields in the document"
 #: packages/ui/primitives/document-flow/field-items-advanced-settings/text-field.tsx
 msgid "Placeholder"
 msgstr "Placeholder"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Plausibel"
+msgstr "Plausibel"
 
 #. placeholder {0}: _(actionVerb).toLowerCase()
 #: packages/email/template-components/template-document-invite.tsx
@@ -13023,6 +13052,10 @@ msgstr "Total Users"
 msgid "Transfer documents to a different team"
 msgstr "Transfer documents to a different team"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Trefferqualität"
+msgstr "Trefferqualität"
+
 #: apps/remix/app/components/dialogs/webhook-create-dialog.tsx
 #: apps/remix/app/components/dialogs/webhook-edit-dialog.tsx
 msgid "Triggers"
@@ -13259,6 +13292,10 @@ msgstr "Unpin"
 #: apps/remix/app/routes/_authenticated+/admin+/unsealed-documents._index.tsx
 msgid "Unsealed Documents"
 msgstr "Unsealed Documents"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Unsicher"
+msgstr "Unsicher"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
 msgid "Unterschrieben"

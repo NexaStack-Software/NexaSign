@@ -358,11 +358,21 @@ msgstr ""
 msgid "{0} invited you to {recipientActionVerb} a document"
 msgstr "{0} からドキュメントへの{recipientActionVerb}依頼が届いています"
 
+#. placeholder {0}: qualityCounts.medium
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{0} kurz prüfen"
+msgstr ""
+
 #. placeholder {0}: numberFmt.format(run.mailsChecked)
 #. placeholder {1}: numberFmt.format(found)
 #. placeholder {2}: ratePerMin >= 10 ? Math.round(ratePerMin) : ratePerMin.toFixed(1)
 #: apps/remix/app/components/discovery/background-sync-banner.tsx
 msgid "{0} Mails geprüft · {1} Belege · {2} Mails/Min · Gesamtumfang wird ermittelt"
+msgstr ""
+
+#. placeholder {0}: qualityCounts.low
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{0} manuell prüfen"
 msgstr ""
 
 #. placeholder {0}: counts.undecided
@@ -389,6 +399,17 @@ msgstr ""
 #: packages/lib/server-only/document/resend-document.ts
 msgid "{0} on behalf of \"{1}\" has invited you to {recipientActionVerb} the document \"{2}\"."
 msgstr "{0} が「{1}」を代表してドキュメント「{2}」の{recipientActionVerb}を依頼しています。"
+
+#. placeholder {0}: qualityCounts.risks
+#. placeholder {1}: qualityCounts.duplicates
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{0} Risiken · {1} Dubletten"
+msgstr ""
+
+#. placeholder {0}: qualityCounts.high
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{0} sehr sicher"
+msgstr ""
 
 #. placeholder {0}: organisation.name
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl._index.tsx
@@ -6765,6 +6786,10 @@ msgstr ""
 msgid "Hinweis: Der Export nimmt gefundene Belege auf, sobald sie akzeptiert wurden. Die Mail-Artefakte werden vom Host-Pfad <0>NEXASIGN_DISCOVERY_ARCHIVE_PATH</0> gelesen; Standard ist <1>/var/lib/nexasign-archive</1>."
 msgstr ""
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Hinweise"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "Hochgeladener Beleg"
 msgstr ""
@@ -9167,6 +9192,10 @@ msgstr "文書内に入力フィールドを配置・設定します"
 #: packages/ui/primitives/document-flow/field-items-advanced-settings/text-field.tsx
 msgid "Placeholder"
 msgstr "プレースホルダー"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Plausibel"
+msgstr ""
 
 #. placeholder {0}: _(actionVerb).toLowerCase()
 #: packages/email/template-components/template-document-invite.tsx
@@ -13028,6 +13057,10 @@ msgstr "ユーザー総数"
 msgid "Transfer documents to a different team"
 msgstr "ドキュメントを別のチームに転送する"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Trefferqualität"
+msgstr ""
+
 #: apps/remix/app/components/dialogs/webhook-create-dialog.tsx
 #: apps/remix/app/components/dialogs/webhook-edit-dialog.tsx
 msgid "Triggers"
@@ -13264,6 +13297,10 @@ msgstr "ピン留めを解除"
 #: apps/remix/app/routes/_authenticated+/admin+/unsealed-documents._index.tsx
 msgid "Unsealed Documents"
 msgstr "未封印の文書"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Unsicher"
+msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
 msgid "Unterschrieben"

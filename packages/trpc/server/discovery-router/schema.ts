@@ -39,6 +39,12 @@ export const ZDiscoveryDocumentSchema = z.object({
   // Optional in Listenansicht (vor allem akzeptierte Belege).
   detectedAmount: z.string().nullable().optional(),
   detectedInvoiceNumber: z.string().nullable().optional(),
+  confidence: z.number().int().min(0).max(100).optional(),
+  confidenceLabel: z.enum(['high', 'medium', 'low']).optional(),
+  confidenceReasons: z.array(z.string()).optional(),
+  riskFlags: z.array(z.string()).optional(),
+  duplicateCount: z.number().int().nonnegative().optional(),
+  duplicateGroupKey: z.string().nullable().optional(),
   acceptedAt: z.coerce.date().nullable().optional(),
   acceptedByName: z.string().nullable().optional(),
   archivedAt: z.coerce.date().nullable().optional(),
