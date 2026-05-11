@@ -63,7 +63,7 @@ export function meta() {
 
 type Document = TFindDiscoveryDocumentsResponse['documents'][number];
 type Decision = 'archive' | 'ignore' | 'undecided';
-type FilterChip = 'all' | 'archive' | 'ignore' | 'undecided';
+type FilterChip = 'all' | 'archive' | 'ignore' | 'undecided' | 'needs-check';
 
 const formatDate = (date: Date | null, locale: string): string => {
   if (!date) return '–';
@@ -118,6 +118,9 @@ const confidenceClass = (doc: Document): string => {
   if (doc.confidenceLabel === 'medium') return 'bg-sky-50 text-sky-800 ring-sky-200';
   return 'bg-amber-50 text-amber-900 ring-amber-200';
 };
+
+const needsHumanCheck = (doc: Document): boolean =>
+  doc.confidenceLabel === 'low' || (doc.duplicateCount ?? 0) > 0;
 
 /**
  * Heuristik: einfache Signale (Reply-Mail, Newsletter, Bestellbestätigung,
@@ -291,8 +294,8 @@ const DocumentRow = ({
                   <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-900">
                     <TriangleAlertIcon className="h-3 w-3" aria-hidden />
                     {doc.duplicateCount === 1
-                      ? 'Mögliche Dublette in dieser Liste'
-                      : `${doc.duplicateCount} mögliche Dubletten in dieser Liste`}
+                      ? 'Mögliche Dublette im aktuellen Filter'
+                      : `${doc.duplicateCount} mögliche Dubletten im aktuellen Filter`}
                   </span>
                 )}
                 {(doc.riskFlags ?? []).map((flag) => (
@@ -537,6 +540,7 @@ export default function FindDocumentsPage() {
     let low = 0;
     let risks = 0;
     let duplicates = 0;
+    let needsCheck = 0;
 
     for (const doc of allInboxDocs) {
       if (doc.confidenceLabel === 'high') high++;
@@ -545,18 +549,31 @@ export default function FindDocumentsPage() {
 
       if ((doc.riskFlags?.length ?? 0) > 0) risks++;
       if ((doc.duplicateCount ?? 0) > 0) duplicates++;
+      if (needsHumanCheck(doc)) needsCheck++;
     }
 
-    return { high, medium, low, risks, duplicates };
+    return { high, medium, low, risks, duplicates, needsCheck };
   }, [allInboxDocs]);
 
   const visibleDocs = useMemo(() => {
     if (filter === 'all') return allInboxDocs;
+    if (filter === 'needs-check') return allInboxDocs.filter(needsHumanCheck);
     return allInboxDocs.filter((doc) => {
       const d = decisions.get(doc.id) ?? 'undecided';
       return d === filter;
     });
   }, [allInboxDocs, decisions, filter]);
+
+  const unreviewedRiskyArchiveCount = useMemo(
+    () =>
+      allInboxDocs.filter(
+        (doc) =>
+          decisions.get(doc.id) === 'archive' &&
+          needsHumanCheck(doc) &&
+          !manualDecisionIds.has(doc.id),
+      ).length,
+    [allInboxDocs, decisions, manualDecisionIds],
+  );
 
   const handleConfirm = async () => {
     const archiveIds = allInboxDocs
@@ -998,6 +1015,26 @@ export default function FindDocumentsPage() {
         </Card>
       )}
 
+      {qualityCounts.needsCheck > 0 && (
+        <Card className="flex flex-wrap items-start justify-between gap-3 border-amber-200 bg-amber-50 p-4 text-sm">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 font-semibold text-amber-950">
+              <TriangleAlertIcon className="h-4 w-4" aria-hidden />
+              <Trans>{qualityCounts.needsCheck} Treffer brauchen Ihre Prüfung</Trans>
+            </div>
+            <p className="mt-1 text-amber-900">
+              <Trans>
+                Diese Treffer haben niedrige Sicherheit oder mögliche Dubletten. Prüfen Sie sie
+                zuerst, bevor Sie den Stapel übernehmen.
+              </Trans>
+            </p>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => setFilter('needs-check')}>
+            <Trans>Zu prüfende Treffer anzeigen</Trans>
+          </Button>
+        </Card>
+      )}
+
       {/* FILTER-CHIPS — Decision-Achse, vier Pillen. */}
       {counts.total > 0 && (
         <div className="flex flex-wrap items-center gap-1">
@@ -1007,6 +1044,15 @@ export default function FindDocumentsPage() {
             label={<Trans>Alle</Trans>}
             count={counts.total}
           />
+          {qualityCounts.needsCheck > 0 && (
+            <FilterPill
+              active={filter === 'needs-check'}
+              onClick={() => setFilter('needs-check')}
+              label={<Trans>Zu prüfen</Trans>}
+              count={qualityCounts.needsCheck}
+              color="amber"
+            />
+          )}
           <FilterPill
             active={filter === 'archive'}
             onClick={() => setFilter('archive')}
@@ -1199,6 +1245,18 @@ export default function FindDocumentsPage() {
                       <Trans>Offene Zeilen anzeigen →</Trans>
                     </button>
                   </>
+                ) : unreviewedRiskyArchiveCount > 0 ? (
+                  <>
+                    <Trans>
+                      {unreviewedRiskyArchiveCount} unsichere Archiv-Vorschläge bitte kurz prüfen.
+                    </Trans>{' '}
+                    <button
+                      onClick={() => setFilter('needs-check')}
+                      className="font-medium text-amber-700 underline-offset-2 hover:underline"
+                    >
+                      <Trans>Zu prüfende Treffer anzeigen →</Trans>
+                    </button>
+                  </>
                 ) : (
                   <>
                     <Trans>
@@ -1221,6 +1279,7 @@ export default function FindDocumentsPage() {
                   disabled={
                     isCommitting ||
                     counts.undecided > 0 ||
+                    unreviewedRiskyArchiveCount > 0 ||
                     (counts.archive === 0 && counts.ignore === 0)
                   }
                   onClick={() => setConfirmOpen(true)}

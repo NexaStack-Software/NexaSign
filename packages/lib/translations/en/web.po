@@ -411,6 +411,11 @@ msgstr "{0} sehr sicher"
 msgid "{0} Teams"
 msgstr "{0} Teams"
 
+#. placeholder {0}: qualityCounts.needsCheck
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{0} Treffer brauchen Ihre Prüfung"
+msgstr "{0} Treffer brauchen Ihre Prüfung"
+
 #. placeholder {0}: numberFmt.format(run.mailsChecked)
 #. placeholder {1}: numberFmt.format(total)
 #. placeholder {2}: numberFmt.format(found)
@@ -660,6 +665,10 @@ msgstr "{teamName} has invited you to {action} {documentName}"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
 msgid "{totalEverLoaded} geladen"
 msgstr "{totalEverLoaded} geladen"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{unreviewedRiskyArchiveCount} unsichere Archiv-Vorschläge bitte kurz prüfen."
+msgstr "{unreviewedRiskyArchiveCount} unsichere Archiv-Vorschläge bitte kurz prüfen."
 
 #: packages/lib/utils/document-audit-logs.ts
 msgid "{user} added a field"
@@ -4481,6 +4490,10 @@ msgstr "Diese Quelle existiert nicht oder wurde gelöscht."
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
 msgid "Diese Quelle ist gesperrt."
 msgstr "Diese Quelle ist gesperrt."
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Diese Treffer haben niedrige Sicherheit oder mögliche Dubletten. Prüfen Sie sie zuerst, bevor Sie den Stapel übernehmen."
+msgstr "Diese Treffer haben niedrige Sicherheit oder mögliche Dubletten. Prüfen Sie sie zuerst, bevor Sie den Stapel übernehmen."
 
 #: apps/remix/app/routes/_authenticated+/vorlagen+/_index.tsx
 msgid "Diese Vorlagen dienen zur <0>Orientierung</0> und stellen keine Rechtsberatung i.S.d. Rechtsdienstleistungsgesetzes dar. Vor produktiver Verwendung bitte durch zugelassene/n Rechtsanwältin/-anwalt prüfen lassen. Die Nutzung erfolgt auf eigenes Risiko."
@@ -15858,6 +15871,18 @@ msgstr "ZIP erstellen"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
 msgid "ZIP für Ihren Steuerberater — alle Belege aus dem Archiv und der endgültigen Ablage mit Original-Anhängen, Filter-Übersicht und CSV."
 msgstr "ZIP für Ihren Steuerberater — alle Belege aus dem Archiv und der endgültigen Ablage mit Original-Anhängen, Filter-Übersicht und CSV."
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Zu prüfen"
+msgstr "Zu prüfen"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Zu prüfende Treffer anzeigen"
+msgstr "Zu prüfende Treffer anzeigen"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Zu prüfende Treffer anzeigen →"
+msgstr "Zu prüfende Treffer anzeigen →"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Zum Ignorieren"

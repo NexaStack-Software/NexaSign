@@ -416,6 +416,11 @@ msgstr ""
 msgid "{0} Teams"
 msgstr "{0} のチーム"
 
+#. placeholder {0}: qualityCounts.needsCheck
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{0} Treffer brauchen Ihre Prüfung"
+msgstr ""
+
 #. placeholder {0}: numberFmt.format(run.mailsChecked)
 #. placeholder {1}: numberFmt.format(total)
 #. placeholder {2}: numberFmt.format(found)
@@ -664,6 +669,10 @@ msgstr "{teamName} から {action} {documentName} の依頼が届いています
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
 msgid "{totalEverLoaded} geladen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{unreviewedRiskyArchiveCount} unsichere Archiv-Vorschläge bitte kurz prüfen."
 msgstr ""
 
 #: packages/lib/utils/document-audit-logs.ts
@@ -4485,6 +4494,10 @@ msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
 msgid "Diese Quelle ist gesperrt."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Diese Treffer haben niedrige Sicherheit oder mögliche Dubletten. Prüfen Sie sie zuerst, bevor Sie den Stapel übernehmen."
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/vorlagen+/_index.tsx
@@ -15862,6 +15875,18 @@ msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
 msgid "ZIP für Ihren Steuerberater — alle Belege aus dem Archiv und der endgültigen Ablage mit Original-Anhängen, Filter-Übersicht und CSV."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Zu prüfen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Zu prüfende Treffer anzeigen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Zu prüfende Treffer anzeigen →"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx

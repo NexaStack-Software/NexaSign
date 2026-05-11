@@ -96,6 +96,12 @@ type QualitySignals = {
   duplicateGroupKey: string | null;
 };
 
+type DuplicateKeySource = {
+  detectedInvoiceNumber: string | null;
+  senderDomain: string | null;
+  correspondent: string | null;
+};
+
 const intersectStatus = (
   left: PrismaDiscoveryDocumentStatus[] | undefined,
   right: PrismaDiscoveryDocumentStatus[],
@@ -178,7 +184,7 @@ const normalizeDuplicatePart = (value: string | null | undefined): string =>
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
 
-const duplicateGroupKeyFor = (doc: DbDiscoveryDocument): string | null => {
+const duplicateGroupKeyFor = (doc: DuplicateKeySource): string | null => {
   const invoice = normalizeDuplicatePart(doc.detectedInvoiceNumber);
   if (!invoice) return null;
   const sender =
@@ -255,11 +261,39 @@ const buildQualitySignals = (
   };
 };
 
-const attachDuplicateCounts = (documents: DiscoveryDocument[]): DiscoveryDocument[] => {
+const attachDuplicateCounts = async (
+  documents: DiscoveryDocument[],
+  where: Prisma.DiscoveryDocumentWhereInput,
+): Promise<DiscoveryDocument[]> => {
+  const invoiceNumbers = [
+    ...new Set(
+      documents
+        .map((doc) => doc.detectedInvoiceNumber?.trim())
+        .filter((value): value is string => Boolean(value)),
+    ),
+  ];
+
+  if (invoiceNumbers.length === 0) {
+    return documents;
+  }
+
+  const candidates = await prisma.discoveryDocument.findMany({
+    where: {
+      AND: [where, { detectedInvoiceNumber: { in: invoiceNumbers } }],
+    },
+    select: {
+      id: true,
+      detectedInvoiceNumber: true,
+      senderDomain: true,
+      correspondent: true,
+    },
+  });
+
   const counts = new Map<string, number>();
-  for (const doc of documents) {
-    if (!doc.duplicateGroupKey) continue;
-    counts.set(doc.duplicateGroupKey, (counts.get(doc.duplicateGroupKey) ?? 0) + 1);
+  for (const candidate of candidates) {
+    const key = duplicateGroupKeyFor(candidate);
+    if (!key) continue;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
   }
 
   return documents.map((doc) => ({
@@ -375,7 +409,7 @@ export const dbDiscoveryReader: DiscoveryReader = {
     const slice = hasMore ? results.slice(0, PAGE_SIZE) : results;
 
     return {
-      documents: attachDuplicateCounts(slice.map(toDiscoveryDocument)),
+      documents: await attachDuplicateCounts(slice.map(toDiscoveryDocument), where),
       total,
       nextCursor: hasMore ? slice[slice.length - 1].id : null,
     };
