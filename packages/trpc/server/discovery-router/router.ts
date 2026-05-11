@@ -149,7 +149,7 @@ const buildSenderDomainRuleSuggestions = async ({
     existingRules.map((rule) => [`${rule.pattern}:${rule.action}`, rule]),
   );
 
-  return [...byDomain.entries()]
+  const rules = [...byDomain.entries()]
     .flatMap(([domain, stats]) => {
       const candidates: Array<{
         action: RuleAction;
@@ -198,12 +198,20 @@ const buildSenderDomainRuleSuggestions = async ({
       });
     })
     .filter((suggestion) => suggestion.status !== 'dismissed')
-    .filter((suggestion) => suggestion.confidence >= 70)
+    .filter((suggestion) => suggestion.status === 'active' || suggestion.confidence >= 70);
+
+  const activeRules = rules
+    .filter((rule) => rule.status === 'active')
+    .sort((a, b) => b.confidence - a.confidence || b.evidenceCount - a.evidenceCount);
+
+  const suggestedRules = rules
+    .filter((rule) => rule.status === 'suggested')
     .sort((a, b) => {
-      if (a.status !== b.status) return a.status === 'suggested' ? -1 : 1;
       return b.confidence - a.confidence || b.evidenceCount - a.evidenceCount;
     })
     .slice(0, 5);
+
+  return [...activeRules, ...suggestedRules];
 };
 
 const getPrimaryPdfDocumentDataId = async (doc: {

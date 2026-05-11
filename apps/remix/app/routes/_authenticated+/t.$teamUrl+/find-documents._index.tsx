@@ -126,6 +126,9 @@ const needsHumanCheck = (doc: Document): boolean =>
 const ruleActionLabel = (action: 'archive' | 'ignore'): string =>
   action === 'archive' ? 'künftig als Beleg vorschlagen' : 'künftig eher ignorieren';
 
+const ruleActionShortLabel = (action: 'archive' | 'ignore'): string =>
+  action === 'archive' ? 'Ins Archiv vorschlagen' : 'Ignorieren vorschlagen';
+
 /**
  * Heuristik: einfache Signale (Reply-Mail, Newsletter, Bestellbestätigung,
  * keine Beträge ohne Anhang) liefern den Default-Vorschlag pro Zeile. Wenn
@@ -455,9 +458,12 @@ export default function FindDocumentsPage() {
     enabled: hasConnectedSource,
   });
   const ruleSuggestions = ruleSuggestionsQuery.data?.suggestions ?? [];
+  const activeRules = ruleSuggestions.filter((rule) => rule.status === 'active');
+  const suggestedRules = ruleSuggestions.filter((rule) => rule.status === 'suggested');
   const updateRuleStatusMutation = trpc.discovery.updateRuleStatus.useMutation({
     onSuccess: () => {
       void utils.discovery.getRuleSuggestions.invalidate();
+      void utils.discovery.findDocuments.invalidate();
     },
   });
 
@@ -1116,80 +1122,155 @@ export default function FindDocumentsPage() {
       )}
 
       {ruleSuggestions.length > 0 && (
-        <Card className="space-y-3 border-emerald-200 bg-emerald-50/70 p-4 text-sm">
+        <Card className="space-y-4 border-emerald-200 bg-emerald-50/70 p-4 text-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 font-semibold text-emerald-950">
                 <SparklesIcon className="h-4 w-4" aria-hidden />
-                <Trans>NexaFile hat wiederkehrende Entscheidungen erkannt</Trans>
+                <Trans>Automatisierungen für „Dokumente finden"</Trans>
               </div>
               <p className="mt-1 text-emerald-900">
                 <Trans>
-                  Diese Regeln sparen künftig Klicks. Sie werden nur gespeichert, wenn Sie sie
-                  bewusst aktivieren.
+                  Aktive Regeln sortieren neue Treffer nur vor. Dauerhaft übernommen wird weiterhin
+                  erst, wenn Sie den Stapel bestätigen.
                 </Trans>
               </p>
             </div>
+            <div className="rounded-md border border-emerald-200 bg-white px-3 py-2 text-xs text-emerald-900">
+              <strong>{activeRules.length}</strong> <Trans>aktiv</Trans> ·{' '}
+              <strong>{suggestedRules.length}</strong> <Trans>vorgeschlagen</Trans>
+            </div>
           </div>
-          <ul className="space-y-2">
-            {ruleSuggestions.map((rule) => {
-              const isPending = updateRuleStatusMutation.isPending;
-              return (
-                <li
-                  key={`${rule.scope}:${rule.pattern}:${rule.action}`}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-emerald-200 bg-white px-3 py-2"
-                >
-                  <div className="min-w-0">
-                    <div className="font-medium text-neutral-900">
-                      <Trans>
-                        Mails von <strong>{rule.label}</strong> {ruleActionLabel(rule.action)}
-                      </Trans>
-                    </div>
-                    <div className="mt-0.5 text-xs text-neutral-500">
-                      <Trans>
-                        Grundlage: {rule.evidenceCount} gleiche Entscheidungen · Sicherheit{' '}
-                        {rule.confidence}%
-                      </Trans>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {rule.status === 'active' ? (
-                      <Badge variant="secondary" size="small" className="rounded-full">
-                        <Trans>Regel aktiv</Trans>
-                      </Badge>
-                    ) : (
+
+          {activeRules.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-xs font-semibold uppercase tracking-wide text-emerald-900">
+                <Trans>Aktive Regeln</Trans>
+              </div>
+              <ul className="space-y-2">
+                {activeRules.map((rule) => {
+                  const isPending = updateRuleStatusMutation.isPending;
+                  return (
+                    <li
+                      key={`${rule.scope}:${rule.pattern}:${rule.action}`}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-emerald-300 bg-white px-3 py-2"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <div className="font-medium text-neutral-900">
+                            <Trans>
+                              Mails von <strong>{rule.label}</strong>
+                            </Trans>
+                          </div>
+                          <Badge variant="secondary" size="small" className="rounded-full">
+                            {ruleActionShortLabel(rule.action)}
+                          </Badge>
+                        </div>
+                        <div className="mt-0.5 text-xs text-neutral-500">
+                          <Trans>
+                            Grundlage: {rule.evidenceCount} gleiche Entscheidungen · Sicherheit{' '}
+                            {rule.confidence}%
+                          </Trans>
+                          {rule.lastMatchedAt && (
+                            <>
+                              {' '}
+                              · <Trans>zuletzt {formatDate(rule.lastMatchedAt, i18n.locale)}</Trans>
+                            </>
+                          )}
+                        </div>
+                      </div>
                       <Button
                         size="sm"
+                        variant="outline"
                         disabled={isPending}
                         onClick={() =>
                           updateRuleStatusMutation.mutate({
                             ...rule,
-                            status: 'active',
+                            status: 'dismissed',
                           })
                         }
                       >
-                        <ShieldCheckIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-                        <Trans>Regel merken</Trans>
+                        <Trans>Regel ausschalten</Trans>
                       </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={isPending}
-                      onClick={() =>
-                        updateRuleStatusMutation.mutate({
-                          ...rule,
-                          status: 'dismissed',
-                        })
-                      }
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
+          {suggestedRules.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-xs font-semibold uppercase tracking-wide text-emerald-900">
+                <Trans>Vorgeschlagene Regeln</Trans>
+              </div>
+              <ul className="space-y-2">
+                {suggestedRules.map((rule) => {
+                  const isPending = updateRuleStatusMutation.isPending;
+                  return (
+                    <li
+                      key={`${rule.scope}:${rule.pattern}:${rule.action}`}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-emerald-200 bg-white px-3 py-2"
                     >
-                      <Trans>Nicht vorschlagen</Trans>
-                    </Button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                      <div className="min-w-0">
+                        <div className="font-medium text-neutral-900">
+                          <Trans>
+                            Mails von <strong>{rule.label}</strong> {ruleActionLabel(rule.action)}
+                          </Trans>
+                        </div>
+                        <div className="mt-0.5 text-xs text-neutral-500">
+                          <Trans>
+                            Grundlage: {rule.evidenceCount} gleiche Entscheidungen · Sicherheit{' '}
+                            {rule.confidence}%
+                          </Trans>
+                          {rule.oppositeCount > 0 && (
+                            <>
+                              {' '}
+                              · <Trans>{rule.oppositeCount} abweichende Entscheidungen</Trans>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          disabled={isPending}
+                          onClick={() =>
+                            updateRuleStatusMutation.mutate({
+                              ...rule,
+                              status: 'active',
+                            })
+                          }
+                        >
+                          <ShieldCheckIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                          <Trans>Regel merken</Trans>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={isPending}
+                          onClick={() =>
+                            updateRuleStatusMutation.mutate({
+                              ...rule,
+                              status: 'dismissed',
+                            })
+                          }
+                        >
+                          <Trans>Nicht vorschlagen</Trans>
+                        </Button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
+          {activeRules.length === 0 && suggestedRules.length === 0 && (
+            <div className="rounded-md border border-emerald-200 bg-white px-3 py-2 text-sm text-neutral-600">
+              <Trans>Noch keine belastbaren Regeln erkannt.</Trans>
+            </div>
+          )}
         </Card>
       )}
 

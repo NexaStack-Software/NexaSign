@@ -261,6 +261,11 @@ msgstr "{0, plural, one {You are about to delete the selected template.} other {
 msgid "{0}"
 msgstr "{0}"
 
+#. placeholder {0}: rule.oppositeCount
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{0} abweichende Entscheidungen"
+msgstr "{0} abweichende Entscheidungen"
+
 #. placeholder {0}: result.attachmentsAdded
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "{0} Anhang/Anhänge wieder verfügbar."
@@ -1817,12 +1822,21 @@ msgid "Aktionen für alle in dieser Sicht:"
 msgstr "Aktionen für alle in dieser Sicht:"
 
 #: apps/remix/app/components/sources/folder-diagnostics-card.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "aktiv"
 msgstr "aktiv"
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
 msgid "Aktiv"
 msgstr "Aktiv"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Aktive Regeln"
+msgstr "Aktive Regeln"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Aktive Regeln sortieren neue Treffer nur vor. Dauerhaft übernommen wird weiterhin erst, wenn Sie den Stapel bestätigen."
+msgstr "Aktive Regeln sortieren neue Treffer nur vor. Dauerhaft übernommen wird weiterhin erst, wenn Sie den Stapel bestätigen."
 
 #: apps/remix/app/components/dialogs/smart-bulk-accept-dialog.tsx
 msgid "Aktuell gibt es keine Belege, die als „vollständig\" gelten. Gehen Sie die offenen Belege manuell durch — vielleicht fehlt nur der Betrag oder der Absender, und Sie können das im Schnell-Review nachtragen."
@@ -2695,6 +2709,10 @@ msgstr "Automatically sign fields"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "Automatisch aus der Mail ausgelesen — bei Bedarf hier korrigieren."
 msgstr "Automatisch aus der Mail ausgelesen — bei Bedarf hier korrigieren."
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Automatisierungen für „Dokumente finden\""
+msgstr "Automatisierungen für „Dokumente finden\""
 
 #: apps/remix/app/components/forms/avatar-image.tsx
 msgid "Avatar"
@@ -4502,10 +4520,6 @@ msgstr "Diese Quelle existiert nicht oder wurde gelöscht."
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
 msgid "Diese Quelle ist gesperrt."
 msgstr "Diese Quelle ist gesperrt."
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Diese Regeln sparen künftig Klicks. Sie werden nur gespeichert, wenn Sie sie bewusst aktivieren."
-msgstr "Diese Regeln sparen künftig Klicks. Sie werden nur gespeichert, wenn Sie sie bewusst aktivieren."
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Diese Treffer haben niedrige Sicherheit oder mögliche Dubletten. Prüfen Sie sie zuerst, bevor Sie den Stapel übernehmen."
@@ -6689,6 +6703,7 @@ msgstr "Groups"
 #. placeholder {0}: rule.evidenceCount
 #. placeholder {1}: rule.confidence
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Grundlage: {0} gleiche Entscheidungen · Sicherheit {1}%"
 msgstr "Grundlage: {0} gleiche Entscheidungen · Sicherheit {1}%"
 
@@ -7804,6 +7819,11 @@ msgid "Mail-Inhalt"
 msgstr "Mail-Inhalt"
 
 #. placeholder {0}: rule.label
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Mails von <0>{0}</0>"
+msgstr "Mails von <0>{0}</0>"
+
+#. placeholder {0}: rule.label
 #. placeholder {1}: ruleActionLabel(rule.action)
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Mails von <0>{0}</0> {1}"
@@ -8338,10 +8358,6 @@ msgstr "NexaFile deckt vier Schritte für Sie ab: <0>Dokumente erstellen</0> aus
 msgid "NexaFile durchsucht jetzt das Postfach <0>{0}</0> nach Rechnungen und Belegen — im folgenden Zeitraum:"
 msgstr "NexaFile durchsucht jetzt das Postfach <0>{0}</0> nach Rechnungen und Belegen — im folgenden Zeitraum:"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "NexaFile hat wiederkehrende Entscheidungen erkannt"
-msgstr "NexaFile hat wiederkehrende Entscheidungen erkannt"
-
 #: apps/remix/app/routes/_authenticated+/vorlagen+/gobd+/_index.tsx
 msgid "NexaFile ist Open-Source (AGPL-3.0). Die Bereitstellung erfolgt ohne Gewährleistung."
 msgstr "NexaFile ist Open-Source (AGPL-3.0). Die Bereitstellung erfolgt ohne Gewährleistung."
@@ -8567,6 +8583,10 @@ msgstr "No value found."
 #: apps/remix/app/routes/_unauthenticated+/forgot-password.tsx
 msgid "No worries, it happens! Enter your email and we'll email you a special link to reset your password."
 msgstr "No worries, it happens! Enter your email and we'll email you a special link to reset your password."
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Noch keine belastbaren Regeln erkannt."
+msgstr "Noch keine belastbaren Regeln erkannt."
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
 msgid "Noch keine Belege endgültig archiviert."
@@ -9965,8 +9985,8 @@ msgid "Redirecting"
 msgstr "Redirecting"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Regel aktiv"
-msgstr "Regel aktiv"
+msgid "Regel ausschalten"
+msgstr "Regel ausschalten"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Regel merken"
@@ -14085,6 +14105,14 @@ msgstr "von {totalCount} Dokumenten"
 msgid "Vor dem Bestätigen passiert nichts dauerhaft. Übernommene Belege bleiben im Archiv noch korrigierbar."
 msgstr "Vor dem Bestätigen passiert nichts dauerhaft. Übernommene Belege bleiben im Archiv noch korrigierbar."
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "vorgeschlagen"
+msgstr "vorgeschlagen"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Vorgeschlagene Regeln"
+msgstr "Vorgeschlagene Regeln"
+
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "Voriger Beleg"
 msgstr "Voriger Beleg"
@@ -15946,6 +15974,11 @@ msgstr "Zu prüfende Treffer anzeigen"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Zu prüfende Treffer anzeigen →"
 msgstr "Zu prüfende Treffer anzeigen →"
+
+#. placeholder {0}: formatDate(rule.lastMatchedAt, i18n.locale)
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "zuletzt {0}"
+msgstr "zuletzt {0}"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Zum Ignorieren"
