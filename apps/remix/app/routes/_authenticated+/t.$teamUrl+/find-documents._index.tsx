@@ -133,6 +133,9 @@ const ruleActionLabel = (action: 'archive' | 'ignore'): string =>
  * überstimmen.
  */
 const heuristicDefault = (doc: Document): Decision => {
+  if (doc.ruleMatch?.action === 'archive') return 'archive';
+  if (doc.ruleMatch?.action === 'ignore') return 'ignore';
+
   const title = doc.title.toLowerCase();
   const sender = (doc.correspondent ?? '').toLowerCase();
   if (title.startsWith('aw:') || title.startsWith('re:') || title.startsWith('fwd:'))
@@ -169,6 +172,10 @@ const heuristicHint = (doc: Document): string | null => {
 const decisionReason = (doc: Document, decision: Decision): string => {
   if (decision === 'undecided') {
     return 'Diese Zeile bleibt unverändert, bis Sie selbst entscheiden.';
+  }
+
+  if (doc.ruleMatch && doc.ruleMatch.action === decision) {
+    return `Aktive Regel: Mails von ${doc.ruleMatch.label} wurden bisher ${doc.ruleMatch.evidenceCount}x so entschieden.`;
   }
 
   if (decision === 'ignore') {
@@ -215,6 +222,7 @@ const DocumentRow = ({
 
   return (
     <li
+      data-rule-match={doc.ruleMatch ? 'true' : undefined}
       className={`group relative flex items-stretch overflow-hidden rounded-md border shadow-sm transition-all hover:shadow-md ${
         isSelected
           ? 'border-primary ring-2 ring-primary/30'
@@ -281,6 +289,15 @@ const DocumentRow = ({
                 >
                   <ShieldCheckIcon className="h-3 w-3" aria-hidden />
                   {confidenceLabel(doc)} · {doc.confidence}%
+                </span>
+              )}
+              {doc.ruleMatch && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-900 ring-1 ring-emerald-200"
+                  title={`Regel-Sicherheit: ${doc.ruleMatch.confidence}%`}
+                >
+                  <SparklesIcon className="h-3 w-3" aria-hidden />
+                  <Trans>Regel: {doc.ruleMatch.label}</Trans>
                 </span>
               )}
             </div>
@@ -546,6 +563,16 @@ export default function FindDocumentsPage() {
   const manualChangeCount = useMemo(
     () => allInboxDocs.filter((doc) => manualDecisionIds.has(doc.id)).length,
     [allInboxDocs, manualDecisionIds],
+  );
+  const ruleAppliedCount = useMemo(
+    () =>
+      allInboxDocs.filter(
+        (doc) =>
+          doc.ruleMatch &&
+          !manualDecisionIds.has(doc.id) &&
+          decisions.get(doc.id) === doc.ruleMatch.action,
+      ).length,
+    [allInboxDocs, decisions, manualDecisionIds],
   );
   const qualityCounts = useMemo(() => {
     let high = 0;
@@ -979,14 +1006,54 @@ export default function FindDocumentsPage() {
             className="h-10 w-10 shrink-0"
           />
           <span className="flex-1 text-neutral-700">
-            <Trans>
-              Wir haben unsere Vorschläge bereits gesetzt:{' '}
-              <strong className="text-emerald-700">{counts.archive} ins Archiv</strong>,{' '}
-              <strong className="text-neutral-600">{counts.ignore} ignorieren</strong>. Wenn Sie das
-              anders sehen, klicken Sie pro Zeile rechts.
-            </Trans>
+            {ruleAppliedCount > 0 ? (
+              <Trans>
+                Wir haben unsere Vorschläge bereits gesetzt:{' '}
+                <strong className="text-emerald-700">{counts.archive} ins Archiv</strong>,{' '}
+                <strong className="text-neutral-600">{counts.ignore} ignorieren</strong>.{' '}
+                <strong>{ruleAppliedCount}</strong> davon kommen aus Ihren aktiven Regeln.
+              </Trans>
+            ) : (
+              <Trans>
+                Wir haben unsere Vorschläge bereits gesetzt:{' '}
+                <strong className="text-emerald-700">{counts.archive} ins Archiv</strong>,{' '}
+                <strong className="text-neutral-600">{counts.ignore} ignorieren</strong>. Wenn Sie
+                das anders sehen, klicken Sie pro Zeile rechts.
+              </Trans>
+            )}
           </span>
         </div>
+      )}
+
+      {ruleAppliedCount > 0 && (
+        <Card className="flex flex-wrap items-start justify-between gap-3 border-emerald-200 bg-emerald-50 p-4 text-sm">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 font-semibold text-emerald-950">
+              <SparklesIcon className="h-4 w-4" aria-hidden />
+              <Trans>{ruleAppliedCount} Treffer wurden durch aktive Regeln vorsortiert</Trans>
+            </div>
+            <p className="mt-1 text-emerald-900">
+              <Trans>
+                NexaFile ändert noch nichts dauerhaft. Die Regeln setzen nur den Vorschlag pro
+                Zeile; Sie können jede Entscheidung vor dem Bestätigen überschreiben.
+              </Trans>
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setFilter('all');
+              window.requestAnimationFrame(() => {
+                document
+                  .querySelector('[data-rule-match="true"]')
+                  ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              });
+            }}
+          >
+            <Trans>Regel-Treffer anzeigen</Trans>
+          </Button>
+        </Card>
       )}
 
       {counts.total > 0 && (
@@ -1359,6 +1426,11 @@ export default function FindDocumentsPage() {
                         <Trans>{manualChangeCount} Entscheidungen haben Sie aktiv geändert.</Trans>
                       </span>
                     )}
+                    {manualChangeCount === 0 && ruleAppliedCount > 0 && (
+                      <span>
+                        <Trans>{ruleAppliedCount} Entscheidungen stammen aus aktiven Regeln.</Trans>
+                      </span>
+                    )}
                   </>
                 )}
               </div>
@@ -1415,6 +1487,13 @@ export default function FindDocumentsPage() {
                           <Trans>
                             {manualChangeCount} Entscheidungen stammen von Ihnen, der Rest sind
                             NexaFile-Vorschläge.
+                          </Trans>
+                        </span>
+                      )}
+                      {ruleAppliedCount > 0 && (
+                        <span className="block text-emerald-800">
+                          <Trans>
+                            {ruleAppliedCount} Vorschläge wurden durch aktive Regeln vorsortiert.
                           </Trans>
                         </span>
                       )}

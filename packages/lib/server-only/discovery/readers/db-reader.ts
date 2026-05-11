@@ -88,6 +88,24 @@ type DbDiscoveryDocument = {
   _count: { artifacts: number };
 };
 
+type ActiveDiscoveryRule = {
+  id: string;
+  label: string;
+  pattern: string;
+  action: 'ARCHIVE' | 'IGNORE';
+  confidence: number;
+  evidenceCount: number;
+};
+
+type DiscoveryRuleMatch = {
+  id: string;
+  scope: 'sender-domain';
+  label: string;
+  action: 'archive' | 'ignore';
+  confidence: number;
+  evidenceCount: number;
+};
+
 type QualitySignals = {
   confidence: number;
   confidenceLabel: DiscoveryConfidenceLabel;
@@ -129,14 +147,30 @@ const appendAnd = (
   where.AND = [...current, condition];
 };
 
-const toDiscoveryDocument = (doc: DbDiscoveryDocument): DiscoveryDocument => {
+const toDiscoveryDocument = (
+  doc: DbDiscoveryDocument,
+  activeRulesByDomain?: Map<string, ActiveDiscoveryRule[]>,
+): DiscoveryDocument => {
   // attachmentCount kommt jetzt aus einer dedizierten Relation-Selection mit
   // `where: { kind: 'ATTACHMENT' }`, kein `_count - 3`-Hack mehr. Damit ist
   // die Anzeige robust gegenüber Belegen, die weniger als 3 Standard-
   // Artifacts haben (z. B. ältere Sync-Stände ohne BODY_TEXT/METADATA).
   const attachmentCount = doc.artifacts.length;
   const hasArchive = doc.archivePath !== null && doc.archivePath !== '' && doc._count.artifacts > 0;
-  const quality = buildQualitySignals(doc, attachmentCount, hasArchive);
+  const rule = doc.senderDomain
+    ? activeRulesByDomain?.get(doc.senderDomain.toLowerCase())?.[0]
+    : undefined;
+  const ruleMatch: DiscoveryRuleMatch | null = rule
+    ? {
+        id: rule.id,
+        scope: 'sender-domain',
+        label: rule.label,
+        action: rule.action === 'ARCHIVE' ? 'archive' : 'ignore',
+        confidence: rule.confidence,
+        evidenceCount: rule.evidenceCount,
+      }
+    : null;
+  const quality = buildQualitySignals(doc, attachmentCount, hasArchive, ruleMatch);
 
   return {
     id: doc.id,
@@ -156,6 +190,7 @@ const toDiscoveryDocument = (doc: DbDiscoveryDocument): DiscoveryDocument => {
     riskFlags: quality.riskFlags,
     duplicateCount: 0,
     duplicateGroupKey: quality.duplicateGroupKey,
+    ruleMatch,
     acceptedAt: doc.acceptedAt,
     acceptedByName: doc.acceptedBy?.name ?? null,
     archivedAt: doc.archivedAt,
@@ -197,6 +232,7 @@ const buildQualitySignals = (
   doc: DbDiscoveryDocument,
   attachmentCount: number,
   hasArchive: boolean,
+  ruleMatch?: DiscoveryRuleMatch | null,
 ): QualitySignals => {
   const reasons: string[] = [];
   const risks: string[] = [];
@@ -240,6 +276,18 @@ const buildQualitySignals = (
     score += 4;
   }
 
+  if (ruleMatch) {
+    if (ruleMatch.action === 'archive') {
+      score += 10;
+      reasons.unshift(
+        `Aktive Regel: ${ruleMatch.label} wurde ${ruleMatch.evidenceCount}x als Beleg übernommen`,
+      );
+    } else {
+      score -= 20;
+      risks.unshift(`Aktive Regel: ${ruleMatch.label} wurde ${ruleMatch.evidenceCount}x ignoriert`);
+    }
+  }
+
   if (doc.status === 'PENDING_MANUAL') {
     score -= 8;
     risks.push('Beleg muss wahrscheinlich im Portal nachgezogen werden');
@@ -259,6 +307,51 @@ const buildQualitySignals = (
     riskFlags: risks.slice(0, 3),
     duplicateGroupKey: duplicateGroupKeyFor(doc),
   };
+};
+
+const findActiveRulesByDomain = async (
+  teamId: number,
+  userId: number | undefined,
+  documents: DbDiscoveryDocument[],
+): Promise<Map<string, ActiveDiscoveryRule[]>> => {
+  if (!userId) return new Map();
+
+  const domains = [
+    ...new Set(
+      documents
+        .map((doc) => doc.senderDomain?.toLowerCase().trim())
+        .filter((domain): domain is string => Boolean(domain)),
+    ),
+  ];
+
+  if (domains.length === 0) return new Map();
+
+  const rules = await prisma.discoveryRule.findMany({
+    where: {
+      teamId,
+      userId,
+      scope: 'SENDER_DOMAIN',
+      status: 'ACTIVE',
+      pattern: { in: domains },
+    },
+    select: {
+      id: true,
+      label: true,
+      pattern: true,
+      action: true,
+      confidence: true,
+      evidenceCount: true,
+    },
+    orderBy: [{ confidence: 'desc' }, { evidenceCount: 'desc' }],
+  });
+
+  const byDomain = new Map<string, ActiveDiscoveryRule[]>();
+  for (const rule of rules) {
+    const key = rule.pattern.toLowerCase();
+    byDomain.set(key, [...(byDomain.get(key) ?? []), rule]);
+  }
+
+  return byDomain;
 };
 
 const attachDuplicateCounts = async (
@@ -408,8 +501,13 @@ export const dbDiscoveryReader: DiscoveryReader = {
     const hasMore = results.length > PAGE_SIZE;
     const slice = hasMore ? results.slice(0, PAGE_SIZE) : results;
 
+    const activeRulesByDomain = await findActiveRulesByDomain(teamId, ctx?.userId, slice);
+
     return {
-      documents: await attachDuplicateCounts(slice.map(toDiscoveryDocument), where),
+      documents: await attachDuplicateCounts(
+        slice.map((doc) => toDiscoveryDocument(doc, activeRulesByDomain)),
+        where,
+      ),
       total,
       nextCursor: hasMore ? slice[slice.length - 1].id : null,
     };
@@ -506,7 +604,10 @@ export const dbDiscoveryReader: DiscoveryReader = {
         _count: { select: { artifacts: true } },
       },
     });
-    return doc ? toDiscoveryDocument(doc) : null;
+    const activeRulesByDomain = doc
+      ? await findActiveRulesByDomain(teamId, ctx?.userId, [doc])
+      : undefined;
+    return doc ? toDiscoveryDocument(doc, activeRulesByDomain) : null;
   },
 
   async getDocumentContent(id: string, ctx?: DiscoveryContext): Promise<Uint8Array | null> {

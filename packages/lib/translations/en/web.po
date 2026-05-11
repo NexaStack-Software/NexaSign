@@ -629,6 +629,18 @@ msgstr "{recipientReference} has signed {documentName}"
 msgid "{remaningLength, plural, one {# character remaining} other {# characters remaining}}"
 msgstr "{remaningLength, plural, one {# character remaining} other {# characters remaining}}"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{ruleAppliedCount} Entscheidungen stammen aus aktiven Regeln."
+msgstr "{ruleAppliedCount} Entscheidungen stammen aus aktiven Regeln."
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{ruleAppliedCount} Treffer wurden durch aktive Regeln vorsortiert"
+msgstr "{ruleAppliedCount} Treffer wurden durch aktive Regeln vorsortiert"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{ruleAppliedCount} Vorschläge wurden durch aktive Regeln vorsortiert."
+msgstr "{ruleAppliedCount} Vorschläge wurden durch aktive Regeln vorsortiert."
+
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
 msgid "{sealedCount} Belege sind endgültig archiviert. Sie können sie noch lesen, suchen und herunterladen — aber nicht mehr ändern. So verlangt es das Finanzamt (10 Jahre Aufbewahrung, § 147 AO)."
 msgstr "{sealedCount} Belege sind endgültig archiviert. Sie können sie noch lesen, suchen und herunterladen — aber nicht mehr ändern. So verlangt es das Finanzamt (10 Jahre Aufbewahrung, § 147 AO)."
@@ -8313,6 +8325,10 @@ msgstr "New option {0}"
 msgid "New Password"
 msgstr "New Password"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "NexaFile ändert noch nichts dauerhaft. Die Regeln setzen nur den Vorschlag pro Zeile; Sie können jede Entscheidung vor dem Bestätigen überschreiben."
+msgstr "NexaFile ändert noch nichts dauerhaft. Die Regeln setzen nur den Vorschlag pro Zeile; Sie können jede Entscheidung vor dem Bestätigen überschreiben."
+
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
 msgid "NexaFile deckt vier Schritte für Sie ab: <0>Dokumente erstellen</0> aus Vorlagen, <1>Dokumente im Postfach finden</1>, <2>Dokumente unterschreiben</2> (eigene zur Unterschrift versenden oder selbst unterschreiben), und alles <3>rechtssicher archivieren</3>. Wählen Sie unten eine der vier Kacheln — wir führen Sie dann Schritt für Schritt durch."
 msgstr "NexaFile deckt vier Schritte für Sie ab: <0>Dokumente erstellen</0> aus Vorlagen, <1>Dokumente im Postfach finden</1>, <2>Dokumente unterschreiben</2> (eigene zur Unterschrift versenden oder selbst unterschreiben), und alles <3>rechtssicher archivieren</3>. Wählen Sie unten eine der vier Kacheln — wir führen Sie dann Schritt für Schritt durch."
@@ -9955,6 +9971,15 @@ msgstr "Regel aktiv"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Regel merken"
 msgstr "Regel merken"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Regel-Treffer anzeigen"
+msgstr "Regel-Treffer anzeigen"
+
+#. placeholder {0}: doc.ruleMatch.label
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Regel: {0}"
+msgstr "Regel: {0}"
 
 #: apps/remix/app/components/forms/signup.tsx
 #: apps/remix/app/components/general/claim-account.tsx
@@ -14733,6 +14758,12 @@ msgstr "Wir haben {totalHits} Treffer im Zeitraum {latestCompletedRangeLabel} ge
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
 msgid "Wir haben sie in Ihrem E-Mail-Postfach gefunden. Pro Beleg ein Klick: ins Archiv oder ignorieren."
 msgstr "Wir haben sie in Ihrem E-Mail-Postfach gefunden. Pro Beleg ein Klick: ins Archiv oder ignorieren."
+
+#. placeholder {0}: counts.archive
+#. placeholder {1}: counts.ignore
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Wir haben unsere Vorschläge bereits gesetzt: <0>{0} ins Archiv</0>, <1>{1} ignorieren</1>. <2>{ruleAppliedCount}</2> davon kommen aus Ihren aktiven Regeln."
+msgstr "Wir haben unsere Vorschläge bereits gesetzt: <0>{0} ins Archiv</0>, <1>{1} ignorieren</1>. <2>{ruleAppliedCount}</2> davon kommen aus Ihren aktiven Regeln."
 
 #. placeholder {0}: counts.archive
 #. placeholder {1}: counts.ignore

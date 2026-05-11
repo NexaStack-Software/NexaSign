@@ -45,6 +45,17 @@ export const ZDiscoveryDocumentSchema = z.object({
   riskFlags: z.array(z.string()).optional(),
   duplicateCount: z.number().int().nonnegative().optional(),
   duplicateGroupKey: z.string().nullable().optional(),
+  ruleMatch: z
+    .object({
+      id: z.string(),
+      scope: z.literal('sender-domain'),
+      label: z.string(),
+      action: z.enum(['archive', 'ignore']),
+      confidence: z.number().int().min(0).max(100),
+      evidenceCount: z.number().int().nonnegative(),
+    })
+    .nullable()
+    .optional(),
   acceptedAt: z.coerce.date().nullable().optional(),
   acceptedByName: z.string().nullable().optional(),
   archivedAt: z.coerce.date().nullable().optional(),

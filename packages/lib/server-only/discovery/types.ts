@@ -50,6 +50,15 @@ export type DiscoveryDocument = {
   riskFlags?: string[];
   duplicateCount?: number;
   duplicateGroupKey?: string | null;
+  /** Aktive Nutzerregel, die dieses Dokument in der Review-Liste vorsortiert. */
+  ruleMatch?: {
+    id: string;
+    scope: 'sender-domain';
+    label: string;
+    action: 'archive' | 'ignore';
+    confidence: number;
+    evidenceCount: number;
+  } | null;
   acceptedAt?: Date | null;
   acceptedByName?: string | null;
   /** Stufe-2-Trigger (Rechtssicher archiviert / WORM-Lock). */
