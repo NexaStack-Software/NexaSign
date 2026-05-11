@@ -635,16 +635,16 @@ msgid "{remaningLength, plural, one {# character remaining} other {# characters 
 msgstr "{remaningLength, plural, one {# character remaining} other {# characters remaining}}"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "{ruleAppliedCount} Entscheidungen stammen aus aktiven Regeln."
-msgstr "{ruleAppliedCount} Entscheidungen stammen aus aktiven Regeln."
+msgid "{ruleAppliedCount} Entscheidungen wurden von Ihren Regeln vorgeschlagen."
+msgstr "{ruleAppliedCount} Entscheidungen wurden von Ihren Regeln vorgeschlagen."
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "{ruleAppliedCount} Treffer wurden durch aktive Regeln vorsortiert"
-msgstr "{ruleAppliedCount} Treffer wurden durch aktive Regeln vorsortiert"
+msgid "{ruleAppliedCount} Treffer wurden von Ihren Regeln vorsortiert"
+msgstr "{ruleAppliedCount} Treffer wurden von Ihren Regeln vorsortiert"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "{ruleAppliedCount} Vorschläge wurden durch aktive Regeln vorsortiert."
-msgstr "{ruleAppliedCount} Vorschläge wurden durch aktive Regeln vorsortiert."
+msgid "{ruleAppliedCount} Vorschläge wurden von Ihren Regeln vorsortiert."
+msgstr "{ruleAppliedCount} Vorschläge wurden von Ihren Regeln vorsortiert."
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
 msgid "{sealedCount} Belege sind endgültig archiviert. Sie können sie noch lesen, suchen und herunterladen — aber nicht mehr ändern. So verlangt es das Finanzamt (10 Jahre Aufbewahrung, § 147 AO)."
@@ -9992,15 +9992,6 @@ msgstr "Regel ausschalten"
 msgid "Regel merken"
 msgstr "Regel merken"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Regel-Treffer anzeigen"
-msgstr "Regel-Treffer anzeigen"
-
-#. placeholder {0}: doc.ruleMatch.label
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Regel: {0}"
-msgstr "Regel: {0}"
-
 #: apps/remix/app/components/forms/signup.tsx
 #: apps/remix/app/components/general/claim-account.tsx
 msgid "Registration Successful"
@@ -14133,6 +14124,15 @@ msgstr "Vorschau"
 msgid "Vorschau nicht verfügbar — bitte Anhang öffnen."
 msgstr "Vorschau nicht verfügbar — bitte Anhang öffnen."
 
+#. placeholder {0}: doc.ruleMatch.label
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Vorsortiert: {0}"
+msgstr "Vorsortiert: {0}"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Vorsortierte Treffer anzeigen"
+msgstr "Vorsortierte Treffer anzeigen"
+
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
 msgid "Wählen Sie ein bereits verbundenes Postfach für einen neuen Lauf — oder hängen Sie weiter unten ein zusätzliches Postfach an."
 msgstr "Wählen Sie ein bereits verbundenes Postfach für einen neuen Lauf — oder hängen Sie weiter unten ein zusätzliches Postfach an."
@@ -14790,8 +14790,8 @@ msgstr "Wir haben sie in Ihrem E-Mail-Postfach gefunden. Pro Beleg ein Klick: in
 #. placeholder {0}: counts.archive
 #. placeholder {1}: counts.ignore
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Wir haben unsere Vorschläge bereits gesetzt: <0>{0} ins Archiv</0>, <1>{1} ignorieren</1>. <2>{ruleAppliedCount}</2> davon kommen aus Ihren aktiven Regeln."
-msgstr "Wir haben unsere Vorschläge bereits gesetzt: <0>{0} ins Archiv</0>, <1>{1} ignorieren</1>. <2>{ruleAppliedCount}</2> davon kommen aus Ihren aktiven Regeln."
+msgid "Wir haben unsere Vorschläge bereits gesetzt: <0>{0} ins Archiv</0>, <1>{1} ignorieren</1>. <2>{ruleAppliedCount}</2> davon wurden von Ihren Regeln vorsortiert."
+msgstr "Wir haben unsere Vorschläge bereits gesetzt: <0>{0} ins Archiv</0>, <1>{1} ignorieren</1>. <2>{ruleAppliedCount}</2> davon wurden von Ihren Regeln vorsortiert."
 
 #. placeholder {0}: counts.archive
 #. placeholder {1}: counts.ignore

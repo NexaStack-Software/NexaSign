@@ -178,7 +178,7 @@ const decisionReason = (doc: Document, decision: Decision): string => {
   }
 
   if (doc.ruleMatch && doc.ruleMatch.action === decision) {
-    return `Aktive Regel: Mails von ${doc.ruleMatch.label} wurden bisher ${doc.ruleMatch.evidenceCount}x so entschieden.`;
+    return `Von Ihren Regeln vorsortiert: Mails von ${doc.ruleMatch.label} wurden bisher ${doc.ruleMatch.evidenceCount}x so entschieden.`;
   }
 
   if (decision === 'ignore') {
@@ -297,10 +297,10 @@ const DocumentRow = ({
               {doc.ruleMatch && (
                 <span
                   className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-900 ring-1 ring-emerald-200"
-                  title={`Regel-Sicherheit: ${doc.ruleMatch.confidence}%`}
+                  title={`Sicherheit der Vorsortierung: ${doc.ruleMatch.confidence}%`}
                 >
                   <SparklesIcon className="h-3 w-3" aria-hidden />
-                  <Trans>Regel: {doc.ruleMatch.label}</Trans>
+                  <Trans>Vorsortiert: {doc.ruleMatch.label}</Trans>
                 </span>
               )}
             </div>
@@ -1017,7 +1017,7 @@ export default function FindDocumentsPage() {
                 Wir haben unsere Vorschläge bereits gesetzt:{' '}
                 <strong className="text-emerald-700">{counts.archive} ins Archiv</strong>,{' '}
                 <strong className="text-neutral-600">{counts.ignore} ignorieren</strong>.{' '}
-                <strong>{ruleAppliedCount}</strong> davon kommen aus Ihren aktiven Regeln.
+                <strong>{ruleAppliedCount}</strong> davon wurden von Ihren Regeln vorsortiert.
               </Trans>
             ) : (
               <Trans>
@@ -1036,7 +1036,7 @@ export default function FindDocumentsPage() {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 font-semibold text-emerald-950">
               <SparklesIcon className="h-4 w-4" aria-hidden />
-              <Trans>{ruleAppliedCount} Treffer wurden durch aktive Regeln vorsortiert</Trans>
+              <Trans>{ruleAppliedCount} Treffer wurden von Ihren Regeln vorsortiert</Trans>
             </div>
             <p className="mt-1 text-emerald-900">
               <Trans>
@@ -1057,7 +1057,7 @@ export default function FindDocumentsPage() {
               });
             }}
           >
-            <Trans>Regel-Treffer anzeigen</Trans>
+            <Trans>Vorsortierte Treffer anzeigen</Trans>
           </Button>
         </Card>
       )}
@@ -1509,7 +1509,9 @@ export default function FindDocumentsPage() {
                     )}
                     {manualChangeCount === 0 && ruleAppliedCount > 0 && (
                       <span>
-                        <Trans>{ruleAppliedCount} Entscheidungen stammen aus aktiven Regeln.</Trans>
+                        <Trans>
+                          {ruleAppliedCount} Entscheidungen wurden von Ihren Regeln vorgeschlagen.
+                        </Trans>
                       </span>
                     )}
                   </>
@@ -1574,7 +1576,7 @@ export default function FindDocumentsPage() {
                       {ruleAppliedCount > 0 && (
                         <span className="block text-emerald-800">
                           <Trans>
-                            {ruleAppliedCount} Vorschläge wurden durch aktive Regeln vorsortiert.
+                            {ruleAppliedCount} Vorschläge wurden von Ihren Regeln vorsortiert.
                           </Trans>
                         </span>
                       )}

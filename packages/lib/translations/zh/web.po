@@ -640,15 +640,15 @@ msgid "{remaningLength, plural, one {# character remaining} other {# characters 
 msgstr "{remaningLength, plural, other {# 个字符剩余}}"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "{ruleAppliedCount} Entscheidungen stammen aus aktiven Regeln."
+msgid "{ruleAppliedCount} Entscheidungen wurden von Ihren Regeln vorgeschlagen."
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "{ruleAppliedCount} Treffer wurden durch aktive Regeln vorsortiert"
+msgid "{ruleAppliedCount} Treffer wurden von Ihren Regeln vorsortiert"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "{ruleAppliedCount} Vorschläge wurden durch aktive Regeln vorsortiert."
+msgid "{ruleAppliedCount} Vorschläge wurden von Ihren Regeln vorsortiert."
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
@@ -9997,15 +9997,6 @@ msgstr ""
 msgid "Regel merken"
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Regel-Treffer anzeigen"
-msgstr ""
-
-#. placeholder {0}: doc.ruleMatch.label
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Regel: {0}"
-msgstr ""
-
 #: apps/remix/app/components/forms/signup.tsx
 #: apps/remix/app/components/general/claim-account.tsx
 msgid "Registration Successful"
@@ -14138,6 +14129,15 @@ msgstr ""
 msgid "Vorschau nicht verfügbar — bitte Anhang öffnen."
 msgstr ""
 
+#. placeholder {0}: doc.ruleMatch.label
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Vorsortiert: {0}"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Vorsortierte Treffer anzeigen"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
 msgid "Wählen Sie ein bereits verbundenes Postfach für einen neuen Lauf — oder hängen Sie weiter unten ein zusätzliches Postfach an."
 msgstr ""
@@ -14795,7 +14795,7 @@ msgstr ""
 #. placeholder {0}: counts.archive
 #. placeholder {1}: counts.ignore
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Wir haben unsere Vorschläge bereits gesetzt: <0>{0} ins Archiv</0>, <1>{1} ignorieren</1>. <2>{ruleAppliedCount}</2> davon kommen aus Ihren aktiven Regeln."
+msgid "Wir haben unsere Vorschläge bereits gesetzt: <0>{0} ins Archiv</0>, <1>{1} ignorieren</1>. <2>{ruleAppliedCount}</2> davon wurden von Ihren Regeln vorsortiert."
 msgstr ""
 
 #. placeholder {0}: counts.archive
