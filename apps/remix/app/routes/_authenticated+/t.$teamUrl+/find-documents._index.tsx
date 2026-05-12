@@ -97,7 +97,7 @@ const stripeColor = (decision: Decision): string => {
 };
 
 const decisionLabel = (decision: Decision, isManual: boolean, isReviewed = false): string => {
-  const prefix = isManual ? 'Von Ihnen gewählt' : isReviewed ? 'Geprüft' : 'Vorschlag';
+  const prefix = isManual ? 'Ihre Auswahl' : isReviewed ? 'Geprüft' : 'Empfehlung';
   if (decision === 'archive') return `${prefix}: ins Archiv`;
   if (decision === 'ignore') return `${prefix}: nicht übernehmen`;
   return isManual ? 'Von Ihnen offen gelassen' : 'Noch offen';
@@ -125,10 +125,12 @@ const needsHumanCheck = (doc: Document): boolean =>
   doc.confidenceLabel === 'low' || (doc.duplicateCount ?? 0) > 0;
 
 const ruleActionLabel = (action: 'archive' | 'ignore'): string =>
-  action === 'archive' ? 'künftig als Beleg vorschlagen' : 'künftig eher ignorieren';
+  action === 'archive'
+    ? 'beim nächsten Mal eher ins Archiv legen'
+    : 'beim nächsten Mal nicht übernehmen';
 
 const ruleActionShortLabel = (action: 'archive' | 'ignore'): string =>
-  action === 'archive' ? 'Ins Archiv vorschlagen' : 'Ignorieren vorschlagen';
+  action === 'archive' ? 'Meist ins Archiv' : 'Meist nicht übernehmen';
 
 /**
  * Heuristik: einfache Signale (Reply-Mail, Newsletter, Bestellbestätigung,
@@ -179,7 +181,7 @@ const decisionReason = (doc: Document, decision: Decision): string => {
   }
 
   if (doc.ruleMatch && doc.ruleMatch.action === decision) {
-    return `Ähnlicher Fall: Mails von ${doc.ruleMatch.label} haben Sie bisher meist so entschieden.`;
+    return `Bekannter Absender: Mails von ${doc.ruleMatch.label} haben Sie bisher meist so behandelt.`;
   }
 
   if (decision === 'ignore') {
@@ -335,10 +337,10 @@ const DocumentRow = ({
               {doc.ruleMatch && (
                 <span
                   className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-900 ring-1 ring-emerald-200"
-                  title={`Sicherheit dieses Vorschlags: ${doc.ruleMatch.confidence}%`}
+                  title={`Sicherheit dieser Empfehlung: ${doc.ruleMatch.confidence}%`}
                 >
                   <SparklesIcon className="h-3 w-3" aria-hidden />
-                  <Trans>Ähnlicher Fall: {doc.ruleMatch.label}</Trans>
+                  <Trans>Bekannter Absender: {doc.ruleMatch.label}</Trans>
                 </span>
               )}
             </div>
@@ -368,18 +370,18 @@ const DocumentRow = ({
         </Link>
 
         <div className="flex w-full shrink-0 flex-col items-stretch gap-2 sm:w-auto sm:min-w-56 sm:items-end">
-          <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-2">
+          <div className="rounded-lg border border-neutral-200 bg-white p-2 shadow-sm">
             <div className="mb-1 flex items-center justify-between gap-2">
               <div className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
-                <Trans>Vormerken</Trans>
+                <Trans>Ihre Entscheidung</Trans>
               </div>
               <div className="text-[11px] font-medium text-neutral-500">
-                <Trans>Unten bestätigen</Trans>
+                <Trans>noch nicht gespeichert</Trans>
               </div>
             </div>
             <div
               role="group"
-              aria-label="Vormerkung"
+              aria-label="Entscheidung für diesen Beleg"
               className="grid grid-cols-2 overflow-hidden rounded-md border border-neutral-300 bg-white"
             >
               <Button
@@ -395,7 +397,7 @@ const DocumentRow = ({
                 aria-pressed={decision === 'archive'}
               >
                 <CheckCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-                <Trans>Archiv</Trans>
+                <Trans>Ins Archiv</Trans>
               </Button>
               <Button
                 size="sm"
@@ -415,11 +417,11 @@ const DocumentRow = ({
             </div>
             <p className="mt-1 text-[11px] leading-snug text-neutral-500">
               {decision === 'archive' ? (
-                <Trans>Wird erst mit „Bestätigen“ ins Archiv gelegt.</Trans>
+                <Trans>Wird beim Bestätigen ins Archiv gelegt.</Trans>
               ) : decision === 'ignore' ? (
-                <Trans>Wird erst mit „Bestätigen“ aus der Arbeitsliste entfernt.</Trans>
+                <Trans>Wird beim Bestätigen aus der Liste entfernt.</Trans>
               ) : (
-                <Trans>Bleibt offen, bis Sie eine Auswahl treffen.</Trans>
+                <Trans>Bleibt hier, bis Sie entscheiden.</Trans>
               )}
             </p>
           </div>
@@ -852,7 +854,7 @@ export default function FindDocumentsPage() {
             : _(msg`Beleg war bereits verarbeitet`),
         description:
           result.ignoredCount > 0
-            ? _(msg`Er wurde aus dieser Arbeitsliste entfernt.`)
+            ? _(msg`Er wurde aus dieser Liste entfernt.`)
             : _(msg`Die Liste wurde aktualisiert.`),
       });
     } catch (err) {
@@ -1170,7 +1172,8 @@ export default function FindDocumentsPage() {
                   </Trans>
                 ) : (
                   <Trans>
-                    Unten bestätigen Sie die Auswahl. Vorher wird nichts dauerhaft übernommen.
+                    Mit „Bestätigen“ schließen Sie diesen Schritt ab. Vorher wird nichts dauerhaft
+                    übernommen.
                   </Trans>
                 )}
               </p>
@@ -1204,7 +1207,7 @@ export default function FindDocumentsPage() {
                   </Button>
                 ) : (
                   <div className="rounded-md bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 ring-1 ring-emerald-200">
-                    <Trans>Unten bestätigen</Trans>
+                    <Trans>Bereit zur Bestätigung</Trans>
                   </div>
                 )}
                 <Button variant="ghost" onClick={() => openList('all')}>
@@ -1345,10 +1348,10 @@ export default function FindDocumentsPage() {
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <div className="text-sm font-semibold text-neutral-950">
-                <Trans>Arbeitsliste</Trans>
+                <Trans>Alle Vorschläge</Trans>
               </div>
               <p className="text-xs text-neutral-500">
-                <Trans>Wählen Sie nur die Sicht, die Sie gerade bearbeiten möchten.</Trans>
+                <Trans>Suchen, filtern oder mehrere Belege auf einmal ändern.</Trans>
               </p>
             </div>
 
@@ -1429,7 +1432,7 @@ export default function FindDocumentsPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-neutral-300">
-              <Trans>Auswahl vormerken als:</Trans>
+              <Trans>Auswahl ändern zu:</Trans>
             </span>
             <Button
               size="sm"
@@ -1438,7 +1441,7 @@ export default function FindDocumentsPage() {
               className="border-emerald-300 bg-emerald-600 text-white hover:bg-emerald-700"
             >
               <CheckCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-              <Trans>Archiv</Trans>
+              <Trans>Ins Archiv</Trans>
             </Button>
             <Button
               size="sm"
@@ -1894,13 +1897,14 @@ export default function FindDocumentsPage() {
                 {counts.undecided > 0 ? (
                   <>
                     <Trans>
-                      Bitte erst die offenen Zeilen entscheiden — sonst geht uns ein Beleg verloren.
+                      Bitte erst die offenen Vorschläge entscheiden, damit nichts versehentlich
+                      übersprungen wird.
                     </Trans>{' '}
                     <button
                       onClick={() => openList('undecided')}
                       className="font-medium text-amber-700 underline-offset-2 hover:underline"
                     >
-                      <Trans>Offene Zeilen anzeigen →</Trans>
+                      <Trans>Offene Vorschläge anzeigen →</Trans>
                     </button>
                   </>
                 ) : unreviewedRiskyArchiveCount > 0 ? (
@@ -1923,8 +1927,8 @@ export default function FindDocumentsPage() {
                 ) : (
                   <>
                     <Trans>
-                      Beim Bestätigen landen die {counts.archive} Belege im Archiv (noch
-                      korrigierbar). Endgültig archivieren ist Stufe 2 im Archiv-Tab.
+                      Beim Bestätigen gehen {counts.archive} Belege in den Archivbereich. Dort
+                      können Sie Felder korrigieren und endgültig archivieren.
                     </Trans>{' '}
                     {manualChangeCount > 0 && (
                       <span>
@@ -1934,7 +1938,7 @@ export default function FindDocumentsPage() {
                     {manualChangeCount === 0 && ruleAppliedCount > 0 && (
                       <span>
                         <Trans>
-                          {ruleAppliedCount} Entscheidungen basieren auf ähnlichen Fällen.
+                          {ruleAppliedCount} Empfehlungen basieren auf bekannten Absendern.
                         </Trans>
                       </span>
                     )}
@@ -1969,23 +1973,22 @@ export default function FindDocumentsPage() {
                     <AlertDialogDescription className="space-y-3">
                       <span className="block">
                         <Trans>
-                          Wir übernehmen jetzt <strong>{counts.archive} Belege</strong> in den
-                          korrigierbaren Archiv-Stapel und markieren{' '}
-                          <strong>{counts.ignore} Mails</strong> als kein Beleg.
+                          Wir legen jetzt <strong>{counts.archive} Belege</strong> in den
+                          Archivbereich und entfernen <strong>{counts.ignore} Mails</strong> aus
+                          dieser Liste.
                         </Trans>
                       </span>
                       <span className="block">
                         <Trans>
-                          Das ist noch nicht die endgültige Archivierung. Übernommene Belege können
-                          Sie im Archiv weiter prüfen und korrigieren.
+                          Das ist noch nicht die endgültige Archivierung. Im Archiv können Sie die
+                          übernommenen Belege weiter prüfen und korrigieren.
                         </Trans>
                       </span>
                       {counts.ignore > 0 && (
                         <span className="block rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-neutral-700">
                           <Trans>
-                            Ignorierte Mails verschwinden aus dieser Arbeitsliste. Falls Sie
-                            unsicher sind, brechen Sie ab und setzen die Zeile auf „Noch nicht
-                            entscheiden".
+                            Ignorierte Mails verschwinden aus dieser Liste. Falls Sie unsicher sind,
+                            brechen Sie ab und lassen den Vorschlag offen.
                           </Trans>
                         </span>
                       )}
@@ -2000,7 +2003,7 @@ export default function FindDocumentsPage() {
                       {ruleAppliedCount > 0 && (
                         <span className="block text-emerald-800">
                           <Trans>
-                            {ruleAppliedCount} Vorschläge basieren auf ähnlichen Fällen.
+                            {ruleAppliedCount} Empfehlungen basieren auf bekannten Absendern.
                           </Trans>
                         </span>
                       )}
