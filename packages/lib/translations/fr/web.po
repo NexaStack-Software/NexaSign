@@ -640,15 +640,15 @@ msgid "{remaningLength, plural, one {# character remaining} other {# characters 
 msgstr "{remaningLength, plural, one {# caractère restant} other {# caractères restants}}"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "{ruleAppliedCount} Entscheidungen wurden von Ihren Regeln vorgeschlagen."
+msgid "{ruleAppliedCount} ähnliche Fälle erkannt"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "{ruleAppliedCount} Treffer wurden von Ihren Regeln vorsortiert"
+msgid "{ruleAppliedCount} Entscheidungen basieren auf ähnlichen Fällen."
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "{ruleAppliedCount} Vorschläge wurden von Ihren Regeln vorsortiert."
+msgid "{ruleAppliedCount} Vorschläge basieren auf ähnlichen Fällen."
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
@@ -1796,6 +1796,15 @@ msgstr "Après avoir signé un document électroniquement, vous aurez l'occasion
 msgid "After submission, a document will be automatically generated and added to your documents page. You will also receive a notification via email."
 msgstr "Après soumission, un document sera automatiquement généré et ajouté à votre page de documents. Vous recevrez également une notification par e-mail."
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Ähnliche Fälle anzeigen"
+msgstr ""
+
+#. placeholder {0}: doc.ruleMatch.label
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Ähnlicher Fall: {0}"
+msgstr ""
+
 #: apps/remix/app/components/general/admin-global-settings-section.tsx
 msgid "AI features"
 msgstr "Fonctionnalités d’IA"
@@ -1827,20 +1836,11 @@ msgid "Aktionen für alle in dieser Sicht:"
 msgstr ""
 
 #: apps/remix/app/components/sources/folder-diagnostics-card.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "aktiv"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
 msgid "Aktiv"
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Aktive Regeln"
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Aktive Regeln sortieren neue Treffer nur vor. Dauerhaft übernommen wird weiterhin erst, wenn Sie den Stapel bestätigen."
 msgstr ""
 
 #: apps/remix/app/components/dialogs/smart-bulk-accept-dialog.tsx
@@ -2713,10 +2713,6 @@ msgstr "Signer automatiquement les champs"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "Automatisch aus der Mail ausgelesen — bei Bedarf hier korrigieren."
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Automatisierungen für „Dokumente finden\""
 msgstr ""
 
 #: apps/remix/app/components/forms/avatar-image.tsx
@@ -4532,6 +4528,10 @@ msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/vorlagen+/_index.tsx
 msgid "Diese Vorlagen dienen zur <0>Orientierung</0> und stellen keine Rechtsberatung i.S.d. Rechtsdienstleistungsgesetzes dar. Vor produktiver Verwendung bitte durch zugelassene/n Rechtsanwältin/-anwalt prüfen lassen. Die Nutzung erfolgt auf eigenes Risiko."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Diese Vorschläge basieren auf Ihren bisherigen Entscheidungen. NexaFile ändert noch nichts dauerhaft; Sie können jede Entscheidung vor dem Bestätigen überschreiben."
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
@@ -6500,6 +6500,10 @@ msgid "Full Name"
 msgstr "Nom complet"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Für ähnliche Fälle merken"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Für Archivierung"
 msgstr ""
 
@@ -6513,6 +6517,14 @@ msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
 msgid "Geben Sie Ihre Adresse ein — wir erkennen den Anbieter und übernehmen die Adresse direkt in den nächsten Schritt, damit Sie sie nicht erneut tippen müssen."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "gemerkt"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Gemerkte Entscheidungen"
 msgstr ""
 
 #: apps/remix/app/components/embed/authoring/configure-document-advanced-settings.tsx
@@ -8313,6 +8325,10 @@ msgid "Needs to view"
 msgstr "Nécessite une visualisation"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Neue Muster"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
 msgid "Neuen Lauf starten"
 msgstr ""
@@ -8350,10 +8366,6 @@ msgstr "Nouvelle option {0}"
 msgid "New Password"
 msgstr "Nouveau Mot de Passe"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "NexaFile ändert noch nichts dauerhaft. Die Regeln setzen nur den Vorschlag pro Zeile; Sie können jede Entscheidung vor dem Bestätigen überschreiben."
-msgstr ""
-
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
 msgid "NexaFile deckt vier Schritte für Sie ab: <0>Dokumente erstellen</0> aus Vorlagen, <1>Dokumente im Postfach finden</1>, <2>Dokumente unterschreiben</2> (eigene zur Unterschrift versenden oder selbst unterschreiben), und alles <3>rechtssicher archivieren</3>. Wählen Sie unten eine der vier Kacheln — wir führen Sie dann Schritt für Schritt durch."
 msgstr ""
@@ -8361,6 +8373,10 @@ msgstr ""
 #. placeholder {0}: sourceLabel ?? ''
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
 msgid "NexaFile durchsucht jetzt das Postfach <0>{0}</0> nach Rechnungen und Belegen — im folgenden Zeitraum:"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "NexaFile erkennt ähnliche Absender und schlägt dieselbe Entscheidung vor, die Sie früher meist gewählt haben. Dauerhaft übernommen wird erst, wenn Sie bestätigen."
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/vorlagen+/gobd+/_index.tsx
@@ -8399,6 +8415,10 @@ msgstr "Email du destinataire suivant"
 #: apps/remix/app/components/general/document-signing/document-signing-complete-dialog.tsx
 msgid "Next Recipient Name"
 msgstr "Nom du destinataire suivant"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Nicht mehr merken"
+msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Nicht vorschlagen"
@@ -8589,10 +8609,6 @@ msgstr "Aucune valeur trouvée."
 msgid "No worries, it happens! Enter your email and we'll email you a special link to reset your password."
 msgstr "Pas de soucis, ça arrive ! Entrez votre email et nous vous enverrons un lien spécial pour réinitialiser votre mot de passe."
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Noch keine belastbaren Regeln erkannt."
-msgstr ""
-
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
 msgid "Noch keine Belege endgültig archiviert."
 msgstr ""
@@ -8604,6 +8620,10 @@ msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
 msgid "Noch keine Sync-Läufe. Starten Sie oben einen Lauf."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Noch keine wiederkehrenden Entscheidungen erkannt."
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
@@ -9988,14 +10008,6 @@ msgstr "URL de redirection"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/documents.$id.edit.tsx
 msgid "Redirecting"
 msgstr "Redirection"
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Regel ausschalten"
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Regel merken"
-msgstr ""
 
 #: apps/remix/app/components/forms/signup.tsx
 #: apps/remix/app/components/general/claim-account.tsx
@@ -14105,10 +14117,6 @@ msgstr ""
 msgid "vorgeschlagen"
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Vorgeschlagene Regeln"
-msgstr ""
-
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "Voriger Beleg"
 msgstr ""
@@ -14127,15 +14135,6 @@ msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
 msgid "Vorschau nicht verfügbar — bitte Anhang öffnen."
-msgstr ""
-
-#. placeholder {0}: doc.ruleMatch.label
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Vorsortiert: {0}"
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Vorsortierte Treffer anzeigen"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
@@ -14764,6 +14763,10 @@ msgstr "Largeur :"
 msgid "Wie weit zurück sollen wir gehen?"
 msgstr ""
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Wiederkehrende Entscheidungen"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
 msgid "Willkommen bei NexaFile!"
 msgstr ""
@@ -14795,7 +14798,7 @@ msgstr ""
 #. placeholder {0}: counts.archive
 #. placeholder {1}: counts.ignore
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Wir haben unsere Vorschläge bereits gesetzt: <0>{0} ins Archiv</0>, <1>{1} ignorieren</1>. <2>{ruleAppliedCount}</2> davon wurden von Ihren Regeln vorsortiert."
+msgid "Wir haben unsere Vorschläge bereits gesetzt: <0>{0} ins Archiv</0>, <1>{1} ignorieren</1>. <2>{ruleAppliedCount}</2> davon basieren auf Ihren bisherigen Entscheidungen."
 msgstr ""
 
 #. placeholder {0}: counts.archive

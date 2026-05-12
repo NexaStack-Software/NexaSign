@@ -178,7 +178,7 @@ const decisionReason = (doc: Document, decision: Decision): string => {
   }
 
   if (doc.ruleMatch && doc.ruleMatch.action === decision) {
-    return `Von Ihren Regeln vorsortiert: Mails von ${doc.ruleMatch.label} wurden bisher ${doc.ruleMatch.evidenceCount}x so entschieden.`;
+    return `Ähnlicher Fall: Mails von ${doc.ruleMatch.label} haben Sie bisher meist so entschieden.`;
   }
 
   if (decision === 'ignore') {
@@ -297,10 +297,10 @@ const DocumentRow = ({
               {doc.ruleMatch && (
                 <span
                   className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-900 ring-1 ring-emerald-200"
-                  title={`Sicherheit der Vorsortierung: ${doc.ruleMatch.confidence}%`}
+                  title={`Sicherheit dieses Vorschlags: ${doc.ruleMatch.confidence}%`}
                 >
                   <SparklesIcon className="h-3 w-3" aria-hidden />
-                  <Trans>Vorsortiert: {doc.ruleMatch.label}</Trans>
+                  <Trans>Ähnlicher Fall: {doc.ruleMatch.label}</Trans>
                 </span>
               )}
             </div>
@@ -1017,7 +1017,8 @@ export default function FindDocumentsPage() {
                 Wir haben unsere Vorschläge bereits gesetzt:{' '}
                 <strong className="text-emerald-700">{counts.archive} ins Archiv</strong>,{' '}
                 <strong className="text-neutral-600">{counts.ignore} ignorieren</strong>.{' '}
-                <strong>{ruleAppliedCount}</strong> davon wurden von Ihren Regeln vorsortiert.
+                <strong>{ruleAppliedCount}</strong> davon basieren auf Ihren bisherigen
+                Entscheidungen.
               </Trans>
             ) : (
               <Trans>
@@ -1036,12 +1037,12 @@ export default function FindDocumentsPage() {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 font-semibold text-emerald-950">
               <SparklesIcon className="h-4 w-4" aria-hidden />
-              <Trans>{ruleAppliedCount} Treffer wurden von Ihren Regeln vorsortiert</Trans>
+              <Trans>{ruleAppliedCount} ähnliche Fälle erkannt</Trans>
             </div>
             <p className="mt-1 text-emerald-900">
               <Trans>
-                NexaFile ändert noch nichts dauerhaft. Die Regeln setzen nur den Vorschlag pro
-                Zeile; Sie können jede Entscheidung vor dem Bestätigen überschreiben.
+                Diese Vorschläge basieren auf Ihren bisherigen Entscheidungen. NexaFile ändert noch
+                nichts dauerhaft; Sie können jede Entscheidung vor dem Bestätigen überschreiben.
               </Trans>
             </p>
           </div>
@@ -1057,7 +1058,7 @@ export default function FindDocumentsPage() {
               });
             }}
           >
-            <Trans>Vorsortierte Treffer anzeigen</Trans>
+            <Trans>Ähnliche Fälle anzeigen</Trans>
           </Button>
         </Card>
       )}
@@ -1127,17 +1128,17 @@ export default function FindDocumentsPage() {
             <div>
               <div className="flex items-center gap-2 font-semibold text-emerald-950">
                 <SparklesIcon className="h-4 w-4" aria-hidden />
-                <Trans>Automatisierungen für „Dokumente finden"</Trans>
+                <Trans>Wiederkehrende Entscheidungen</Trans>
               </div>
               <p className="mt-1 text-emerald-900">
                 <Trans>
-                  Aktive Regeln sortieren neue Treffer nur vor. Dauerhaft übernommen wird weiterhin
-                  erst, wenn Sie den Stapel bestätigen.
+                  NexaFile erkennt ähnliche Absender und schlägt dieselbe Entscheidung vor, die Sie
+                  früher meist gewählt haben. Dauerhaft übernommen wird erst, wenn Sie bestätigen.
                 </Trans>
               </p>
             </div>
             <div className="rounded-md border border-emerald-200 bg-white px-3 py-2 text-xs text-emerald-900">
-              <strong>{activeRules.length}</strong> <Trans>aktiv</Trans> ·{' '}
+              <strong>{activeRules.length}</strong> <Trans>gemerkt</Trans> ·{' '}
               <strong>{suggestedRules.length}</strong> <Trans>vorgeschlagen</Trans>
             </div>
           </div>
@@ -1145,7 +1146,7 @@ export default function FindDocumentsPage() {
           {activeRules.length > 0 && (
             <div className="space-y-2">
               <div className="text-xs font-semibold uppercase tracking-wide text-emerald-900">
-                <Trans>Aktive Regeln</Trans>
+                <Trans>Gemerkte Entscheidungen</Trans>
               </div>
               <ul className="space-y-2">
                 {activeRules.map((rule) => {
@@ -1190,7 +1191,7 @@ export default function FindDocumentsPage() {
                           })
                         }
                       >
-                        <Trans>Regel ausschalten</Trans>
+                        <Trans>Nicht mehr merken</Trans>
                       </Button>
                     </li>
                   );
@@ -1202,7 +1203,7 @@ export default function FindDocumentsPage() {
           {suggestedRules.length > 0 && (
             <div className="space-y-2">
               <div className="text-xs font-semibold uppercase tracking-wide text-emerald-900">
-                <Trans>Vorgeschlagene Regeln</Trans>
+                <Trans>Neue Muster</Trans>
               </div>
               <ul className="space-y-2">
                 {suggestedRules.map((rule) => {
@@ -1243,7 +1244,7 @@ export default function FindDocumentsPage() {
                           }
                         >
                           <ShieldCheckIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-                          <Trans>Regel merken</Trans>
+                          <Trans>Für ähnliche Fälle merken</Trans>
                         </Button>
                         <Button
                           size="sm"
@@ -1268,7 +1269,7 @@ export default function FindDocumentsPage() {
 
           {activeRules.length === 0 && suggestedRules.length === 0 && (
             <div className="rounded-md border border-emerald-200 bg-white px-3 py-2 text-sm text-neutral-600">
-              <Trans>Noch keine belastbaren Regeln erkannt.</Trans>
+              <Trans>Noch keine wiederkehrenden Entscheidungen erkannt.</Trans>
             </div>
           )}
         </Card>
@@ -1510,7 +1511,7 @@ export default function FindDocumentsPage() {
                     {manualChangeCount === 0 && ruleAppliedCount > 0 && (
                       <span>
                         <Trans>
-                          {ruleAppliedCount} Entscheidungen wurden von Ihren Regeln vorgeschlagen.
+                          {ruleAppliedCount} Entscheidungen basieren auf ähnlichen Fällen.
                         </Trans>
                       </span>
                     )}
@@ -1576,7 +1577,7 @@ export default function FindDocumentsPage() {
                       {ruleAppliedCount > 0 && (
                         <span className="block text-emerald-800">
                           <Trans>
-                            {ruleAppliedCount} Vorschläge wurden von Ihren Regeln vorsortiert.
+                            {ruleAppliedCount} Vorschläge basieren auf ähnlichen Fällen.
                           </Trans>
                         </span>
                       )}
