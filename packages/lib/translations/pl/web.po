@@ -2030,6 +2030,10 @@ msgstr "Prawie gotowe"
 msgid "Already have an account? <0>Sign in instead</0>"
 msgstr "Masz już konto? <0>Zaloguj się</0>"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Als geprüft markieren"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
 msgid "Als ZIP herunterladen"
 msgstr ""
@@ -2474,6 +2478,8 @@ msgstr ""
 #: apps/remix/app/components/general/app-nav-mobile.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
 msgid "Archiv"
@@ -2670,12 +2676,12 @@ msgstr ""
 msgid "Aus Vorlage: Rechnung, Vertrag, X-Rechnung, GoBD-Formular."
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Auswahl ändern auf:"
-msgstr ""
-
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
 msgid "Auswahl aufheben"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Auswahl vormerken als:"
 msgstr ""
 
 #: apps/remix/app/routes/_internal+/[__htmltopdf]+/certificate.tsx
@@ -2982,6 +2988,10 @@ msgstr ""
 #: packages/ui/primitives/signature-pad/signature-pad-color-picker.tsx
 msgid "Black"
 msgstr "Czarny"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Bleibt offen, bis Sie eine Auswahl treffen."
+msgstr ""
 
 #: packages/ui/primitives/signature-pad/signature-pad-color-picker.tsx
 msgid "Blue"
@@ -6543,10 +6553,6 @@ msgstr "Imię i nazwisko"
 msgid "Für ähnliche Fälle merken"
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Für Archiv vormerken"
-msgstr ""
-
 #: apps/remix/app/routes/_authenticated+/vorlagen+/gobd+/_index.tsx
 msgid "Für signierte Dokumente startet die Aufbewahrung mit <0>completedAt</0>. Für gefundene Belege startet sie mit <1>acceptedAt</1>, also in dem Moment, in dem Sie den Beleg als relevant übernehmen. Der Retention-Check meldet Belege, die auf die 10-Jahres-Frist zulaufen oder sie überschritten haben; er löscht nichts automatisch."
 msgstr ""
@@ -6578,10 +6584,6 @@ msgstr "Wygeneruj rekordy DKIM"
 #: packages/ui/primitives/document-flow/add-subject.tsx
 msgid "Generate Links"
 msgstr "Wygeneruj linki"
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Geprüft"
-msgstr ""
 
 #: packages/lib/constants/i18n.ts
 msgid "German"
@@ -7009,7 +7011,6 @@ msgid "If your authenticator app does not support QR codes, you can use the foll
 msgstr "Jeśli Twoja aplikacja uwierzytelniająca nie obsługuje kodów QR, użyj poniższego kodu:"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
 msgid "Ignorieren"
@@ -7237,10 +7238,6 @@ msgstr ""
 
 #: apps/remix/app/components/discovery/use-deferred-status-action.tsx
 msgid "Ins Archiv übernommen (in 5 s endgültig)"
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Ins Archiv vormerken"
 msgstr ""
 
 #: apps/remix/app/components/tables/admin-document-recipient-item-table.tsx
@@ -8466,6 +8463,8 @@ msgid "Nicht mehr merken"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Nicht übernehmen"
 msgstr ""
 
@@ -8675,14 +8674,6 @@ msgstr ""
 msgid "Noch korrigierbar"
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Noch nicht entscheiden"
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Noch zu entscheiden"
-msgstr ""
-
 #: apps/remix/app/components/discovery/sync-overview-card.tsx
 msgid "Noch zu prüfen"
 msgstr ""
@@ -8791,6 +8782,11 @@ msgstr "Wyłączone"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Offen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Offen lassen"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
@@ -13481,6 +13477,7 @@ msgid "Unsichere Belege werden einzeln gezeigt, damit Sie nicht in der langen Li
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Unten bestätigen"
 msgstr ""
 
@@ -14210,6 +14207,10 @@ msgstr ""
 msgid "Vorletztes Jahr"
 msgstr ""
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Vormerken"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
 msgid "Vorschau"
 msgstr ""
@@ -14896,6 +14897,14 @@ msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
 msgid "Wird abgebrochen…"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Wird erst mit „Bestätigen“ aus der Arbeitsliste entfernt."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Wird erst mit „Bestätigen“ ins Archiv gelegt."
 msgstr ""
 
 #: apps/remix/app/components/sources/folder-diagnostics-card.tsx
@@ -16050,10 +16059,6 @@ msgstr ""
 #. placeholder {0}: formatDate(rule.lastMatchedAt, i18n.locale)
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "zuletzt {0}"
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Zum Ignorieren"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx

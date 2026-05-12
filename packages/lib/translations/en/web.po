@@ -2025,6 +2025,10 @@ msgstr "Almost done"
 msgid "Already have an account? <0>Sign in instead</0>"
 msgstr "Already have an account? <0>Sign in instead</0>"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Als geprüft markieren"
+msgstr "Als geprüft markieren"
+
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
 msgid "Als ZIP herunterladen"
 msgstr "Als ZIP herunterladen"
@@ -2469,6 +2473,8 @@ msgstr "Arbeitsvertrag, NDA, Beratungsvertrag, AV-Vertrag, X-Rechnung und mehr �
 #: apps/remix/app/components/general/app-nav-mobile.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
 msgid "Archiv"
@@ -2665,13 +2671,13 @@ msgstr "Aus dem Postfach"
 msgid "Aus Vorlage: Rechnung, Vertrag, X-Rechnung, GoBD-Formular."
 msgstr "Aus Vorlage: Rechnung, Vertrag, X-Rechnung, GoBD-Formular."
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Auswahl ändern auf:"
-msgstr "Auswahl ändern auf:"
-
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
 msgid "Auswahl aufheben"
 msgstr "Auswahl aufheben"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Auswahl vormerken als:"
+msgstr "Auswahl vormerken als:"
 
 #: apps/remix/app/routes/_internal+/[__htmltopdf]+/certificate.tsx
 #: packages/lib/server-only/pdf/render-certificate.ts
@@ -2977,6 +2983,10 @@ msgstr "Bitte prüfen"
 #: packages/ui/primitives/signature-pad/signature-pad-color-picker.tsx
 msgid "Black"
 msgstr "Black"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Bleibt offen, bis Sie eine Auswahl treffen."
+msgstr "Bleibt offen, bis Sie eine Auswahl treffen."
 
 #: packages/ui/primitives/signature-pad/signature-pad-color-picker.tsx
 msgid "Blue"
@@ -6538,10 +6548,6 @@ msgstr "Full Name"
 msgid "Für ähnliche Fälle merken"
 msgstr "Für ähnliche Fälle merken"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Für Archiv vormerken"
-msgstr "Für Archiv vormerken"
-
 #: apps/remix/app/routes/_authenticated+/vorlagen+/gobd+/_index.tsx
 msgid "Für signierte Dokumente startet die Aufbewahrung mit <0>completedAt</0>. Für gefundene Belege startet sie mit <1>acceptedAt</1>, also in dem Moment, in dem Sie den Beleg als relevant übernehmen. Der Retention-Check meldet Belege, die auf die 10-Jahres-Frist zulaufen oder sie überschritten haben; er löscht nichts automatisch."
 msgstr "Für signierte Dokumente startet die Aufbewahrung mit <0>completedAt</0>. Für gefundene Belege startet sie mit <1>acceptedAt</1>, also in dem Moment, in dem Sie den Beleg als relevant übernehmen. Der Retention-Check meldet Belege, die auf die 10-Jahres-Frist zulaufen oder sie überschritten haben; er löscht nichts automatisch."
@@ -6573,10 +6579,6 @@ msgstr "Generate DKIM Records"
 #: packages/ui/primitives/document-flow/add-subject.tsx
 msgid "Generate Links"
 msgstr "Generate Links"
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Geprüft"
-msgstr "Geprüft"
 
 #: packages/lib/constants/i18n.ts
 msgid "German"
@@ -7004,7 +7006,6 @@ msgid "If your authenticator app does not support QR codes, you can use the foll
 msgstr "If your authenticator app does not support QR codes, you can use the following code instead:"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
 msgid "Ignorieren"
@@ -7233,10 +7234,6 @@ msgstr "Ins Archiv — ist ein Beleg"
 #: apps/remix/app/components/discovery/use-deferred-status-action.tsx
 msgid "Ins Archiv übernommen (in 5 s endgültig)"
 msgstr "Ins Archiv übernommen (in 5 s endgültig)"
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Ins Archiv vormerken"
-msgstr "Ins Archiv vormerken"
 
 #: apps/remix/app/components/tables/admin-document-recipient-item-table.tsx
 msgid "Inserted"
@@ -8461,6 +8458,8 @@ msgid "Nicht mehr merken"
 msgstr "Nicht mehr merken"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Nicht übernehmen"
 msgstr "Nicht übernehmen"
 
@@ -8670,14 +8669,6 @@ msgstr "Noch keine Sync-Läufe. Starten Sie oben einen Lauf."
 msgid "Noch korrigierbar"
 msgstr "Noch korrigierbar"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Noch nicht entscheiden"
-msgstr "Noch nicht entscheiden"
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Noch zu entscheiden"
-msgstr "Noch zu entscheiden"
-
 #: apps/remix/app/components/discovery/sync-overview-card.tsx
 msgid "Noch zu prüfen"
 msgstr "Noch zu prüfen"
@@ -8787,6 +8778,11 @@ msgstr "Off"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Offen"
 msgstr "Offen"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Offen lassen"
+msgstr "Offen lassen"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Offene anzeigen"
@@ -13474,6 +13470,7 @@ msgid "Unsichere Belege werden einzeln gezeigt, damit Sie nicht in der langen Li
 msgstr "Unsichere Belege werden einzeln gezeigt, damit Sie nicht in der langen Liste suchen müssen."
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Unten bestätigen"
 msgstr "Unten bestätigen"
 
@@ -14203,6 +14200,10 @@ msgstr "Vorlagen"
 msgid "Vorletztes Jahr"
 msgstr "Vorletztes Jahr"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Vormerken"
+msgstr "Vormerken"
+
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
 msgid "Vorschau"
 msgstr "Vorschau"
@@ -14890,6 +14891,14 @@ msgstr "Wir verbinden uns einmal mit Ihrem E-Mail-Postfach und finden alle Rechn
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
 msgid "Wird abgebrochen…"
 msgstr "Wird abgebrochen…"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Wird erst mit „Bestätigen“ aus der Arbeitsliste entfernt."
+msgstr "Wird erst mit „Bestätigen“ aus der Arbeitsliste entfernt."
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Wird erst mit „Bestätigen“ ins Archiv gelegt."
+msgstr "Wird erst mit „Bestätigen“ ins Archiv gelegt."
 
 #: apps/remix/app/components/sources/folder-diagnostics-card.tsx
 msgid "Wird gescannt"
@@ -16044,10 +16053,6 @@ msgstr "Zu prüfen"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "zuletzt {0}"
 msgstr "zuletzt {0}"
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Zum Ignorieren"
-msgstr "Zum Ignorieren"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "Zum Signieren vorbereiten"

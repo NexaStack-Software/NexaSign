@@ -98,7 +98,7 @@ const stripeColor = (decision: Decision): string => {
 const decisionLabel = (decision: Decision, isManual: boolean, isReviewed = false): string => {
   const prefix = isManual ? 'Von Ihnen gewählt' : isReviewed ? 'Geprüft' : 'Vorschlag';
   if (decision === 'archive') return `${prefix}: ins Archiv`;
-  if (decision === 'ignore') return `${prefix}: ignorieren`;
+  if (decision === 'ignore') return `${prefix}: nicht übernehmen`;
   return isManual ? 'Von Ihnen offen gelassen' : 'Noch offen';
 };
 
@@ -366,42 +366,61 @@ const DocumentRow = ({
           </div>
         </Link>
 
-        <div className="flex shrink-0 flex-col items-end gap-2">
-          <div
-            role="group"
-            aria-label="Entscheidung"
-            className="flex overflow-hidden rounded-md border border-neutral-300"
-          >
-            <Button
-              size="sm"
-              variant="ghost"
-              disabled={isPending}
-              onClick={() => onChange('archive')}
-              className={`rounded-none border-r border-neutral-300 px-3 ${
-                decision === 'archive'
-                  ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                  : 'text-emerald-700 hover:bg-emerald-50'
-              }`}
-              aria-pressed={decision === 'archive'}
+        <div className="flex w-full shrink-0 flex-col items-stretch gap-2 sm:w-auto sm:min-w-56 sm:items-end">
+          <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-2">
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+                <Trans>Vormerken</Trans>
+              </div>
+              <div className="text-[11px] font-medium text-neutral-500">
+                <Trans>Unten bestätigen</Trans>
+              </div>
+            </div>
+            <div
+              role="group"
+              aria-label="Vormerkung"
+              className="grid grid-cols-2 overflow-hidden rounded-md border border-neutral-300 bg-white"
             >
-              <CheckCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-              <Trans>Ins Archiv vormerken</Trans>
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              disabled={isPending}
-              onClick={() => onChange('ignore')}
-              className={`rounded-none px-3 ${
-                decision === 'ignore'
-                  ? 'bg-neutral-700 text-white hover:bg-neutral-800'
-                  : 'text-neutral-600 hover:bg-neutral-100'
-              }`}
-              aria-pressed={decision === 'ignore'}
-            >
-              <XCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-              <Trans>Ignorieren</Trans>
-            </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={isPending}
+                onClick={() => onChange('archive')}
+                className={`rounded-none border-r border-neutral-300 px-3 ${
+                  decision === 'archive'
+                    ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                    : 'text-emerald-700 hover:bg-emerald-50'
+                }`}
+                aria-pressed={decision === 'archive'}
+              >
+                <CheckCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                <Trans>Archiv</Trans>
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={isPending}
+                onClick={() => onChange('ignore')}
+                className={`rounded-none px-3 ${
+                  decision === 'ignore'
+                    ? 'bg-neutral-700 text-white hover:bg-neutral-800'
+                    : 'text-neutral-600 hover:bg-neutral-100'
+                }`}
+                aria-pressed={decision === 'ignore'}
+              >
+                <XCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                <Trans>Nicht übernehmen</Trans>
+              </Button>
+            </div>
+            <p className="mt-1 text-[11px] leading-snug text-neutral-500">
+              {decision === 'archive' ? (
+                <Trans>Wird erst mit „Bestätigen“ ins Archiv gelegt.</Trans>
+              ) : decision === 'ignore' ? (
+                <Trans>Wird erst mit „Bestätigen“ aus der Arbeitsliste entfernt.</Trans>
+              ) : (
+                <Trans>Bleibt offen, bis Sie eine Auswahl treffen.</Trans>
+              )}
+            </p>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -412,13 +431,13 @@ const DocumentRow = ({
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => onChange('undecided')}>
                 <ClockIcon className="mr-2 h-4 w-4" aria-hidden />
-                <Trans>Noch nicht entscheiden</Trans>
+                <Trans>Offen lassen</Trans>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           {reviewOpen && (
             <Button size="sm" variant="outline" disabled={isPending} onClick={onMarkReviewed}>
-              <Trans>Geprüft</Trans>
+              <Trans>Als geprüft markieren</Trans>
             </Button>
           )}
         </div>
@@ -1387,7 +1406,7 @@ export default function FindDocumentsPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-neutral-300">
-              <Trans>Auswahl ändern auf:</Trans>
+              <Trans>Auswahl vormerken als:</Trans>
             </span>
             <Button
               size="sm"
@@ -1396,7 +1415,7 @@ export default function FindDocumentsPage() {
               className="border-emerald-300 bg-emerald-600 text-white hover:bg-emerald-700"
             >
               <CheckCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-              <Trans>Für Archiv vormerken</Trans>
+              <Trans>Archiv</Trans>
             </Button>
             <Button
               size="sm"
@@ -1405,7 +1424,7 @@ export default function FindDocumentsPage() {
               className="border-neutral-500 bg-neutral-700 text-white hover:bg-neutral-800"
             >
               <XCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-              <Trans>Zum Ignorieren</Trans>
+              <Trans>Nicht übernehmen</Trans>
             </Button>
             <Button
               size="sm"
@@ -1414,7 +1433,7 @@ export default function FindDocumentsPage() {
               className="text-neutral-300 hover:bg-white/10 hover:text-white"
             >
               <ClockIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-              <Trans>Noch zu entscheiden</Trans>
+              <Trans>Offen lassen</Trans>
             </Button>
           </div>
         </div>
