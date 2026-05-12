@@ -22,7 +22,6 @@ import {
   MoreHorizontalIcon,
   PaperclipIcon,
   ShieldCheckIcon,
-  SparklesIcon,
   TriangleAlertIcon,
   XCircleIcon,
 } from 'lucide-react';
@@ -123,6 +122,25 @@ const confidenceClass = (doc: Document): string => {
 
 const needsHumanCheck = (doc: Document): boolean =>
   doc.confidenceLabel === 'low' || (doc.duplicateCount ?? 0) > 0;
+
+const issueSummary = (doc: Document): string | null => {
+  const duplicateCount = doc.duplicateCount ?? 0;
+  const riskCount = doc.riskFlags?.length ?? 0;
+
+  if (duplicateCount > 0 && riskCount > 0) {
+    return `${duplicateCount} mögliche Dubletten · ${riskCount} offene Punkte`;
+  }
+
+  if (duplicateCount > 0) {
+    return duplicateCount === 1 ? 'Mögliche Dublette' : `${duplicateCount} mögliche Dubletten`;
+  }
+
+  if (riskCount > 0) {
+    return riskCount === 1 ? '1 offener Punkt' : `${riskCount} offene Punkte`;
+  }
+
+  return null;
+};
 
 const ruleActionLabel = (action: 'archive' | 'ignore'): string =>
   action === 'archive'
@@ -233,6 +251,9 @@ const DocumentRow = ({
   const dimmed = decision === 'ignore';
   const needsReview = needsHumanCheck(doc);
   const reviewOpen = needsReview && decision === 'archive' && !isReviewed;
+  const issues = issueSummary(doc);
+  const showReason =
+    reviewOpen || decision === 'ignore' || isManual || Boolean(doc.ruleMatch) || Boolean(issues);
 
   return (
     <li
@@ -324,46 +345,41 @@ const DocumentRow = ({
               {doc.title}
             </div>
 
-            <div className="mt-1 flex flex-wrap items-center gap-1.5">
-              {typeof doc.confidence === 'number' && (
-                <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${confidenceClass(doc)}`}
-                  title={`Erkennungsqualität: ${doc.confidence}/100`}
-                >
-                  <ShieldCheckIcon className="h-3 w-3" aria-hidden />
-                  {confidenceLabel(doc)} · {doc.confidence}%
-                </span>
-              )}
-              {doc.ruleMatch && (
-                <span
-                  className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-900 ring-1 ring-emerald-200"
-                  title={`Sicherheit dieser Empfehlung: ${doc.ruleMatch.confidence}%`}
-                >
-                  <SparklesIcon className="h-3 w-3" aria-hidden />
-                  <Trans>Bekannter Absender: {doc.ruleMatch.label}</Trans>
-                </span>
-              )}
-            </div>
-            <div className="mt-1 text-xs text-neutral-500">{hint}</div>
-            {((doc.riskFlags?.length ?? 0) > 0 || (doc.duplicateCount ?? 0) > 0) && (
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {(doc.duplicateCount ?? 0) > 0 && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-900">
-                    <TriangleAlertIcon className="h-3 w-3" aria-hidden />
-                    {doc.duplicateCount === 1
-                      ? 'Mögliche Dublette im aktuellen Filter'
-                      : `${doc.duplicateCount} mögliche Dubletten im aktuellen Filter`}
+            {(showReason || issues || doc.confidenceLabel === 'low') && (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                {showReason && (
+                  <span
+                    className={`inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md px-2 py-1 text-xs ${
+                      reviewOpen
+                        ? 'bg-amber-100 text-amber-950 ring-1 ring-amber-200'
+                        : 'bg-neutral-50 text-neutral-600 ring-1 ring-neutral-200'
+                    }`}
+                  >
+                    <span className="shrink-0 font-semibold text-neutral-800">
+                      <Trans>Warum?</Trans>
+                    </span>
+                    <span className="truncate">{hint}</span>
                   </span>
                 )}
-                {(doc.riskFlags ?? []).map((flag) => (
-                  <span
-                    key={flag}
-                    className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-700"
-                  >
+                {issues && (
+                  <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-1 text-xs font-medium text-amber-950 ring-1 ring-amber-200">
                     <TriangleAlertIcon className="h-3 w-3" aria-hidden />
-                    {flag}
+                    {issues}
                   </span>
-                ))}
+                )}
+                {doc.confidenceLabel === 'low' && !issues && (
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium ring-1 ${confidenceClass(doc)}`}
+                    title={
+                      typeof doc.confidence === 'number'
+                        ? `Erkennungsqualität: ${doc.confidence}/100`
+                        : undefined
+                    }
+                  >
+                    <ShieldCheckIcon className="h-3 w-3" aria-hidden />
+                    {confidenceLabel(doc)}
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -1252,34 +1268,58 @@ export default function FindDocumentsPage() {
       )}
 
       {activeTab === 'focus' && reviewQueueOpen && currentReviewDoc && (
-        <Card className="border-amber-200 bg-amber-50/80 p-4 text-sm shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              <div className="text-xs font-semibold uppercase tracking-wide text-amber-900">
-                <Trans>
-                  Beleg {reviewQueueIndex + 1} von {pendingReviewDocs.length} prüfen
-                </Trans>
+        <Card className="overflow-hidden border-amber-200 bg-white text-sm shadow-sm">
+          <div className="h-1 bg-amber-100" aria-hidden>
+            <div
+              className="h-full bg-amber-500 transition-all"
+              style={{
+                width: `${Math.round(((reviewQueueIndex + 1) / pendingReviewDocs.length) * 100)}%`,
+              }}
+            />
+          </div>
+
+          <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="text-xs font-semibold uppercase tracking-wide text-amber-900">
+                  <Trans>
+                    Prüfen {reviewQueueIndex + 1} von {pendingReviewDocs.length}
+                  </Trans>
+                </div>
+                <Button size="sm" variant="ghost" onClick={() => setReviewQueueOpen(false)}>
+                  <Trans>Schließen</Trans>
+                </Button>
               </div>
-              <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <h2 className="truncate text-base font-semibold text-neutral-950">
+
+              <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50/70 p-3">
+                <h2 className="truncate text-lg font-semibold text-neutral-950">
                   {currentReviewDoc.correspondent ?? currentReviewDoc.title}
                 </h2>
-                {currentReviewDoc.detectedAmount && (
-                  <span className="font-semibold tabular-nums text-neutral-950">
-                    {currentReviewDoc.detectedAmount}
-                  </span>
-                )}
-                <span className="text-xs tabular-nums text-neutral-600">
-                  {formatDate(
-                    currentReviewDoc.documentDate ?? currentReviewDoc.capturedAt,
-                    i18n.locale,
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-neutral-600">
+                  {currentReviewDoc.detectedAmount && (
+                    <span className="rounded-md bg-white px-2 py-1 font-semibold tabular-nums text-neutral-950 ring-1 ring-neutral-200">
+                      {currentReviewDoc.detectedAmount}
+                    </span>
                   )}
-                </span>
+                  <span className="rounded-md bg-white px-2 py-1 tabular-nums ring-1 ring-neutral-200">
+                    {formatDate(
+                      currentReviewDoc.documentDate ?? currentReviewDoc.capturedAt,
+                      i18n.locale,
+                    )}
+                  </span>
+                  {currentReviewDoc.attachmentCount > 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-1 ring-1 ring-neutral-200">
+                      <PaperclipIcon className="h-3.5 w-3.5" aria-hidden />
+                      {currentReviewDoc.attachmentCount}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-2 line-clamp-2 text-neutral-700">{currentReviewDoc.title}</p>
               </div>
-              <p className="mt-1 truncate text-neutral-700">{currentReviewDoc.title}</p>
-              <div className="mt-2 rounded-md border border-amber-200 bg-white/60 px-3 py-2 text-xs text-amber-950">
+
+              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
                 <span className="font-semibold">
-                  <Trans>Warum prüfen?</Trans>
+                  <Trans>Warum liegt dieser Beleg hier?</Trans>
                 </span>{' '}
                 {decisionReason(
                   currentReviewDoc,
@@ -1287,58 +1327,74 @@ export default function FindDocumentsPage() {
                 )}
               </div>
             </div>
-            <Button size="sm" variant="ghost" onClick={() => setReviewQueueOpen(false)}>
-              <Trans>Schließen</Trans>
-            </Button>
-          </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <Button
-              onClick={() => void handleAcceptDocumentNow(currentReviewDoc)}
-              disabled={isCommitting}
-            >
-              {bulkAcceptMutation.isPending ? (
-                <Loader2Icon className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
-              ) : (
-                <CheckCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-              )}
-              <Trans>Jetzt ins Archiv</Trans>
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => void handleIgnoreDocumentNow(currentReviewDoc)}
-              disabled={isCommitting}
-            >
-              {bulkIgnoreMutation.isPending ? (
-                <Loader2Icon className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
-              ) : (
-                <XCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-              )}
-              <Trans>Nicht übernehmen</Trans>
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => handleDecision(currentReviewDoc.id, 'undecided')}
-              disabled={isCommitting}
-            >
-              <ClockIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-              <Trans>Später entscheiden</Trans>
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={goToNextPendingReview}
-              disabled={pendingReviewDocs.length <= 1}
-            >
-              <Trans>Nächsten Beleg prüfen</Trans>
-            </Button>
-            <Button asChild variant="link" className="px-1">
-              <Link
-                to={currentReviewDoc.id}
-                onClick={() => handleMarkReviewed(currentReviewDoc.id)}
-              >
-                <Trans>Belegdetails öffnen</Trans>
-              </Link>
-            </Button>
+            <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                <Trans>Ihre Entscheidung</Trans>
+              </div>
+              <p className="mt-1 text-sm leading-snug text-neutral-600">
+                <Trans>
+                  Treffen Sie eine Auswahl. Danach bleibt der nächste unklare Beleg im Blick.
+                </Trans>
+              </p>
+
+              <div className="mt-3 grid gap-2">
+                <Button
+                  size="lg"
+                  onClick={() => void handleAcceptDocumentNow(currentReviewDoc)}
+                  disabled={isCommitting}
+                  className="justify-start bg-emerald-600 text-white hover:bg-emerald-700"
+                >
+                  {bulkAcceptMutation.isPending ? (
+                    <Loader2Icon className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                  ) : (
+                    <CheckCircleIcon className="mr-2 h-4 w-4" aria-hidden />
+                  )}
+                  <Trans>Ins Archiv</Trans>
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => void handleIgnoreDocumentNow(currentReviewDoc)}
+                  disabled={isCommitting}
+                  className="justify-start"
+                >
+                  {bulkIgnoreMutation.isPending ? (
+                    <Loader2Icon className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                  ) : (
+                    <XCircleIcon className="mr-2 h-4 w-4" aria-hidden />
+                  )}
+                  <Trans>Nicht übernehmen</Trans>
+                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleDecision(currentReviewDoc.id, 'undecided')}
+                    disabled={isCommitting}
+                  >
+                    <ClockIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                    <Trans>Später</Trans>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={goToNextPendingReview}
+                    disabled={pendingReviewDocs.length <= 1}
+                  >
+                    <Trans>Überspringen</Trans>
+                  </Button>
+                </div>
+              </div>
+
+              <Button asChild variant="link" className="mt-2 h-auto px-0 text-neutral-600">
+                <Link
+                  to={currentReviewDoc.id}
+                  onClick={() => handleMarkReviewed(currentReviewDoc.id)}
+                >
+                  <ExternalLinkIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                  <Trans>Details öffnen</Trans>
+                </Link>
+              </Button>
+            </div>
           </div>
         </Card>
       )}
@@ -1718,17 +1774,17 @@ export default function FindDocumentsPage() {
               {activeTab === 'memory' && (
                 <section>
                   <h2 className="text-sm font-semibold text-neutral-900">
-                    <Trans>Hinweise in dieser Liste</Trans>
+                    <Trans>Warum Belege geprüft werden</Trans>
                   </h2>
                   <p className="mt-0.5 text-xs text-neutral-500">
                     <Trans>
-                      Diese Zahlen erklären, warum einzelne Belege geprüft werden sollten.
+                      Kurzüberblick über sichere Treffer, offene Punkte und mögliche Dubletten.
                     </Trans>
                   </p>
                   <div className="mt-3 grid gap-3 text-sm md:grid-cols-4">
                     <div className="rounded-md border border-emerald-100 bg-emerald-50 p-3">
                       <div className="text-xs font-medium uppercase tracking-wide text-emerald-800">
-                        <Trans>Direkt verwendbar</Trans>
+                        <Trans>Sicher erkannt</Trans>
                       </div>
                       <div className="mt-1 font-semibold text-neutral-900">
                         {qualityCounts.high}
@@ -1752,11 +1808,11 @@ export default function FindDocumentsPage() {
                     </div>
                     <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
                       <div className="text-xs font-medium uppercase tracking-wide text-neutral-600">
-                        <Trans>Hinweise</Trans>
+                        <Trans>Auffälligkeiten</Trans>
                       </div>
                       <div className="mt-1 font-semibold text-neutral-900">
                         <Trans>
-                          {qualityCounts.risks} Warnhinweise · {qualityCounts.duplicates} mögliche
+                          {qualityCounts.risks} offene Punkte · {qualityCounts.duplicates} mögliche
                           Dubletten
                         </Trans>
                       </div>
