@@ -325,7 +325,7 @@ const DocumentRow = ({
               {typeof doc.confidence === 'number' && (
                 <span
                   className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${confidenceClass(doc)}`}
-                  title={`Trefferqualität: ${doc.confidence}/100`}
+                  title={`Erkennungsqualität: ${doc.confidence}/100`}
                 >
                   <ShieldCheckIcon className="h-3 w-3" aria-hidden />
                   {confidenceLabel(doc)} · {doc.confidence}%
@@ -658,12 +658,17 @@ export default function FindDocumentsPage() {
 
   const visibleDocs = useMemo(() => {
     if (filter === 'all') return allInboxDocs;
-    if (filter === 'needs-check') return allInboxDocs.filter(needsHumanCheck);
+    if (filter === 'needs-check') {
+      return allInboxDocs.filter(
+        (doc) =>
+          decisions.get(doc.id) === 'archive' && needsHumanCheck(doc) && !reviewedIds.has(doc.id),
+      );
+    }
     return allInboxDocs.filter((doc) => {
       const d = decisions.get(doc.id) ?? 'undecided';
       return d === filter;
     });
-  }, [allInboxDocs, decisions, filter]);
+  }, [allInboxDocs, decisions, filter, reviewedIds]);
 
   const safeArchiveDocs = useMemo(
     () =>
@@ -738,14 +743,14 @@ export default function FindDocumentsPage() {
       await reviewQueue.refetch();
 
       toast({
-        title: _(msg`Sichere Vorschläge übernommen`),
+        title: _(msg`Sichere Belege übernommen`),
         description: _(
-          msg`${result.acceptedCount} Belege liegen jetzt im Archiv. Unsichere Treffer bleiben in der Liste.`,
+          msg`${result.acceptedCount} Belege liegen jetzt im Archiv. Unsichere Belege bleiben in der Liste.`,
         ),
       });
     } catch (err) {
       toast({
-        title: _(msg`Sichere Vorschläge konnten nicht übernommen werden`),
+        title: _(msg`Sichere Belege konnten nicht übernommen werden`),
         description: err instanceof Error ? err.message : 'Unbekannter Fehler',
         variant: 'destructive',
       });
@@ -903,10 +908,11 @@ export default function FindDocumentsPage() {
               {counts.total > 0 ? (
                 latestCompletedRangeLabel ? (
                   <Trans>
-                    Wir haben {totalHits} Treffer im Zeitraum {latestCompletedRangeLabel} gefunden
+                    Wir haben {totalHits} mögliche Belege im Zeitraum {latestCompletedRangeLabel}{' '}
+                    gefunden
                   </Trans>
                 ) : (
-                  <Trans>Wir haben {totalHits} Treffer gefunden</Trans>
+                  <Trans>Wir haben {totalHits} mögliche Belege gefunden</Trans>
                 )
               ) : (
                 <Trans>Belege aus dem Postfach</Trans>
@@ -914,8 +920,8 @@ export default function FindDocumentsPage() {
             </h1>
             <p className="mt-1 text-sm text-neutral-600">
               <Trans>
-                Prüfen Sie die Trefferliste. Wenn ein Vorschlag passt, müssen Sie nichts ändern.
-                Erst mit <strong>Bestätigen</strong> wird etwas übernommen.
+                Wenn ein Vorschlag passt, müssen Sie nichts ändern. Erst mit{' '}
+                <strong>Bestätigen</strong> wird etwas übernommen.
               </Trans>
             </p>
           </div>
@@ -963,58 +969,100 @@ export default function FindDocumentsPage() {
       <GmailAllMailBanner sources={queueMeta?.sources ?? []} />
 
       {counts.total > 0 && (
-        <Card className="grid gap-3 border-neutral-200 bg-white p-4 text-sm shadow-sm md:grid-cols-[1.4fr_1fr_auto] md:items-center">
-          <div>
-            <div className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-              <Trans>Nächster Schritt</Trans>
+        <Card className="overflow-hidden border-neutral-200 bg-white text-sm shadow-sm">
+          <div className="border-b border-neutral-100 bg-neutral-50/70 px-4 py-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  <Trans>Arbeitsablauf</Trans>
+                </div>
+                <h2 className="mt-1 text-base font-semibold text-neutral-950">
+                  <Trans>
+                    Erst Unsicheres prüfen, dann Sicheres übernehmen, am Ende speichern.
+                  </Trans>
+                </h2>
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-medium text-emerald-800 ring-1 ring-emerald-200">
+                  <Trans>{counts.archive} ins Archiv</Trans>
+                </span>
+                <span className="rounded-full bg-neutral-100 px-2.5 py-1 font-medium text-neutral-700 ring-1 ring-neutral-200">
+                  <Trans>{counts.ignore} ignorieren</Trans>
+                </span>
+                {counts.undecided > 0 && (
+                  <span className="rounded-full bg-amber-50 px-2.5 py-1 font-medium text-amber-900 ring-1 ring-amber-200">
+                    <Trans>{counts.undecided} offen</Trans>
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="mt-1 font-semibold text-neutral-900">
-              {pendingReviewDocs.length > 0 ? (
-                <Trans>{pendingReviewDocs.length} Prüffälle fokussiert durchgehen</Trans>
-              ) : safeArchiveDocs.length > 0 ? (
-                <Trans>{safeArchiveDocs.length} sichere Vorschläge übernehmen</Trans>
-              ) : counts.undecided > 0 ? (
-                <Trans>{counts.undecided} offene Treffer entscheiden</Trans>
-              ) : (
-                <Trans>Stapel bereit zum Bestätigen</Trans>
-              )}
-            </div>
-            <p className="mt-1 text-neutral-600">
-              <Trans>
-                Die Liste darunter ist die Arbeitsfläche. Statistiken und Suchlaufdetails stehen
-                weiter unten.
-              </Trans>
-            </p>
           </div>
-          <div className="flex flex-wrap gap-2 text-xs">
-            <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-medium text-emerald-800 ring-1 ring-emerald-200">
-              <Trans>{counts.archive} ins Archiv</Trans>
-            </span>
-            <span className="rounded-full bg-neutral-100 px-2.5 py-1 font-medium text-neutral-700 ring-1 ring-neutral-200">
-              <Trans>{counts.ignore} ignorieren</Trans>
-            </span>
-            {pendingReviewDocs.length > 0 && (
-              <span className="rounded-full bg-amber-50 px-2.5 py-1 font-medium text-amber-900 ring-1 ring-amber-200">
-                <Trans>{pendingReviewDocs.length} prüfen</Trans>
-              </span>
-            )}
-            {safeArchiveDocs.length > 0 && (
-              <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-medium text-emerald-800 ring-1 ring-emerald-200">
-                <Trans>{safeArchiveDocs.length} sicher</Trans>
-              </span>
-            )}
-            {ruleAppliedCount > 0 && (
-              <span className="rounded-full bg-sky-50 px-2.5 py-1 font-medium text-sky-800 ring-1 ring-sky-200">
-                <Trans>{ruleAppliedCount} ähnliche Fälle</Trans>
-              </span>
-            )}
-          </div>
-          <div className="flex flex-wrap gap-2 md:justify-end">
-            {safeArchiveDocs.length > 0 && (
+
+          <div className="grid gap-3 p-4 md:grid-cols-3">
+            <div
+              className={`rounded-lg border p-3 ${
+                pendingReviewDocs.length > 0
+                  ? 'border-amber-200 bg-amber-50'
+                  : 'border-neutral-200 bg-white'
+              }`}
+            >
+              <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                <Trans>1. Prüfen</Trans>
+              </div>
+              <div className="mt-1 font-semibold text-neutral-950">
+                {pendingReviewDocs.length > 0 ? (
+                  <Trans>{pendingReviewDocs.length} Belege brauchen Ihre Entscheidung</Trans>
+                ) : (
+                  <Trans>Nichts Kritisches offen</Trans>
+                )}
+              </div>
+              <p className="mt-1 min-h-10 text-xs text-neutral-600">
+                <Trans>
+                  Unsichere Belege werden einzeln gezeigt, damit Sie nicht in der langen Liste
+                  suchen müssen.
+                </Trans>
+              </p>
               <Button
                 size="sm"
+                variant={pendingReviewDocs.length > 0 ? 'default' : 'outline'}
+                className="mt-3"
+                disabled={pendingReviewDocs.length === 0}
+                onClick={() => {
+                  setReviewQueueOpen(true);
+                  setFilter('needs-check');
+                }}
+              >
+                <Trans>Jetzt prüfen</Trans>
+              </Button>
+            </div>
+
+            <div
+              className={`rounded-lg border p-3 ${
+                safeArchiveDocs.length > 0
+                  ? 'border-emerald-200 bg-emerald-50'
+                  : 'border-neutral-200 bg-white'
+              }`}
+            >
+              <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                <Trans>2. Sicheres</Trans>
+              </div>
+              <div className="mt-1 font-semibold text-neutral-950">
+                {safeArchiveDocs.length > 0 ? (
+                  <Trans>{safeArchiveDocs.length} sichere Belege können direkt ins Archiv</Trans>
+                ) : (
+                  <Trans>Keine sicheren Belege offen</Trans>
+                )}
+              </div>
+              <p className="mt-1 min-h-10 text-xs text-neutral-600">
+                <Trans>
+                  Nur sehr sichere Belege ohne Warnhinweise werden gesammelt übernommen.
+                </Trans>
+              </p>
+              <Button
+                size="sm"
+                className="mt-3"
                 onClick={() => void handleAcceptSafeArchive()}
-                disabled={isCommitting}
+                disabled={safeArchiveDocs.length === 0 || isCommitting}
               >
                 {isCommitting ? (
                   <Loader2Icon className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
@@ -1023,35 +1071,59 @@ export default function FindDocumentsPage() {
                 )}
                 <Trans>Sichere übernehmen</Trans>
               </Button>
-            )}
-            {pendingReviewDocs.length > 0 && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setReviewQueueOpen(true);
-                  setFilter('needs-check');
-                }}
-              >
-                <Trans>Prüfmodus starten</Trans>
-              </Button>
-            )}
-            {ruleAppliedCount > 0 && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setFilter('all');
-                  window.requestAnimationFrame(() => {
-                    document
-                      .querySelector('[data-rule-match="true"]')
-                      ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  });
-                }}
-              >
-                <Trans>Ähnliche Fälle</Trans>
-              </Button>
-            )}
+            </div>
+
+            <div
+              className={`rounded-lg border p-3 ${
+                counts.undecided > 0 || pendingReviewDocs.length > 0
+                  ? 'border-neutral-200 bg-white'
+                  : 'border-emerald-200 bg-emerald-50'
+              }`}
+            >
+              <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                <Trans>3. Speichern</Trans>
+              </div>
+              <div className="mt-1 font-semibold text-neutral-950">
+                {counts.undecided > 0 ? (
+                  <Trans>{counts.undecided} Belege sind noch offen</Trans>
+                ) : pendingReviewDocs.length > 0 ? (
+                  <Trans>Erst die Prüfung abschließen</Trans>
+                ) : (
+                  <Trans>Bereit zum Übernehmen</Trans>
+                )}
+              </div>
+              <p className="mt-1 min-h-10 text-xs text-neutral-600">
+                <Trans>
+                  Gespeichert wird erst über den Button unten. Bis dahin bleibt alles änderbar.
+                </Trans>
+              </p>
+              {counts.undecided > 0 ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-3"
+                  onClick={() => setFilter('undecided')}
+                >
+                  <Trans>Offene anzeigen</Trans>
+                </Button>
+              ) : pendingReviewDocs.length > 0 ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-3"
+                  onClick={() => {
+                    setReviewQueueOpen(true);
+                    setFilter('needs-check');
+                  }}
+                >
+                  <Trans>Prüfung fortsetzen</Trans>
+                </Button>
+              ) : (
+                <div className="mt-3 rounded-md bg-white/70 px-3 py-2 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200">
+                  <Trans>Unten bestätigen</Trans>
+                </div>
+              )}
+            </div>
           </div>
         </Card>
       )}
@@ -1062,7 +1134,7 @@ export default function FindDocumentsPage() {
             <div className="min-w-0 flex-1">
               <div className="text-xs font-semibold uppercase tracking-wide text-amber-900">
                 <Trans>
-                  Prüffall {reviewQueueIndex + 1} von {pendingReviewDocs.length}
+                  Beleg {reviewQueueIndex + 1} von {pendingReviewDocs.length} prüfen
                 </Trans>
               </div>
               <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
@@ -1082,12 +1154,15 @@ export default function FindDocumentsPage() {
                 </span>
               </div>
               <p className="mt-1 truncate text-neutral-700">{currentReviewDoc.title}</p>
-              <p className="mt-1 text-xs text-amber-900">
+              <div className="mt-2 rounded-md border border-amber-200 bg-white/60 px-3 py-2 text-xs text-amber-950">
+                <span className="font-semibold">
+                  <Trans>Warum prüfen?</Trans>
+                </span>{' '}
                 {decisionReason(
                   currentReviewDoc,
                   decisions.get(currentReviewDoc.id) ?? 'undecided',
                 )}
-              </p>
+              </div>
             </div>
             <Button size="sm" variant="ghost" onClick={() => setReviewQueueOpen(false)}>
               <Trans>Schließen</Trans>
@@ -1097,32 +1172,32 @@ export default function FindDocumentsPage() {
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <Button onClick={() => handleDecision(currentReviewDoc.id, 'archive')}>
               <CheckCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-              <Trans>Übernehmen</Trans>
+              <Trans>Ins Archiv</Trans>
             </Button>
             <Button variant="outline" onClick={() => handleDecision(currentReviewDoc.id, 'ignore')}>
               <XCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-              <Trans>Ignorieren</Trans>
+              <Trans>Nicht übernehmen</Trans>
             </Button>
             <Button
               variant="ghost"
               onClick={() => handleDecision(currentReviewDoc.id, 'undecided')}
             >
               <ClockIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-              <Trans>Später</Trans>
+              <Trans>Später entscheiden</Trans>
             </Button>
             <Button
               variant="ghost"
               onClick={goToNextPendingReview}
               disabled={pendingReviewDocs.length <= 1}
             >
-              <Trans>Nächster</Trans>
+              <Trans>Nächsten Beleg prüfen</Trans>
             </Button>
             <Button asChild variant="link" className="px-1">
               <Link
                 to={currentReviewDoc.id}
                 onClick={() => handleMarkReviewed(currentReviewDoc.id)}
               >
-                <Trans>Details öffnen</Trans>
+                <Trans>Belegdetails öffnen</Trans>
               </Link>
             </Button>
           </div>
@@ -1130,20 +1205,36 @@ export default function FindDocumentsPage() {
       )}
 
       {counts.total > 0 && (
-        <div className="flex flex-col gap-3 rounded-xl border border-neutral-200 bg-white p-3 shadow-sm md:flex-row md:items-center md:justify-between">
-          <div className="flex flex-wrap items-center gap-1">
-            <FilterPill
-              active={filter === 'all'}
-              onClick={() => setFilter('all')}
-              label={<Trans>Alle</Trans>}
-              count={counts.total}
+        <Card className="border-neutral-200 bg-white p-3 shadow-sm">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="text-sm font-semibold text-neutral-950">
+                <Trans>Arbeitsliste</Trans>
+              </div>
+              <p className="text-xs text-neutral-500">
+                <Trans>Wählen Sie nur die Sicht, die Sie gerade bearbeiten möchten.</Trans>
+              </p>
+            </div>
+
+            <Input
+              type="search"
+              placeholder={_(msg`Suchen: Absender, Betreff, Rechnungs-Nr.`)}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="md:max-w-xs"
             />
-            {qualityCounts.needsCheck > 0 && (
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-1">
+            {pendingReviewDocs.length > 0 && (
               <FilterPill
                 active={filter === 'needs-check'}
-                onClick={() => setFilter('needs-check')}
+                onClick={() => {
+                  setFilter('needs-check');
+                  setReviewQueueOpen(true);
+                }}
                 label={<Trans>Zu prüfen</Trans>}
-                count={qualityCounts.needsCheck}
+                count={pendingReviewDocs.length}
                 color="amber"
               />
             )}
@@ -1170,185 +1261,13 @@ export default function FindDocumentsPage() {
                 color="amber"
               />
             )}
+            <FilterPill
+              active={filter === 'all'}
+              onClick={() => setFilter('all')}
+              label={<Trans>Alle</Trans>}
+              count={counts.total}
+            />
           </div>
-
-          <Input
-            type="search"
-            placeholder={_(msg`Suchen: Absender, Betreff, Rechnungs-Nr.`)}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="md:max-w-xs"
-          />
-        </div>
-      )}
-
-      {ruleSuggestions.length > 0 && (
-        <Card className="border-emerald-100 bg-emerald-50/60 p-3 text-sm">
-          <details>
-            <summary className="cursor-pointer font-medium text-emerald-950">
-              <Trans>Wiederkehrende Entscheidungen</Trans>
-              <span className="ml-2 text-xs font-normal text-emerald-800">
-                <Trans>
-                  {activeRules.length} gemerkt · {suggestedRules.length} neu
-                </Trans>
-              </span>
-            </summary>
-            <p className="mt-2 text-emerald-900">
-              <Trans>
-                NexaFile erkennt ähnliche Absender und schlägt dieselbe Entscheidung vor, die Sie
-                früher meist gewählt haben.
-              </Trans>
-            </p>
-
-            {activeRules.length > 0 && (
-              <div className="mt-3 space-y-2">
-                <div className="text-xs font-semibold uppercase tracking-wide text-emerald-900">
-                  <Trans>Gemerkte Entscheidungen</Trans>
-                </div>
-                <ul className="space-y-2">
-                  {activeRules.map((rule) => {
-                    const isPending = updateRuleStatusMutation.isPending;
-                    return (
-                      <li
-                        key={`${rule.scope}:${rule.pattern}:${rule.action}`}
-                        className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-emerald-300 bg-white px-3 py-2"
-                      >
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <div className="font-medium text-neutral-900">
-                              <Trans>
-                                Mails von <strong>{rule.label}</strong>
-                              </Trans>
-                            </div>
-                            <Badge variant="secondary" size="small" className="rounded-full">
-                              {ruleActionShortLabel(rule.action)}
-                            </Badge>
-                          </div>
-                          <div className="mt-0.5 text-xs text-neutral-500">
-                            <Trans>
-                              Grundlage: {rule.evidenceCount} gleiche Entscheidungen · Sicherheit{' '}
-                              {rule.confidence}%
-                            </Trans>
-                            {rule.lastMatchedAt && (
-                              <>
-                                {' '}
-                                ·{' '}
-                                <Trans>zuletzt {formatDate(rule.lastMatchedAt, i18n.locale)}</Trans>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={isPending}
-                          onClick={() =>
-                            updateRuleStatusMutation.mutate({
-                              ...rule,
-                              status: 'dismissed',
-                            })
-                          }
-                        >
-                          <Trans>Nicht mehr merken</Trans>
-                        </Button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
-
-            {suggestedRules.length > 0 && (
-              <div className="mt-3 space-y-2">
-                <div className="text-xs font-semibold uppercase tracking-wide text-emerald-900">
-                  <Trans>Neue Muster</Trans>
-                </div>
-                <ul className="space-y-2">
-                  {suggestedRules.map((rule) => {
-                    const isPending = updateRuleStatusMutation.isPending;
-                    return (
-                      <li
-                        key={`${rule.scope}:${rule.pattern}:${rule.action}`}
-                        className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-emerald-200 bg-white px-3 py-2"
-                      >
-                        <div className="min-w-0">
-                          <div className="font-medium text-neutral-900">
-                            <Trans>
-                              Mails von <strong>{rule.label}</strong> {ruleActionLabel(rule.action)}
-                            </Trans>
-                          </div>
-                          <div className="mt-0.5 text-xs text-neutral-500">
-                            <Trans>
-                              Grundlage: {rule.evidenceCount} gleiche Entscheidungen · Sicherheit{' '}
-                              {rule.confidence}%
-                            </Trans>
-                            {rule.oppositeCount > 0 && (
-                              <>
-                                {' '}
-                                · <Trans>{rule.oppositeCount} abweichende Entscheidungen</Trans>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            disabled={isPending}
-                            onClick={() =>
-                              updateRuleStatusMutation.mutate({
-                                ...rule,
-                                status: 'active',
-                              })
-                            }
-                          >
-                            <ShieldCheckIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-                            <Trans>Für ähnliche Fälle merken</Trans>
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            disabled={isPending}
-                            onClick={() =>
-                              updateRuleStatusMutation.mutate({
-                                ...rule,
-                                status: 'dismissed',
-                              })
-                            }
-                          >
-                            <Trans>Nicht vorschlagen</Trans>
-                          </Button>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
-          </details>
-        </Card>
-      )}
-
-      {counts.total > 0 && pendingReviewDocs.length > 0 && filter !== 'needs-check' && (
-        <Card className="flex flex-wrap items-start justify-between gap-3 border-amber-200 bg-amber-50 p-3 text-sm">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 font-semibold text-amber-950">
-              <TriangleAlertIcon className="h-4 w-4" aria-hidden />
-              <Trans>{pendingReviewDocs.length} Treffer brauchen Ihre Prüfung</Trans>
-            </div>
-            <p className="mt-1 text-neutral-600">
-              <Trans>Niedrige Sicherheit oder mögliche Dubletten. Prüfen Sie diese zuerst.</Trans>
-            </p>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              setFilter('needs-check');
-              setReviewQueueOpen(true);
-            }}
-          >
-            <Trans>Prüfmodus starten</Trans>
-          </Button>
         </Card>
       )}
 
@@ -1430,7 +1349,7 @@ export default function FindDocumentsPage() {
         <EmptyState hasSources={(queueMeta?.sources.length ?? 0) > 0} />
       ) : visibleDocs.length === 0 ? (
         <Card className="px-6 py-12 text-center text-sm text-neutral-500">
-          <Trans>Keine Treffer in dieser Sicht.</Trans>
+          <Trans>Keine Belege in dieser Sicht.</Trans>
         </Card>
       ) : (
         <>
@@ -1467,7 +1386,7 @@ export default function FindDocumentsPage() {
                 {reviewQueue.isFetchingNextPage ? (
                   <Loader2Icon className="mr-2 h-4 w-4 animate-spin" aria-hidden />
                 ) : null}
-                <Trans>Weitere Treffer laden</Trans>
+                <Trans>Weitere Belege laden</Trans>
               </Button>
             </div>
           )}
@@ -1475,147 +1394,320 @@ export default function FindDocumentsPage() {
       )}
 
       {counts.total > 0 && (
-        <section className="space-y-3 pt-2">
-          <details className="rounded-xl border border-neutral-200 bg-white p-4">
-            <summary className="cursor-pointer text-sm font-semibold text-neutral-900">
-              <Trans>Absender und Quellen</Trans>
-              <span className="ml-2 text-xs font-normal text-neutral-500">
-                <Trans>nur öffnen, wenn Sie die Herkunft der Treffer prüfen möchten</Trans>
-              </span>
-            </summary>
-            <div className="mt-4">
-              <CorrespondentSummaryCard teamUrl={teamUrl} />
-            </div>
-          </details>
-
-          <details className="rounded-xl border border-neutral-200 bg-white p-4">
-            <summary className="cursor-pointer text-sm font-semibold text-neutral-900">
-              <Trans>Qualität und Suchläufe</Trans>
-              <span className="ml-2 text-xs font-normal text-neutral-500">
-                <Trans>
-                  {qualityCounts.high} sicher · {qualityCounts.medium} plausibel ·{' '}
-                  {qualityCounts.low} unsicher
-                </Trans>
-              </span>
-            </summary>
-
-            <div className="mt-4 grid gap-3 text-sm md:grid-cols-4">
-              <div className="rounded-md border border-emerald-100 bg-emerald-50 p-3">
-                <div className="text-xs font-medium uppercase tracking-wide text-emerald-800">
-                  <Trans>Sehr sicher</Trans>
+        <section className="pt-2">
+          <details className="group rounded-xl border border-neutral-200 bg-white shadow-sm">
+            <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 px-4 py-3">
+              <div>
+                <div className="text-sm font-semibold text-neutral-900">
+                  <Trans>Details zur Suche</Trans>
                 </div>
-                <div className="mt-1 font-semibold text-neutral-900">{qualityCounts.high}</div>
-              </div>
-              <div className="rounded-md border border-sky-100 bg-sky-50 p-3">
-                <div className="text-xs font-medium uppercase tracking-wide text-sky-800">
-                  <Trans>Plausibel</Trans>
-                </div>
-                <div className="mt-1 font-semibold text-neutral-900">{qualityCounts.medium}</div>
-              </div>
-              <div className="rounded-md border border-amber-100 bg-amber-50 p-3">
-                <div className="text-xs font-medium uppercase tracking-wide text-amber-800">
-                  <Trans>Unsicher</Trans>
-                </div>
-                <div className="mt-1 font-semibold text-neutral-900">{qualityCounts.low}</div>
-              </div>
-              <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
-                <div className="text-xs font-medium uppercase tracking-wide text-neutral-600">
-                  <Trans>Hinweise</Trans>
-                </div>
-                <div className="mt-1 font-semibold text-neutral-900">
+                <p className="text-xs text-neutral-500">
                   <Trans>
-                    {qualityCounts.risks} Risiken · {qualityCounts.duplicates} Dubletten
+                    Absender, Qualität, Suchläufe und gemerkte Entscheidungen bleiben hier
+                    ausgeblendet, bis Sie sie brauchen.
                   </Trans>
-                </div>
+                </p>
               </div>
-            </div>
+              <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-700 group-open:hidden">
+                <Trans>Öffnen</Trans>
+              </span>
+              <span className="hidden rounded-full bg-neutral-900 px-3 py-1 text-xs font-medium text-white group-open:inline-flex">
+                <Trans>Schließen</Trans>
+              </span>
+            </summary>
 
-            {recentSyncRuns && recentSyncRuns.length > 0 && (
-              <div className="mt-5 space-y-3">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <h2 className="text-sm font-semibold text-neutral-900">
-                      <Trans>Letzte Suchläufe</Trans>
-                    </h2>
-                    <p className="mt-0.5 text-xs text-neutral-600">
+            <div className="space-y-6 border-t border-neutral-100 p-4">
+              {ruleSuggestions.length > 0 && (
+                <section className="rounded-lg border border-emerald-100 bg-emerald-50/60 p-3">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h2 className="text-sm font-semibold text-emerald-950">
+                        <Trans>Gemerkte Entscheidungen</Trans>
+                      </h2>
+                      <p className="mt-1 text-xs text-emerald-900">
+                        <Trans>
+                          Wenn Sie ähnliche Absender gleich behandeln, kann NexaFile diese Auswahl
+                          beim nächsten Mal vorbereiten.
+                        </Trans>
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200">
                       <Trans>
-                        Technische Details dazu, aus welchen Zeiträumen die aktuellen Treffer
-                        stammen.
+                        {activeRules.length} gemerkt · {suggestedRules.length} neu
                       </Trans>
-                    </p>
+                    </span>
                   </div>
-                  <Button asChild variant="ghost" size="sm">
-                    <Link to="/settings/sources">
-                      <Trans>Quellen öffnen</Trans>
-                    </Link>
-                  </Button>
+
+                  {activeRules.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-emerald-900">
+                        <Trans>Bereits gemerkt</Trans>
+                      </div>
+                      <ul className="space-y-2">
+                        {activeRules.map((rule) => {
+                          const isPending = updateRuleStatusMutation.isPending;
+                          return (
+                            <li
+                              key={`${rule.scope}:${rule.pattern}:${rule.action}`}
+                              className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-emerald-300 bg-white px-3 py-2"
+                            >
+                              <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <div className="font-medium text-neutral-900">
+                                    <Trans>
+                                      Mails von <strong>{rule.label}</strong>
+                                    </Trans>
+                                  </div>
+                                  <Badge variant="secondary" size="small" className="rounded-full">
+                                    {ruleActionShortLabel(rule.action)}
+                                  </Badge>
+                                </div>
+                                <div className="mt-0.5 text-xs text-neutral-500">
+                                  <Trans>
+                                    Grundlage: {rule.evidenceCount} gleiche Entscheidungen ·
+                                    Sicherheit {rule.confidence}%
+                                  </Trans>
+                                  {rule.lastMatchedAt && (
+                                    <>
+                                      {' '}
+                                      ·{' '}
+                                      <Trans>
+                                        zuletzt {formatDate(rule.lastMatchedAt, i18n.locale)}
+                                      </Trans>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={isPending}
+                                onClick={() =>
+                                  updateRuleStatusMutation.mutate({
+                                    ...rule,
+                                    status: 'dismissed',
+                                  })
+                                }
+                              >
+                                <Trans>Nicht mehr merken</Trans>
+                              </Button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
+
+                  {suggestedRules.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-emerald-900">
+                        <Trans>Neue Vorschläge</Trans>
+                      </div>
+                      <ul className="space-y-2">
+                        {suggestedRules.map((rule) => {
+                          const isPending = updateRuleStatusMutation.isPending;
+                          return (
+                            <li
+                              key={`${rule.scope}:${rule.pattern}:${rule.action}`}
+                              className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-emerald-200 bg-white px-3 py-2"
+                            >
+                              <div className="min-w-0">
+                                <div className="font-medium text-neutral-900">
+                                  <Trans>
+                                    Mails von <strong>{rule.label}</strong>{' '}
+                                    {ruleActionLabel(rule.action)}
+                                  </Trans>
+                                </div>
+                                <div className="mt-0.5 text-xs text-neutral-500">
+                                  <Trans>
+                                    Grundlage: {rule.evidenceCount} gleiche Entscheidungen ·
+                                    Sicherheit {rule.confidence}%
+                                  </Trans>
+                                  {rule.oppositeCount > 0 && (
+                                    <>
+                                      {' '}
+                                      ·{' '}
+                                      <Trans>{rule.oppositeCount} abweichende Entscheidungen</Trans>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  size="sm"
+                                  disabled={isPending}
+                                  onClick={() =>
+                                    updateRuleStatusMutation.mutate({
+                                      ...rule,
+                                      status: 'active',
+                                    })
+                                  }
+                                >
+                                  <ShieldCheckIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                                  <Trans>Für ähnliche Fälle merken</Trans>
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  disabled={isPending}
+                                  onClick={() =>
+                                    updateRuleStatusMutation.mutate({
+                                      ...rule,
+                                      status: 'dismissed',
+                                    })
+                                  }
+                                >
+                                  <Trans>Nicht anzeigen</Trans>
+                                </Button>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
+                </section>
+              )}
+
+              <section>
+                <div className="mb-3">
+                  <h2 className="text-sm font-semibold text-neutral-900">
+                    <Trans>Absender und Quellen</Trans>
+                  </h2>
+                  <p className="mt-0.5 text-xs text-neutral-500">
+                    <Trans>
+                      Nur relevant, wenn Sie nachvollziehen möchten, woher Belege kommen.
+                    </Trans>
+                  </p>
                 </div>
+                <CorrespondentSummaryCard teamUrl={teamUrl} />
+              </section>
 
-                <ul className="space-y-2">
-                  {recentSyncRuns.map((run) => {
-                    const importedCount = run.documentsAuto + run.documentsManual;
-                    const statusLabel =
-                      run.status === 'RUNNING' || run.status === 'PENDING'
-                        ? _(msg`läuft`)
-                        : run.status === 'SUCCESS'
-                          ? _(msg`fertig`)
-                          : run.status === 'FAILED'
-                            ? _(msg`fehlgeschlagen`)
-                            : _(msg`abgebrochen`);
+              <section>
+                <h2 className="text-sm font-semibold text-neutral-900">
+                  <Trans>Erkennungsqualität</Trans>
+                </h2>
+                <div className="mt-3 grid gap-3 text-sm md:grid-cols-4">
+                  <div className="rounded-md border border-emerald-100 bg-emerald-50 p-3">
+                    <div className="text-xs font-medium uppercase tracking-wide text-emerald-800">
+                      <Trans>Sehr sicher</Trans>
+                    </div>
+                    <div className="mt-1 font-semibold text-neutral-900">{qualityCounts.high}</div>
+                  </div>
+                  <div className="rounded-md border border-sky-100 bg-sky-50 p-3">
+                    <div className="text-xs font-medium uppercase tracking-wide text-sky-800">
+                      <Trans>Plausibel</Trans>
+                    </div>
+                    <div className="mt-1 font-semibold text-neutral-900">
+                      {qualityCounts.medium}
+                    </div>
+                  </div>
+                  <div className="rounded-md border border-amber-100 bg-amber-50 p-3">
+                    <div className="text-xs font-medium uppercase tracking-wide text-amber-800">
+                      <Trans>Unsicher</Trans>
+                    </div>
+                    <div className="mt-1 font-semibold text-neutral-900">{qualityCounts.low}</div>
+                  </div>
+                  <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
+                    <div className="text-xs font-medium uppercase tracking-wide text-neutral-600">
+                      <Trans>Hinweise</Trans>
+                    </div>
+                    <div className="mt-1 font-semibold text-neutral-900">
+                      <Trans>
+                        {qualityCounts.risks} Risiken · {qualityCounts.duplicates} Dubletten
+                      </Trans>
+                    </div>
+                  </div>
+                </div>
+              </section>
 
-                    return (
-                      <li
-                        key={run.id}
-                        className="flex flex-wrap items-start justify-between gap-3 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                            <span className="font-medium text-neutral-900">{run.sourceLabel}</span>
-                            <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-neutral-600">
-                              {statusLabel}
-                            </span>
-                          </div>
-                          <div className="mt-0.5 text-sm text-neutral-700">
-                            {formatDateRange(run.rangeFrom, run.rangeTo, i18n.locale)}
-                          </div>
-                          <div className="mt-0.5 text-xs text-neutral-500">
-                            <Trans>
-                              {importedCount} Treffer, {run.documentsIgnored} ignoriert,{' '}
-                              {run.documentsFailed} fehlgeschlagen, {run.mailsChecked} Mails geprüft
-                            </Trans>
-                          </div>
-                          <div className="mt-0.5 text-xs text-neutral-500">
-                            {run.finishedAt ? (
-                              <Trans>Beendet am {formatDate(run.finishedAt, i18n.locale)}</Trans>
-                            ) : (
-                              <Trans>Gestartet am {formatDate(run.startedAt, i18n.locale)}</Trans>
-                            )}
-                          </div>
-                          {run.errorMessage && (
-                            <div className="mt-1 text-xs text-red-700">{run.errorMessage}</div>
-                          )}
-                          {run.truncationReason && (
-                            <div className="mt-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-900">
-                              {run.truncationReason === 'BYTES_CAP' ? (
-                                <Trans>
-                                  Lauf vorzeitig beendet: Datenmenge-Limit erreicht. Bitte einen
-                                  Folgelauf für den älteren Teil starten.
-                                </Trans>
+              {recentSyncRuns && recentSyncRuns.length > 0 && (
+                <section className="space-y-3">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h2 className="text-sm font-semibold text-neutral-900">
+                        <Trans>Letzte Suchläufe</Trans>
+                      </h2>
+                      <p className="mt-0.5 text-xs text-neutral-500">
+                        <Trans>Technische Herkunft der aktuellen Belege.</Trans>
+                      </p>
+                    </div>
+                    <Button asChild variant="ghost" size="sm">
+                      <Link to="/settings/sources">
+                        <Trans>Quellen öffnen</Trans>
+                      </Link>
+                    </Button>
+                  </div>
+
+                  <ul className="space-y-2">
+                    {recentSyncRuns.map((run) => {
+                      const importedCount = run.documentsAuto + run.documentsManual;
+                      const statusLabel =
+                        run.status === 'RUNNING' || run.status === 'PENDING'
+                          ? _(msg`läuft`)
+                          : run.status === 'SUCCESS'
+                            ? _(msg`fertig`)
+                            : run.status === 'FAILED'
+                              ? _(msg`fehlgeschlagen`)
+                              : _(msg`abgebrochen`);
+
+                      return (
+                        <li
+                          key={run.id}
+                          className="flex flex-wrap items-start justify-between gap-3 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                              <span className="font-medium text-neutral-900">
+                                {run.sourceLabel}
+                              </span>
+                              <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-neutral-600">
+                                {statusLabel}
+                              </span>
+                            </div>
+                            <div className="mt-0.5 text-sm text-neutral-700">
+                              {formatDateRange(run.rangeFrom, run.rangeTo, i18n.locale)}
+                            </div>
+                            <div className="mt-0.5 text-xs text-neutral-500">
+                              <Trans>
+                                {importedCount} mögliche Belege, {run.documentsIgnored} ignoriert,{' '}
+                                {run.documentsFailed} fehlgeschlagen, {run.mailsChecked} Mails
+                                geprüft
+                              </Trans>
+                            </div>
+                            <div className="mt-0.5 text-xs text-neutral-500">
+                              {run.finishedAt ? (
+                                <Trans>Beendet am {formatDate(run.finishedAt, i18n.locale)}</Trans>
                               ) : (
-                                <Trans>
-                                  Lauf vorzeitig beendet: Mail-Anzahl-Limit erreicht. Bitte einen
-                                  Folgelauf mit kürzerem Zeitraum starten.
-                                </Trans>
+                                <Trans>Gestartet am {formatDate(run.startedAt, i18n.locale)}</Trans>
                               )}
                             </div>
-                          )}
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
+                            {run.errorMessage && (
+                              <div className="mt-1 text-xs text-red-700">{run.errorMessage}</div>
+                            )}
+                            {run.truncationReason && (
+                              <div className="mt-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-900">
+                                {run.truncationReason === 'BYTES_CAP' ? (
+                                  <Trans>
+                                    Lauf vorzeitig beendet: Datenmenge-Limit erreicht. Bitte einen
+                                    Folgelauf für den älteren Teil starten.
+                                  </Trans>
+                                ) : (
+                                  <Trans>
+                                    Lauf vorzeitig beendet: Mail-Anzahl-Limit erreicht. Bitte einen
+                                    Folgelauf mit kürzerem Zeitraum starten.
+                                  </Trans>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              )}
+            </div>
           </details>
         </section>
       )}
@@ -1659,13 +1751,17 @@ export default function FindDocumentsPage() {
                 ) : unreviewedRiskyArchiveCount > 0 ? (
                   <>
                     <Trans>
-                      {unreviewedRiskyArchiveCount} unsichere Archiv-Vorschläge bitte kurz prüfen.
+                      {unreviewedRiskyArchiveCount} Belege bitte kurz prüfen, bevor sie ins Archiv
+                      gehen.
                     </Trans>{' '}
                     <button
-                      onClick={() => setFilter('needs-check')}
+                      onClick={() => {
+                        setFilter('needs-check');
+                        setReviewQueueOpen(true);
+                      }}
                       className="font-medium text-amber-700 underline-offset-2 hover:underline"
                     >
-                      <Trans>Zu prüfende Treffer anzeigen →</Trans>
+                      <Trans>Prüfung starten →</Trans>
                     </button>
                   </>
                 ) : (
