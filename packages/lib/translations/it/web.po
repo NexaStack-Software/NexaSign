@@ -2796,8 +2796,20 @@ msgstr ""
 msgid "Beleg {0} von {1} prüfen"
 msgstr ""
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Beleg ins Archiv gelegt"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "Beleg ist endgültig archiviert. Felder können nicht mehr geändert werden."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Beleg konnte nicht entfernt werden"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Beleg konnte nicht ins Archiv gelegt werden"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
@@ -2806,6 +2818,15 @@ msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "Beleg nicht gefunden"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Beleg nicht übernommen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Beleg war bereits verarbeitet"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
@@ -4516,6 +4537,11 @@ msgstr "Non hai richiesto una modifica della password? Siamo qui per aiutarti a 
 msgid "Die Erstellung kann bei vielen Belegen einige Sekunden dauern."
 msgstr ""
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Die Liste wurde aktualisiert."
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/vorlagen+/gobd+/_index.tsx
 msgid "Die Verantwortungs-Teilung"
 msgstr ""
@@ -5898,6 +5924,10 @@ msgstr "Titolo della Busta"
 msgid "Envelope updated"
 msgstr "Busta aggiornata"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Er wurde aus dieser Arbeitsliste entfernt."
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
 msgid "Erinnerung senden"
@@ -6514,7 +6544,7 @@ msgid "Für ähnliche Fälle merken"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Für Archivierung"
+msgid "Für Archiv vormerken"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/vorlagen+/gobd+/_index.tsx
@@ -7195,8 +7225,6 @@ msgid "Initials Settings"
 msgstr "Impostazioni Iniziali"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
@@ -7209,6 +7237,10 @@ msgstr ""
 
 #: apps/remix/app/components/discovery/use-deferred-status-action.tsx
 msgid "Ins Archiv übernommen (in 5 s endgültig)"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Ins Archiv vormerken"
 msgstr ""
 
 #: apps/remix/app/components/tables/admin-document-recipient-item-table.tsx
@@ -7390,6 +7422,10 @@ msgstr "Giapponese"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
 msgid "Jetzt durchgehen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Jetzt ins Archiv"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
@@ -11002,6 +11038,10 @@ msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Sichere übernehmen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Sie finden ihn jetzt im Archiv unter „Zur Ablage bereit\"."
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx

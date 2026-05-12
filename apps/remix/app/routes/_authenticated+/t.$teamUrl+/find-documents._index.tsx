@@ -3,8 +3,8 @@
 //
 // /find-documents — Wireframe-konforme Trefferliste (finden-ergebnisse.html).
 // Zeigt ausschliesslich Eingangs-Belege (status='inbox' + 'pending-manual').
-// Per-Zeile entscheidet der Nutzer client-seitig (Ins Archiv / Ignorieren),
-// am Ende ein Klick auf Bestätigen → Batch-Commit (bulkAccept + bulkIgnore).
+// Per-Zeile merkt der Nutzer Entscheidungen client-seitig vor; der echte
+// Commit passiert ueber "Bestätigen" oder explizite Sofort-Aktionen im Prüfmodus.
 // Andere Status-Stages (Im Archiv, Endgültig archiviert) liegen unter /archiv.
 import { useEffect, useMemo, useRef, useState } from 'react';
 
@@ -385,7 +385,7 @@ const DocumentRow = ({
               aria-pressed={decision === 'archive'}
             >
               <CheckCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-              <Trans>Ins Archiv</Trans>
+              <Trans>Ins Archiv vormerken</Trans>
             </Button>
             <Button
               size="sm"
@@ -712,6 +712,31 @@ export default function FindDocumentsPage() {
     );
   };
 
+  const clearLocalDocumentState = (ids: string[]) => {
+    const idSet = new Set(ids);
+
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      for (const id of idSet) next.delete(id);
+      return next;
+    });
+    setDecisions((prev) => {
+      const next = new Map(prev);
+      for (const id of idSet) next.delete(id);
+      return next;
+    });
+    setManualDecisionIds((prev) => {
+      const next = new Set(prev);
+      for (const id of idSet) next.delete(id);
+      return next;
+    });
+    setReviewedIds((prev) => {
+      const next = new Set(prev);
+      for (const id of idSet) next.delete(id);
+      return next;
+    });
+  };
+
   const handleAcceptSafeArchive = async () => {
     const ids = safeArchiveDocs.map((doc) => doc.id);
     if (ids.length === 0) return;
@@ -719,22 +744,7 @@ export default function FindDocumentsPage() {
     try {
       const result = await bulkAcceptMutation.mutateAsync({ ids });
 
-      setSelectedIds(new Set());
-      setDecisions((prev) => {
-        const next = new Map(prev);
-        for (const id of ids) next.delete(id);
-        return next;
-      });
-      setManualDecisionIds((prev) => {
-        const next = new Set(prev);
-        for (const id of ids) next.delete(id);
-        return next;
-      });
-      setReviewedIds((prev) => {
-        const next = new Set(prev);
-        for (const id of ids) next.delete(id);
-        return next;
-      });
+      clearLocalDocumentState(ids);
 
       await Promise.all([
         utils.discovery.findDocuments.invalidate(),
@@ -751,6 +761,74 @@ export default function FindDocumentsPage() {
     } catch (err) {
       toast({
         title: _(msg`Sichere Belege konnten nicht übernommen werden`),
+        description: err instanceof Error ? err.message : 'Unbekannter Fehler',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleAcceptDocumentNow = async (doc: Document) => {
+    try {
+      const result = await bulkAcceptMutation.mutateAsync({ ids: [doc.id] });
+
+      clearLocalDocumentState([doc.id]);
+      if (pendingReviewDocs.length <= 1) {
+        setReviewQueueOpen(false);
+      }
+
+      await Promise.all([
+        utils.discovery.findDocuments.invalidate(),
+        utils.discovery.getOverview.invalidate(),
+      ]);
+      await reviewQueue.refetch();
+
+      toast({
+        title:
+          result.acceptedCount > 0
+            ? _(msg`Beleg ins Archiv gelegt`)
+            : _(msg`Beleg war bereits verarbeitet`),
+        description:
+          result.acceptedCount > 0
+            ? _(msg`Sie finden ihn jetzt im Archiv unter „Zur Ablage bereit".`)
+            : _(msg`Die Liste wurde aktualisiert.`),
+      });
+    } catch (err) {
+      toast({
+        title: _(msg`Beleg konnte nicht ins Archiv gelegt werden`),
+        description: err instanceof Error ? err.message : 'Unbekannter Fehler',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleIgnoreDocumentNow = async (doc: Document) => {
+    try {
+      const result = await bulkIgnoreMutation.mutateAsync({ ids: [doc.id] });
+
+      clearLocalDocumentState([doc.id]);
+      if (pendingReviewDocs.length <= 1) {
+        setReviewQueueOpen(false);
+      }
+
+      await Promise.all([
+        utils.discovery.findDocuments.invalidate(),
+        utils.discovery.getOverview.invalidate(),
+      ]);
+      await reviewQueue.refetch();
+
+      toast({
+        title:
+          result.ignoredCount > 0
+            ? _(msg`Beleg nicht übernommen`)
+            : _(msg`Beleg war bereits verarbeitet`),
+        description:
+          result.ignoredCount > 0
+            ? _(msg`Er wurde aus dieser Arbeitsliste entfernt.`)
+            : _(msg`Die Liste wurde aktualisiert.`),
+      });
+    } catch (err) {
+      toast({
+        title: _(msg`Beleg konnte nicht entfernt werden`),
         description: err instanceof Error ? err.message : 'Unbekannter Fehler',
         variant: 'destructive',
       });
@@ -1170,17 +1248,33 @@ export default function FindDocumentsPage() {
           </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            <Button onClick={() => handleDecision(currentReviewDoc.id, 'archive')}>
-              <CheckCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-              <Trans>Ins Archiv</Trans>
+            <Button
+              onClick={() => void handleAcceptDocumentNow(currentReviewDoc)}
+              disabled={isCommitting}
+            >
+              {bulkAcceptMutation.isPending ? (
+                <Loader2Icon className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
+              ) : (
+                <CheckCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+              )}
+              <Trans>Jetzt ins Archiv</Trans>
             </Button>
-            <Button variant="outline" onClick={() => handleDecision(currentReviewDoc.id, 'ignore')}>
-              <XCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+            <Button
+              variant="outline"
+              onClick={() => void handleIgnoreDocumentNow(currentReviewDoc)}
+              disabled={isCommitting}
+            >
+              {bulkIgnoreMutation.isPending ? (
+                <Loader2Icon className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
+              ) : (
+                <XCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+              )}
               <Trans>Nicht übernehmen</Trans>
             </Button>
             <Button
               variant="ghost"
               onClick={() => handleDecision(currentReviewDoc.id, 'undecided')}
+              disabled={isCommitting}
             >
               <ClockIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
               <Trans>Später entscheiden</Trans>
@@ -1302,7 +1396,7 @@ export default function FindDocumentsPage() {
               className="border-emerald-300 bg-emerald-600 text-white hover:bg-emerald-700"
             >
               <CheckCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-              <Trans>Für Archivierung</Trans>
+              <Trans>Für Archiv vormerken</Trans>
             </Button>
             <Button
               size="sm"

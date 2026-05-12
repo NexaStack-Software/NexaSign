@@ -2791,9 +2791,21 @@ msgstr "Beispiele (erste {0})"
 msgid "Beleg {0} von {1} prüfen"
 msgstr "Beleg {0} von {1} prüfen"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Beleg ins Archiv gelegt"
+msgstr "Beleg ins Archiv gelegt"
+
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "Beleg ist endgültig archiviert. Felder können nicht mehr geändert werden."
 msgstr "Beleg ist endgültig archiviert. Felder können nicht mehr geändert werden."
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Beleg konnte nicht entfernt werden"
+msgstr "Beleg konnte nicht entfernt werden"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Beleg konnte nicht ins Archiv gelegt werden"
+msgstr "Beleg konnte nicht ins Archiv gelegt werden"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "Beleg liegt im Kunden-Portal"
@@ -2802,6 +2814,15 @@ msgstr "Beleg liegt im Kunden-Portal"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "Beleg nicht gefunden"
 msgstr "Beleg nicht gefunden"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Beleg nicht übernommen"
+msgstr "Beleg nicht übernommen"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Beleg war bereits verarbeitet"
+msgstr "Beleg war bereits verarbeitet"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "Beleg-Detail"
@@ -4511,6 +4532,11 @@ msgstr "Didn't request a password change? We are here to help you secure your ac
 msgid "Die Erstellung kann bei vielen Belegen einige Sekunden dauern."
 msgstr "Die Erstellung kann bei vielen Belegen einige Sekunden dauern."
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Die Liste wurde aktualisiert."
+msgstr "Die Liste wurde aktualisiert."
+
 #: apps/remix/app/routes/_authenticated+/vorlagen+/gobd+/_index.tsx
 msgid "Die Verantwortungs-Teilung"
 msgstr "Die Verantwortungs-Teilung"
@@ -5893,6 +5919,10 @@ msgstr "Envelope Title"
 msgid "Envelope updated"
 msgstr "Envelope updated"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Er wurde aus dieser Arbeitsliste entfernt."
+msgstr "Er wurde aus dieser Arbeitsliste entfernt."
+
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
 msgid "Erinnerung senden"
@@ -6509,8 +6539,8 @@ msgid "Für ähnliche Fälle merken"
 msgstr "Für ähnliche Fälle merken"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Für Archivierung"
-msgstr "Für Archivierung"
+msgid "Für Archiv vormerken"
+msgstr "Für Archiv vormerken"
 
 #: apps/remix/app/routes/_authenticated+/vorlagen+/gobd+/_index.tsx
 msgid "Für signierte Dokumente startet die Aufbewahrung mit <0>completedAt</0>. Für gefundene Belege startet sie mit <1>acceptedAt</1>, also in dem Moment, in dem Sie den Beleg als relevant übernehmen. Der Retention-Check meldet Belege, die auf die 10-Jahres-Frist zulaufen oder sie überschritten haben; er löscht nichts automatisch."
@@ -7190,8 +7220,6 @@ msgid "Initials Settings"
 msgstr "Initials Settings"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
@@ -7205,6 +7233,10 @@ msgstr "Ins Archiv — ist ein Beleg"
 #: apps/remix/app/components/discovery/use-deferred-status-action.tsx
 msgid "Ins Archiv übernommen (in 5 s endgültig)"
 msgstr "Ins Archiv übernommen (in 5 s endgültig)"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Ins Archiv vormerken"
+msgstr "Ins Archiv vormerken"
 
 #: apps/remix/app/components/tables/admin-document-recipient-item-table.tsx
 msgid "Inserted"
@@ -7386,6 +7418,10 @@ msgstr "Japanese"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
 msgid "Jetzt durchgehen"
 msgstr "Jetzt durchgehen"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Jetzt ins Archiv"
+msgstr "Jetzt ins Archiv"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Jetzt prüfen"
@@ -10998,6 +11034,10 @@ msgstr "Sichere Belege übernommen"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Sichere übernehmen"
 msgstr "Sichere übernehmen"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Sie finden ihn jetzt im Archiv unter „Zur Ablage bereit\"."
+msgstr "Sie finden ihn jetzt im Archiv unter „Zur Ablage bereit\"."
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
 msgid "Sie gehen die Treffer durch — pro Beleg ein Klick: ins Archiv oder ignorieren. Fertig."
