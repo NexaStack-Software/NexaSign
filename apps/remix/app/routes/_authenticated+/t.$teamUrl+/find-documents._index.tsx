@@ -757,18 +757,17 @@ export default function FindDocumentsPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-5 px-4 pb-32 pt-6 md:px-6">
-      {/* HEADER mit deutlich sichtbarer Illustration */}
-      <header className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-white p-5">
+    <div className="mx-auto w-full max-w-6xl space-y-4 px-4 pb-32 pt-6 md:px-6">
+      <header className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-white p-4">
         <div className="flex items-center gap-4">
           <Illustration
             name="trefferliste-header"
             alt="Belege aus dem Postfach"
             tone="sky"
-            className="h-20 w-24 shrink-0"
+            className="h-14 w-16 shrink-0"
           />
           <div>
-            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
+            <h1 className="text-xl font-bold tracking-tight md:text-2xl">
               {counts.total > 0 ? (
                 latestCompletedRangeLabel ? (
                   <Trans>
@@ -783,12 +782,8 @@ export default function FindDocumentsPage() {
             </h1>
             <p className="mt-1 text-sm text-neutral-600">
               <Trans>
-                So funktioniert es: Sie verbinden Ihr Postfach und wählen einen Zeitraum.
-                Anschließend durchsucht NexaFile die Mails in diesem Zeitraum und schlägt Ihnen
-                Rechnungs- und Beleg-Kandidaten vor. Sie prüfen die Treffer und entscheiden pro
-                Zeile zwischen <strong>Ins Archiv übernehmen</strong> und{' '}
-                <strong>Ignorieren</strong>. Erst mit <strong>Bestätigen</strong> werden Ihre
-                Entscheidungen übernommen.
+                Prüfen Sie die Trefferliste. Wenn ein Vorschlag passt, müssen Sie nichts ändern.
+                Erst mit <strong>Bestätigen</strong> wird etwas übernommen.
               </Trans>
             </p>
           </div>
@@ -833,422 +828,186 @@ export default function FindDocumentsPage() {
         </div>
       )}
 
-      {/* Gmail-Health-Banner: zeigt sich nur, wenn der letzte Lauf einer
-          Gmail-Source verdaechtig wenig Mails geprueft hat (= „All Mail"
-          nicht in IMAP freigegeben). Verlinkt direkt auf die Source-Detail-
-          Folder-Diagnose. */}
       <GmailAllMailBanner sources={queueMeta?.sources ?? []} />
 
-      {/* Korrespondenten-Uebersicht: „wer hat Ihnen Belege geschickt".
-          Erscheint hier in der Trefferliste, weil das die Seite ist, auf die
-          der User nach Sync-Run faktisch landet. Klick auf eine Zeile setzt
-          den ?correspondent=…-Filter (Banner darueber). */}
-      <CorrespondentSummaryCard teamUrl={teamUrl} />
-
-      {recentSyncRuns && recentSyncRuns.length > 0 && (
-        <Card className="space-y-3 p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-semibold text-neutral-900">
-                <Trans>Letzte Suchläufe</Trans>
-              </h2>
-              <p className="mt-0.5 text-xs text-neutral-600">
-                <Trans>
-                  So sehen Sie sofort, aus welchen Zeiträumen die aktuellen Treffer stammen und wann
-                  zuletzt erneut gesucht wurde.
-                </Trans>
-              </p>
-            </div>
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/settings/sources">
-                <Trans>Quellen öffnen</Trans>
-              </Link>
-            </Button>
-          </div>
-
-          <ul className="space-y-2">
-            {recentSyncRuns.map((run) => {
-              const importedCount = run.documentsAuto + run.documentsManual;
-              const statusLabel =
-                run.status === 'RUNNING' || run.status === 'PENDING'
-                  ? _(msg`läuft`)
-                  : run.status === 'SUCCESS'
-                    ? _(msg`fertig`)
-                    : run.status === 'FAILED'
-                      ? _(msg`fehlgeschlagen`)
-                      : _(msg`abgebrochen`);
-
-              return (
-                <li
-                  key={run.id}
-                  className="flex flex-wrap items-start justify-between gap-3 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <span className="font-medium text-neutral-900">{run.sourceLabel}</span>
-                      <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-neutral-600">
-                        {statusLabel}
-                      </span>
-                    </div>
-                    <div className="mt-0.5 text-sm text-neutral-700">
-                      {formatDateRange(run.rangeFrom, run.rangeTo, i18n.locale)}
-                    </div>
-                    <div className="mt-0.5 text-xs text-neutral-500">
-                      <Trans>
-                        {importedCount} Treffer, {run.documentsIgnored} ignoriert,{' '}
-                        {run.documentsFailed} fehlgeschlagen, {run.mailsChecked} Mails geprüft
-                      </Trans>
-                    </div>
-                    <div className="mt-0.5 text-xs text-neutral-500">
-                      {run.finishedAt ? (
-                        <Trans>Beendet am {formatDate(run.finishedAt, i18n.locale)}</Trans>
-                      ) : (
-                        <Trans>Gestartet am {formatDate(run.startedAt, i18n.locale)}</Trans>
-                      )}
-                    </div>
-                    {run.errorMessage && (
-                      <div className="mt-1 text-xs text-red-700">{run.errorMessage}</div>
-                    )}
-                    {run.truncationReason && (
-                      <div className="mt-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-900">
-                        {run.truncationReason === 'BYTES_CAP' ? (
-                          <Trans>
-                            ⚠ Lauf vorzeitig beendet (Datenmenge-Limit erreicht). Es liegen noch
-                            ältere Mails im gewählten Zeitraum, die nicht geprüft wurden — bitte
-                            einen Folgelauf für den älteren Teil starten.
-                          </Trans>
-                        ) : (
-                          <Trans>
-                            ⚠ Lauf vorzeitig beendet (Mail-Anzahl-Limit erreicht). Bitte einen
-                            Folgelauf mit kürzerem Zeitraum starten.
-                          </Trans>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </Card>
-      )}
-
-      {/* STEP-INDICATOR */}
-      <nav aria-label="Fortschritt" className="flex items-center justify-between">
-        <ol className="flex flex-1 items-center gap-2 text-xs text-neutral-500">
-          <li className="flex flex-1 items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-300 text-xs font-semibold text-white">
-              ✓
-            </span>
-            <span className="text-neutral-700">
-              <Trans>Postfach verbinden</Trans>
-            </span>
-            <span className="h-px flex-1 bg-neutral-300" />
-          </li>
-          <li className="flex flex-1 items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-300 text-xs font-semibold text-white">
-              ✓
-            </span>
-            <span className="text-neutral-700">
-              <Trans>Zeitraum wählen</Trans>
-            </span>
-            <span className="h-px flex-1 bg-neutral-300" />
-          </li>
-          <li className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-900 text-xs font-semibold text-white">
-              3
-            </span>
-            <span className="font-medium text-neutral-900">
-              <Trans>Belege durchgehen</Trans>
-            </span>
-          </li>
-        </ol>
-      </nav>
-
       {counts.total > 0 && (
-        <Card className="grid gap-3 border-neutral-200 bg-neutral-50 p-4 text-sm md:grid-cols-3">
+        <Card className="grid gap-3 border-neutral-200 bg-white p-4 text-sm shadow-sm md:grid-cols-[1.4fr_1fr_auto] md:items-center">
           <div>
-            <div className="font-semibold text-neutral-900">
-              <Trans>1. Vorschläge prüfen</Trans>
+            <div className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+              <Trans>Nächster Schritt</Trans>
+            </div>
+            <div className="mt-1 font-semibold text-neutral-900">
+              {qualityCounts.needsCheck > 0 ? (
+                <Trans>{qualityCounts.needsCheck} unsichere Treffer zuerst prüfen</Trans>
+              ) : counts.undecided > 0 ? (
+                <Trans>{counts.undecided} offene Treffer entscheiden</Trans>
+              ) : (
+                <Trans>Stapel bereit zum Bestätigen</Trans>
+              )}
             </div>
             <p className="mt-1 text-neutral-600">
               <Trans>
-                Jede Zeile sagt Ihnen, warum NexaFile sie übernehmen oder ignorieren würde.
+                Die Liste darunter ist die Arbeitsfläche. Statistiken und Suchlaufdetails stehen
+                weiter unten.
               </Trans>
             </p>
           </div>
-          <div>
-            <div className="font-semibold text-neutral-900">
-              <Trans>2. Nur Ausnahmen ändern</Trans>
-            </div>
-            <p className="mt-1 text-neutral-600">
-              <Trans>
-                Wenn der Vorschlag passt, müssen Sie nichts tun. Korrigieren Sie nur die Zeilen, die
-                falsch einsortiert sind.
-              </Trans>
-            </p>
-          </div>
-          <div>
-            <div className="font-semibold text-neutral-900">
-              <Trans>3. Erst am Ende bestätigen</Trans>
-            </div>
-            <p className="mt-1 text-neutral-600">
-              <Trans>
-                Vor dem Bestätigen passiert nichts dauerhaft. Übernommene Belege bleiben im Archiv
-                noch korrigierbar.
-              </Trans>
-            </p>
-          </div>
-        </Card>
-      )}
-
-      {/* VORSCHLAGS-BAR mit Helfer-Illustration */}
-      {counts.total > 0 && (
-        <div className="flex flex-wrap items-center gap-3 rounded-md border border-neutral-200 bg-white px-4 py-3 text-sm">
-          <Illustration
-            name="heuristik-helper"
-            alt="Vorgesortiert"
-            tone="sky"
-            className="h-10 w-10 shrink-0"
-          />
-          <span className="flex-1 text-neutral-700">
-            {ruleAppliedCount > 0 ? (
-              <Trans>
-                Wir haben unsere Vorschläge bereits gesetzt:{' '}
-                <strong className="text-emerald-700">{counts.archive} ins Archiv</strong>,{' '}
-                <strong className="text-neutral-600">{counts.ignore} ignorieren</strong>.{' '}
-                <strong>{ruleAppliedCount}</strong> davon basieren auf Ihren bisherigen
-                Entscheidungen.
-              </Trans>
-            ) : (
-              <Trans>
-                Wir haben unsere Vorschläge bereits gesetzt:{' '}
-                <strong className="text-emerald-700">{counts.archive} ins Archiv</strong>,{' '}
-                <strong className="text-neutral-600">{counts.ignore} ignorieren</strong>. Wenn Sie
-                das anders sehen, klicken Sie pro Zeile rechts.
-              </Trans>
+          <div className="flex flex-wrap gap-2 text-xs">
+            <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-medium text-emerald-800 ring-1 ring-emerald-200">
+              <Trans>{counts.archive} ins Archiv</Trans>
+            </span>
+            <span className="rounded-full bg-neutral-100 px-2.5 py-1 font-medium text-neutral-700 ring-1 ring-neutral-200">
+              <Trans>{counts.ignore} ignorieren</Trans>
+            </span>
+            {qualityCounts.needsCheck > 0 && (
+              <span className="rounded-full bg-amber-50 px-2.5 py-1 font-medium text-amber-900 ring-1 ring-amber-200">
+                <Trans>{qualityCounts.needsCheck} prüfen</Trans>
+              </span>
             )}
-          </span>
+            {ruleAppliedCount > 0 && (
+              <span className="rounded-full bg-sky-50 px-2.5 py-1 font-medium text-sky-800 ring-1 ring-sky-200">
+                <Trans>{ruleAppliedCount} ähnliche Fälle</Trans>
+              </span>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2 md:justify-end">
+            {qualityCounts.needsCheck > 0 && (
+              <Button size="sm" variant="outline" onClick={() => setFilter('needs-check')}>
+                <Trans>Prüfen</Trans>
+              </Button>
+            )}
+            {ruleAppliedCount > 0 && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setFilter('all');
+                  window.requestAnimationFrame(() => {
+                    document
+                      .querySelector('[data-rule-match="true"]')
+                      ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  });
+                }}
+              >
+                <Trans>Ähnliche Fälle</Trans>
+              </Button>
+            )}
+          </div>
+        </Card>
+      )}
+
+      {counts.total > 0 && (
+        <div className="flex flex-col gap-3 rounded-xl border border-neutral-200 bg-white p-3 shadow-sm md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-wrap items-center gap-1">
+            <FilterPill
+              active={filter === 'all'}
+              onClick={() => setFilter('all')}
+              label={<Trans>Alle</Trans>}
+              count={counts.total}
+            />
+            {qualityCounts.needsCheck > 0 && (
+              <FilterPill
+                active={filter === 'needs-check'}
+                onClick={() => setFilter('needs-check')}
+                label={<Trans>Zu prüfen</Trans>}
+                count={qualityCounts.needsCheck}
+                color="amber"
+              />
+            )}
+            <FilterPill
+              active={filter === 'archive'}
+              onClick={() => setFilter('archive')}
+              label={<Trans>Ins Archiv</Trans>}
+              count={counts.archive}
+              color="emerald"
+            />
+            <FilterPill
+              active={filter === 'ignore'}
+              onClick={() => setFilter('ignore')}
+              label={<Trans>Ignorieren</Trans>}
+              count={counts.ignore}
+              color="neutral"
+            />
+            {counts.undecided > 0 && (
+              <FilterPill
+                active={filter === 'undecided'}
+                onClick={() => setFilter('undecided')}
+                label={<Trans>Offen</Trans>}
+                count={counts.undecided}
+                color="amber"
+              />
+            )}
+          </div>
+
+          <Input
+            type="search"
+            placeholder={_(msg`Suchen: Absender, Betreff, Rechnungs-Nr.`)}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="md:max-w-xs"
+          />
         </div>
       )}
 
-      {ruleAppliedCount > 0 && (
-        <Card className="flex flex-wrap items-start justify-between gap-3 border-emerald-200 bg-emerald-50 p-4 text-sm">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 font-semibold text-emerald-950">
-              <SparklesIcon className="h-4 w-4" aria-hidden />
-              <Trans>{ruleAppliedCount} ähnliche Fälle erkannt</Trans>
-            </div>
-            <p className="mt-1 text-emerald-900">
-              <Trans>
-                Diese Vorschläge basieren auf Ihren bisherigen Entscheidungen. NexaFile ändert noch
-                nichts dauerhaft; Sie können jede Entscheidung vor dem Bestätigen überschreiben.
-              </Trans>
-            </p>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              setFilter('all');
-              window.requestAnimationFrame(() => {
-                document
-                  .querySelector('[data-rule-match="true"]')
-                  ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              });
-            }}
-          >
-            <Trans>Ähnliche Fälle anzeigen</Trans>
-          </Button>
-        </Card>
-      )}
-
-      {counts.total > 0 && (
-        <Card className="grid gap-3 border-sky-100 bg-sky-50/60 p-4 text-sm md:grid-cols-4">
-          <div>
-            <div className="text-xs font-medium uppercase tracking-wide text-sky-800">
-              <Trans>Trefferqualität</Trans>
-            </div>
-            <div className="mt-1 font-semibold text-neutral-900">
-              <Trans>{qualityCounts.high} sehr sicher</Trans>
-            </div>
-          </div>
-          <div>
-            <div className="text-xs font-medium uppercase tracking-wide text-sky-800">
-              <Trans>Plausibel</Trans>
-            </div>
-            <div className="mt-1 font-semibold text-neutral-900">
-              <Trans>{qualityCounts.medium} kurz prüfen</Trans>
-            </div>
-          </div>
-          <div>
-            <div className="text-xs font-medium uppercase tracking-wide text-amber-800">
-              <Trans>Unsicher</Trans>
-            </div>
-            <div className="mt-1 font-semibold text-neutral-900">
-              <Trans>{qualityCounts.low} manuell prüfen</Trans>
-            </div>
-          </div>
-          <div>
-            <div className="text-xs font-medium uppercase tracking-wide text-amber-800">
-              <Trans>Hinweise</Trans>
-            </div>
-            <div className="mt-1 font-semibold text-neutral-900">
-              <Trans>
-                {qualityCounts.risks} Risiken · {qualityCounts.duplicates} Dubletten
-              </Trans>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {qualityCounts.needsCheck > 0 && (
-        <Card className="flex flex-wrap items-start justify-between gap-3 border-amber-200 bg-amber-50 p-4 text-sm">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 font-semibold text-amber-950">
-              <TriangleAlertIcon className="h-4 w-4" aria-hidden />
-              <Trans>{qualityCounts.needsCheck} Treffer brauchen Ihre Prüfung</Trans>
-            </div>
-            <p className="mt-1 text-amber-900">
-              <Trans>
-                Diese Treffer haben niedrige Sicherheit oder mögliche Dubletten. Prüfen Sie sie
-                zuerst, bevor Sie den Stapel übernehmen.
-              </Trans>
-            </p>
-          </div>
-          <Button size="sm" variant="outline" onClick={() => setFilter('needs-check')}>
-            <Trans>Zu prüfende Treffer anzeigen</Trans>
-          </Button>
-        </Card>
-      )}
-
       {ruleSuggestions.length > 0 && (
-        <Card className="space-y-4 border-emerald-200 bg-emerald-50/70 p-4 text-sm">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2 font-semibold text-emerald-950">
-                <SparklesIcon className="h-4 w-4" aria-hidden />
-                <Trans>Wiederkehrende Entscheidungen</Trans>
-              </div>
-              <p className="mt-1 text-emerald-900">
+        <Card className="border-emerald-100 bg-emerald-50/60 p-3 text-sm">
+          <details>
+            <summary className="cursor-pointer font-medium text-emerald-950">
+              <Trans>Wiederkehrende Entscheidungen</Trans>
+              <span className="ml-2 text-xs font-normal text-emerald-800">
                 <Trans>
-                  NexaFile erkennt ähnliche Absender und schlägt dieselbe Entscheidung vor, die Sie
-                  früher meist gewählt haben. Dauerhaft übernommen wird erst, wenn Sie bestätigen.
+                  {activeRules.length} gemerkt · {suggestedRules.length} neu
                 </Trans>
-              </p>
-            </div>
-            <div className="rounded-md border border-emerald-200 bg-white px-3 py-2 text-xs text-emerald-900">
-              <strong>{activeRules.length}</strong> <Trans>gemerkt</Trans> ·{' '}
-              <strong>{suggestedRules.length}</strong> <Trans>vorgeschlagen</Trans>
-            </div>
-          </div>
+              </span>
+            </summary>
+            <p className="mt-2 text-emerald-900">
+              <Trans>
+                NexaFile erkennt ähnliche Absender und schlägt dieselbe Entscheidung vor, die Sie
+                früher meist gewählt haben.
+              </Trans>
+            </p>
 
-          {activeRules.length > 0 && (
-            <div className="space-y-2">
-              <div className="text-xs font-semibold uppercase tracking-wide text-emerald-900">
-                <Trans>Gemerkte Entscheidungen</Trans>
-              </div>
-              <ul className="space-y-2">
-                {activeRules.map((rule) => {
-                  const isPending = updateRuleStatusMutation.isPending;
-                  return (
-                    <li
-                      key={`${rule.scope}:${rule.pattern}:${rule.action}`}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-emerald-300 bg-white px-3 py-2"
-                    >
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <div className="font-medium text-neutral-900">
-                            <Trans>
-                              Mails von <strong>{rule.label}</strong>
-                            </Trans>
-                          </div>
-                          <Badge variant="secondary" size="small" className="rounded-full">
-                            {ruleActionShortLabel(rule.action)}
-                          </Badge>
-                        </div>
-                        <div className="mt-0.5 text-xs text-neutral-500">
-                          <Trans>
-                            Grundlage: {rule.evidenceCount} gleiche Entscheidungen · Sicherheit{' '}
-                            {rule.confidence}%
-                          </Trans>
-                          {rule.lastMatchedAt && (
-                            <>
-                              {' '}
-                              · <Trans>zuletzt {formatDate(rule.lastMatchedAt, i18n.locale)}</Trans>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={isPending}
-                        onClick={() =>
-                          updateRuleStatusMutation.mutate({
-                            ...rule,
-                            status: 'dismissed',
-                          })
-                        }
+            {activeRules.length > 0 && (
+              <div className="mt-3 space-y-2">
+                <div className="text-xs font-semibold uppercase tracking-wide text-emerald-900">
+                  <Trans>Gemerkte Entscheidungen</Trans>
+                </div>
+                <ul className="space-y-2">
+                  {activeRules.map((rule) => {
+                    const isPending = updateRuleStatusMutation.isPending;
+                    return (
+                      <li
+                        key={`${rule.scope}:${rule.pattern}:${rule.action}`}
+                        className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-emerald-300 bg-white px-3 py-2"
                       >
-                        <Trans>Nicht mehr merken</Trans>
-                      </Button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
-
-          {suggestedRules.length > 0 && (
-            <div className="space-y-2">
-              <div className="text-xs font-semibold uppercase tracking-wide text-emerald-900">
-                <Trans>Neue Muster</Trans>
-              </div>
-              <ul className="space-y-2">
-                {suggestedRules.map((rule) => {
-                  const isPending = updateRuleStatusMutation.isPending;
-                  return (
-                    <li
-                      key={`${rule.scope}:${rule.pattern}:${rule.action}`}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-emerald-200 bg-white px-3 py-2"
-                    >
-                      <div className="min-w-0">
-                        <div className="font-medium text-neutral-900">
-                          <Trans>
-                            Mails von <strong>{rule.label}</strong> {ruleActionLabel(rule.action)}
-                          </Trans>
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <div className="font-medium text-neutral-900">
+                              <Trans>
+                                Mails von <strong>{rule.label}</strong>
+                              </Trans>
+                            </div>
+                            <Badge variant="secondary" size="small" className="rounded-full">
+                              {ruleActionShortLabel(rule.action)}
+                            </Badge>
+                          </div>
+                          <div className="mt-0.5 text-xs text-neutral-500">
+                            <Trans>
+                              Grundlage: {rule.evidenceCount} gleiche Entscheidungen · Sicherheit{' '}
+                              {rule.confidence}%
+                            </Trans>
+                            {rule.lastMatchedAt && (
+                              <>
+                                {' '}
+                                ·{' '}
+                                <Trans>zuletzt {formatDate(rule.lastMatchedAt, i18n.locale)}</Trans>
+                              </>
+                            )}
+                          </div>
                         </div>
-                        <div className="mt-0.5 text-xs text-neutral-500">
-                          <Trans>
-                            Grundlage: {rule.evidenceCount} gleiche Entscheidungen · Sicherheit{' '}
-                            {rule.confidence}%
-                          </Trans>
-                          {rule.oppositeCount > 0 && (
-                            <>
-                              {' '}
-                              · <Trans>{rule.oppositeCount} abweichende Entscheidungen</Trans>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
                         <Button
                           size="sm"
-                          disabled={isPending}
-                          onClick={() =>
-                            updateRuleStatusMutation.mutate({
-                              ...rule,
-                              status: 'active',
-                            })
-                          }
-                        >
-                          <ShieldCheckIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-                          <Trans>Für ähnliche Fälle merken</Trans>
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
+                          variant="outline"
                           disabled={isPending}
                           onClick={() =>
                             updateRuleStatusMutation.mutate({
@@ -1257,77 +1016,100 @@ export default function FindDocumentsPage() {
                             })
                           }
                         >
-                          <Trans>Nicht vorschlagen</Trans>
+                          <Trans>Nicht mehr merken</Trans>
                         </Button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
 
-          {activeRules.length === 0 && suggestedRules.length === 0 && (
-            <div className="rounded-md border border-emerald-200 bg-white px-3 py-2 text-sm text-neutral-600">
-              <Trans>Noch keine wiederkehrenden Entscheidungen erkannt.</Trans>
-            </div>
-          )}
+            {suggestedRules.length > 0 && (
+              <div className="mt-3 space-y-2">
+                <div className="text-xs font-semibold uppercase tracking-wide text-emerald-900">
+                  <Trans>Neue Muster</Trans>
+                </div>
+                <ul className="space-y-2">
+                  {suggestedRules.map((rule) => {
+                    const isPending = updateRuleStatusMutation.isPending;
+                    return (
+                      <li
+                        key={`${rule.scope}:${rule.pattern}:${rule.action}`}
+                        className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-emerald-200 bg-white px-3 py-2"
+                      >
+                        <div className="min-w-0">
+                          <div className="font-medium text-neutral-900">
+                            <Trans>
+                              Mails von <strong>{rule.label}</strong> {ruleActionLabel(rule.action)}
+                            </Trans>
+                          </div>
+                          <div className="mt-0.5 text-xs text-neutral-500">
+                            <Trans>
+                              Grundlage: {rule.evidenceCount} gleiche Entscheidungen · Sicherheit{' '}
+                              {rule.confidence}%
+                            </Trans>
+                            {rule.oppositeCount > 0 && (
+                              <>
+                                {' '}
+                                · <Trans>{rule.oppositeCount} abweichende Entscheidungen</Trans>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            disabled={isPending}
+                            onClick={() =>
+                              updateRuleStatusMutation.mutate({
+                                ...rule,
+                                status: 'active',
+                              })
+                            }
+                          >
+                            <ShieldCheckIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                            <Trans>Für ähnliche Fälle merken</Trans>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={isPending}
+                            onClick={() =>
+                              updateRuleStatusMutation.mutate({
+                                ...rule,
+                                status: 'dismissed',
+                              })
+                            }
+                          >
+                            <Trans>Nicht vorschlagen</Trans>
+                          </Button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+          </details>
         </Card>
       )}
 
-      {/* FILTER-CHIPS — Decision-Achse, vier Pillen. */}
-      {counts.total > 0 && (
-        <div className="flex flex-wrap items-center gap-1">
-          <FilterPill
-            active={filter === 'all'}
-            onClick={() => setFilter('all')}
-            label={<Trans>Alle</Trans>}
-            count={counts.total}
-          />
-          {qualityCounts.needsCheck > 0 && (
-            <FilterPill
-              active={filter === 'needs-check'}
-              onClick={() => setFilter('needs-check')}
-              label={<Trans>Zu prüfen</Trans>}
-              count={qualityCounts.needsCheck}
-              color="amber"
-            />
-          )}
-          <FilterPill
-            active={filter === 'archive'}
-            onClick={() => setFilter('archive')}
-            label={<Trans>Für Archivierung ausgewählt</Trans>}
-            count={counts.archive}
-            color="emerald"
-          />
-          <FilterPill
-            active={filter === 'ignore'}
-            onClick={() => setFilter('ignore')}
-            label={<Trans>Zum Ignorieren ausgewählt</Trans>}
-            count={counts.ignore}
-            color="neutral"
-          />
-          {counts.undecided > 0 && (
-            <FilterPill
-              active={filter === 'undecided'}
-              onClick={() => setFilter('undecided')}
-              label={<Trans>Noch zu entscheiden</Trans>}
-              count={counts.undecided}
-              color="amber"
-            />
-          )}
-        </div>
-      )}
-
-      {/* SUCHE */}
-      {counts.total > 0 && (
-        <Input
-          type="search"
-          placeholder={_(msg`In der Liste suchen — Absender, Betreff, Rechnungs-Nr.`)}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="md:max-w-sm"
-        />
+      {counts.total > 0 && qualityCounts.needsCheck > 0 && filter !== 'needs-check' && (
+        <Card className="flex flex-wrap items-start justify-between gap-3 border-amber-200 bg-amber-50 p-3 text-sm">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 font-semibold text-amber-950">
+              <TriangleAlertIcon className="h-4 w-4" aria-hidden />
+              <Trans>{qualityCounts.needsCheck} Treffer brauchen Ihre Prüfung</Trans>
+            </div>
+            <p className="mt-1 text-neutral-600">
+              <Trans>Niedrige Sicherheit oder mögliche Dubletten. Prüfen Sie diese zuerst.</Trans>
+            </p>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => setFilter('needs-check')}>
+            <Trans>Anzeigen</Trans>
+          </Button>
+        </Card>
       )}
 
       {/* MULTI-SELECT-BULK-BAR — sticky oben, sichtbar sobald >=1 markiert. */}
@@ -1449,10 +1231,156 @@ export default function FindDocumentsPage() {
         </>
       )}
 
+      {counts.total > 0 && (
+        <section className="space-y-3 pt-2">
+          <details className="rounded-xl border border-neutral-200 bg-white p-4">
+            <summary className="cursor-pointer text-sm font-semibold text-neutral-900">
+              <Trans>Absender und Quellen</Trans>
+              <span className="ml-2 text-xs font-normal text-neutral-500">
+                <Trans>nur öffnen, wenn Sie die Herkunft der Treffer prüfen möchten</Trans>
+              </span>
+            </summary>
+            <div className="mt-4">
+              <CorrespondentSummaryCard teamUrl={teamUrl} />
+            </div>
+          </details>
+
+          <details className="rounded-xl border border-neutral-200 bg-white p-4">
+            <summary className="cursor-pointer text-sm font-semibold text-neutral-900">
+              <Trans>Qualität und Suchläufe</Trans>
+              <span className="ml-2 text-xs font-normal text-neutral-500">
+                <Trans>
+                  {qualityCounts.high} sicher · {qualityCounts.medium} plausibel ·{' '}
+                  {qualityCounts.low} unsicher
+                </Trans>
+              </span>
+            </summary>
+
+            <div className="mt-4 grid gap-3 text-sm md:grid-cols-4">
+              <div className="rounded-md border border-emerald-100 bg-emerald-50 p-3">
+                <div className="text-xs font-medium uppercase tracking-wide text-emerald-800">
+                  <Trans>Sehr sicher</Trans>
+                </div>
+                <div className="mt-1 font-semibold text-neutral-900">{qualityCounts.high}</div>
+              </div>
+              <div className="rounded-md border border-sky-100 bg-sky-50 p-3">
+                <div className="text-xs font-medium uppercase tracking-wide text-sky-800">
+                  <Trans>Plausibel</Trans>
+                </div>
+                <div className="mt-1 font-semibold text-neutral-900">{qualityCounts.medium}</div>
+              </div>
+              <div className="rounded-md border border-amber-100 bg-amber-50 p-3">
+                <div className="text-xs font-medium uppercase tracking-wide text-amber-800">
+                  <Trans>Unsicher</Trans>
+                </div>
+                <div className="mt-1 font-semibold text-neutral-900">{qualityCounts.low}</div>
+              </div>
+              <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
+                <div className="text-xs font-medium uppercase tracking-wide text-neutral-600">
+                  <Trans>Hinweise</Trans>
+                </div>
+                <div className="mt-1 font-semibold text-neutral-900">
+                  <Trans>
+                    {qualityCounts.risks} Risiken · {qualityCounts.duplicates} Dubletten
+                  </Trans>
+                </div>
+              </div>
+            </div>
+
+            {recentSyncRuns && recentSyncRuns.length > 0 && (
+              <div className="mt-5 space-y-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-sm font-semibold text-neutral-900">
+                      <Trans>Letzte Suchläufe</Trans>
+                    </h2>
+                    <p className="mt-0.5 text-xs text-neutral-600">
+                      <Trans>
+                        Technische Details dazu, aus welchen Zeiträumen die aktuellen Treffer
+                        stammen.
+                      </Trans>
+                    </p>
+                  </div>
+                  <Button asChild variant="ghost" size="sm">
+                    <Link to="/settings/sources">
+                      <Trans>Quellen öffnen</Trans>
+                    </Link>
+                  </Button>
+                </div>
+
+                <ul className="space-y-2">
+                  {recentSyncRuns.map((run) => {
+                    const importedCount = run.documentsAuto + run.documentsManual;
+                    const statusLabel =
+                      run.status === 'RUNNING' || run.status === 'PENDING'
+                        ? _(msg`läuft`)
+                        : run.status === 'SUCCESS'
+                          ? _(msg`fertig`)
+                          : run.status === 'FAILED'
+                            ? _(msg`fehlgeschlagen`)
+                            : _(msg`abgebrochen`);
+
+                    return (
+                      <li
+                        key={run.id}
+                        className="flex flex-wrap items-start justify-between gap-3 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span className="font-medium text-neutral-900">{run.sourceLabel}</span>
+                            <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-neutral-600">
+                              {statusLabel}
+                            </span>
+                          </div>
+                          <div className="mt-0.5 text-sm text-neutral-700">
+                            {formatDateRange(run.rangeFrom, run.rangeTo, i18n.locale)}
+                          </div>
+                          <div className="mt-0.5 text-xs text-neutral-500">
+                            <Trans>
+                              {importedCount} Treffer, {run.documentsIgnored} ignoriert,{' '}
+                              {run.documentsFailed} fehlgeschlagen, {run.mailsChecked} Mails geprüft
+                            </Trans>
+                          </div>
+                          <div className="mt-0.5 text-xs text-neutral-500">
+                            {run.finishedAt ? (
+                              <Trans>Beendet am {formatDate(run.finishedAt, i18n.locale)}</Trans>
+                            ) : (
+                              <Trans>Gestartet am {formatDate(run.startedAt, i18n.locale)}</Trans>
+                            )}
+                          </div>
+                          {run.errorMessage && (
+                            <div className="mt-1 text-xs text-red-700">{run.errorMessage}</div>
+                          )}
+                          {run.truncationReason && (
+                            <div className="mt-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-900">
+                              {run.truncationReason === 'BYTES_CAP' ? (
+                                <Trans>
+                                  Lauf vorzeitig beendet: Datenmenge-Limit erreicht. Bitte einen
+                                  Folgelauf für den älteren Teil starten.
+                                </Trans>
+                              ) : (
+                                <Trans>
+                                  Lauf vorzeitig beendet: Mail-Anzahl-Limit erreicht. Bitte einen
+                                  Folgelauf mit kürzerem Zeitraum starten.
+                                </Trans>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+          </details>
+        </section>
+      )}
+
       {/* BESTÄTIGEN-BAR — sticky bottom, immer sichtbar wenn Treffer da sind. */}
       {counts.total > 0 && (
         <div className="fixed inset-x-0 bottom-0 z-20 border-t border-neutral-200 bg-white shadow-lg">
-          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
             <div className="text-sm">
               <div className="font-medium text-neutral-900">
                 <span className="text-emerald-700">

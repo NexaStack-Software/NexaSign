@@ -307,13 +307,6 @@ msgstr ""
 msgid "{0} Belege warten auf Ihre Prüfung."
 msgstr ""
 
-#. placeholder {0}: res.deletedDiscoveryDocuments
-#. placeholder {1}: res.deletedSources
-#. placeholder {2}: res.deletedEnvelopes
-#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
-msgid "{0} Belege, {1} Postfächer und {2} Verträge gelöscht."
-msgstr ""
-
 #. placeholder {0}: result.skippedIds.length
 #: apps/remix/app/components/dialogs/smart-bulk-accept-dialog.tsx
 msgid "{0} bereits akzeptiert oder nicht eligibel — übersprungen."
@@ -334,6 +327,12 @@ msgstr ""
 msgid "{0} field"
 msgstr "{0}-veld"
 
+#. placeholder {0}: activeRules.length
+#. placeholder {1}: suggestedRules.length
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{0} gemerkt · {1} neu"
+msgstr ""
+
 #. placeholder {0}: team.name
 #. placeholder {1}: envelope.title
 #: packages/lib/jobs/definitions/emails/send-signing-email.handler.ts
@@ -341,6 +340,7 @@ msgid "{0} has invited you to {recipientActionVerb} the document \"{1}\"."
 msgstr "{0} heeft je uitgenodigd om het document \"{1}\" te {recipientActionVerb}."
 
 #. placeholder {0}: counts.ignore
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "{0} ignorieren"
 msgstr ""
@@ -355,6 +355,7 @@ msgstr ""
 
 #. placeholder {0}: counts.archive
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "{0} ins Archiv"
 msgstr ""
 
@@ -363,21 +364,11 @@ msgstr ""
 msgid "{0} invited you to {recipientActionVerb} a document"
 msgstr "{0} heeft je uitgenodigd om een document te {recipientActionVerb}"
 
-#. placeholder {0}: qualityCounts.medium
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "{0} kurz prüfen"
-msgstr ""
-
 #. placeholder {0}: numberFmt.format(run.mailsChecked)
 #. placeholder {1}: numberFmt.format(found)
 #. placeholder {2}: ratePerMin >= 10 ? Math.round(ratePerMin) : ratePerMin.toFixed(1)
 #: apps/remix/app/components/discovery/background-sync-banner.tsx
 msgid "{0} Mails geprüft · {1} Belege · {2} Mails/Min · Gesamtumfang wird ermittelt"
-msgstr ""
-
-#. placeholder {0}: qualityCounts.low
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "{0} manuell prüfen"
 msgstr ""
 
 #. placeholder {0}: counts.undecided
@@ -393,6 +384,11 @@ msgstr ""
 msgid "{0} of {1} documents remaining this month."
 msgstr "{0} van {1} documenten resterend deze maand."
 
+#. placeholder {0}: counts.undecided
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{0} offene Treffer entscheiden"
+msgstr ""
+
 #. placeholder {0}: doc.portalUrlLabel
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "{0} öffnen"
@@ -405,6 +401,11 @@ msgstr ""
 msgid "{0} on behalf of \"{1}\" has invited you to {recipientActionVerb} the document \"{2}\"."
 msgstr "{0} heeft namens \"{1}\" je uitgenodigd om het document \"{2}\" te {recipientActionVerb}."
 
+#. placeholder {0}: qualityCounts.needsCheck
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{0} prüfen"
+msgstr ""
+
 #. placeholder {0}: qualityCounts.risks
 #. placeholder {1}: qualityCounts.duplicates
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
@@ -412,8 +413,10 @@ msgid "{0} Risiken · {1} Dubletten"
 msgstr ""
 
 #. placeholder {0}: qualityCounts.high
+#. placeholder {1}: qualityCounts.medium
+#. placeholder {2}: qualityCounts.low
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "{0} sehr sicher"
+msgid "{0} sicher · {1} plausibel · {2} unsicher"
 msgstr ""
 
 #. placeholder {0}: organisation.name
@@ -424,6 +427,11 @@ msgstr "{0} teams"
 #. placeholder {0}: qualityCounts.needsCheck
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "{0} Treffer brauchen Ihre Prüfung"
+msgstr ""
+
+#. placeholder {0}: qualityCounts.needsCheck
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "{0} unsichere Treffer zuerst prüfen"
 msgstr ""
 
 #. placeholder {0}: numberFmt.format(run.mailsChecked)
@@ -640,7 +648,7 @@ msgid "{remaningLength, plural, one {# character remaining} other {# characters 
 msgstr "{remaningLength, plural, one {# teken resterend} other {# tekens resterend}}"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "{ruleAppliedCount} ähnliche Fälle erkannt"
+msgid "{ruleAppliedCount} ähnliche Fälle"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
@@ -1051,14 +1059,6 @@ msgstr "<0>Getypt</0> - Een handtekening die is getypt met een toetsenbord."
 msgid "<0>Uploaded</0> - A signature that is uploaded from a file."
 msgstr "<0>Geüpload</0> - Een handtekening die is geüpload vanuit een bestand."
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "⚠ Lauf vorzeitig beendet (Datenmenge-Limit erreicht). Es liegen noch ältere Mails im gewählten Zeitraum, die nicht geprüft wurden — bitte einen Folgelauf für den älteren Teil starten."
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "⚠ Lauf vorzeitig beendet (Mail-Anzahl-Limit erreicht). Bitte einen Folgelauf mit kürzerem Zeitraum starten."
-msgstr ""
-
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
 msgid "✓ Erkannt: {detectedProvider} — wir öffnen den passenden Anmelde-Dialog."
 msgstr ""
@@ -1075,10 +1075,6 @@ msgstr "1 gratis organisatie over"
 msgid "1 month"
 msgstr "1 maand"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "1. Vorschläge prüfen"
-msgstr ""
-
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
 msgid "10 Jahre Aufbewahrung"
@@ -1091,10 +1087,6 @@ msgstr ""
 #: apps/remix/app/components/forms/token.tsx
 msgid "12 months"
 msgstr "12 maanden"
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "2. Nur Ausnahmen ändern"
-msgstr ""
 
 #: apps/remix/app/components/general/document-signing/document-signing-auth-dialog.tsx
 msgid "2FA"
@@ -1111,10 +1103,6 @@ msgstr "2FA-token"
 #: apps/remix/app/components/forms/token.tsx
 msgid "3 months"
 msgstr "3 maanden"
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "3. Erst am Ende bestätigen"
-msgstr ""
 
 #: apps/remix/app/routes/_unauthenticated+/organisation.sso.confirmation.$token.tsx
 msgid "400 Error"
@@ -1335,7 +1323,6 @@ msgid "A verification email will be sent to the provided email."
 msgstr "Er wordt een verificatie-e-mail naar het opgegeven e-mailadres verzonden."
 
 #: apps/remix/app/components/dialogs/accept-discovery-document-button.tsx
-#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
 #: apps/remix/app/components/dialogs/smart-bulk-accept-dialog.tsx
 #: apps/remix/app/components/dialogs/tax-package-confirm-button.tsx
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
@@ -1361,6 +1348,10 @@ msgstr ""
 
 #: apps/remix/app/components/discovery/correspondent-summary-card.tsx
 msgid "Absender"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Absender und Quellen"
 msgstr ""
 
 #: apps/remix/app/components/general/organisations/organisation-invitations.tsx
@@ -1797,7 +1788,7 @@ msgid "After submission, a document will be automatically generated and added to
 msgstr "Na indiening wordt er automatisch een document gegenereerd en toegevoegd aan je documentenpagina. Je ontvangt ook een melding per e-mail."
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Ähnliche Fälle anzeigen"
+msgid "Ähnliche Fälle"
 msgstr ""
 
 #. placeholder {0}: doc.ruleMatch.label
@@ -1953,10 +1944,6 @@ msgstr ""
 msgid "Alle ausgewählten Belege waren bereits verarbeitet — wir haben nichts doppelt abgelegt."
 msgstr ""
 
-#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
-msgid "alle Belege im Eingang und im Archiv"
-msgstr ""
-
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
 msgid "Alle Dokumente"
 msgstr ""
@@ -1970,10 +1957,6 @@ msgstr ""
 msgid "Alle geladenen {0} markieren"
 msgstr ""
 
-#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
-msgid "Alle Inhalte löschen"
-msgstr ""
-
 #: apps/remix/app/components/dialogs/smart-bulk-accept-dialog.tsx
 msgid "Alle Kandidaten wurden in den korrigierbaren Archiv-Stapel übernommen."
 msgstr ""
@@ -1984,14 +1967,6 @@ msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
 msgid "Alle übernommenen Belege endgültig archivieren, Felder korrigieren oder ein Steuerpaket (DATEV-CSV) für Ihren Steuerberater exportieren."
-msgstr ""
-
-#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
-msgid "alle verbundenen E-Mail-Postfächer"
-msgstr ""
-
-#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
-msgid "alle Verträge und ihre Unterschriften-Status"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
@@ -2411,6 +2386,10 @@ msgstr "Elke bron"
 #: apps/remix/app/components/general/template/template-page-view-documents-table.tsx
 msgid "Any Status"
 msgstr "Elke status"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Anzeigen"
+msgstr ""
 
 #: apps/remix/app/components/general/settings-nav-desktop.tsx
 #: apps/remix/app/components/general/settings-nav-mobile.tsx
@@ -2838,7 +2817,6 @@ msgid "Belege automatisch aus IMAP / Cloud ziehen — ein Klick pro Mail."
 msgstr ""
 
 #: apps/remix/app/components/discovery/first-run-checklist.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
 msgid "Belege durchgehen"
@@ -4502,12 +4480,12 @@ msgstr "Geen wachtwoordwijziging aangevraagd? We helpen je graag je account te b
 msgid "Die Erstellung kann bei vielen Belegen einige Sekunden dauern."
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/vorlagen+/gobd+/_index.tsx
-msgid "Die Verantwortungs-Teilung"
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Die Liste darunter ist die Arbeitsfläche. Statistiken und Suchlaufdetails stehen weiter unten."
 msgstr ""
 
-#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
-msgid "Diese Aktion löscht <0>unwiderruflich</0>:"
+#: apps/remix/app/routes/_authenticated+/vorlagen+/gobd+/_index.tsx
+msgid "Die Verantwortungs-Teilung"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
@@ -4522,16 +4500,8 @@ msgstr ""
 msgid "Diese Quelle ist gesperrt."
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Diese Treffer haben niedrige Sicherheit oder mögliche Dubletten. Prüfen Sie sie zuerst, bevor Sie den Stapel übernehmen."
-msgstr ""
-
 #: apps/remix/app/routes/_authenticated+/vorlagen+/_index.tsx
 msgid "Diese Vorlagen dienen zur <0>Orientierung</0> und stellen keine Rechtsberatung i.S.d. Rechtsdienstleistungsgesetzes dar. Vor produktiver Verwendung bitte durch zugelassene/n Rechtsanwältin/-anwalt prüfen lassen. Die Nutzung erfolgt auf eigenes Risiko."
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Diese Vorschläge basieren auf Ihren bisherigen Entscheidungen. NexaFile ändert noch nichts dauerhaft; Sie können jede Entscheidung vor dem Bestätigen überschreiben."
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
@@ -5731,10 +5701,6 @@ msgstr ""
 msgid "Endgültig archiviert · 10 Jahre Aufbewahrung"
 msgstr ""
 
-#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
-msgid "Endgültig archivierte Belege haben gesetzlich eine 10-Jahres-Aufbewahrung (§ 147 AO). Ein Reset löscht sie trotzdem — das sollten Sie nur in einem Test- oder Demo-Setup machen, nicht in einer produktiv genutzten Buchhaltung."
-msgstr ""
-
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
 msgid "Endgültig entfernen"
 msgstr ""
@@ -6507,20 +6473,12 @@ msgstr ""
 msgid "Für Archivierung"
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Für Archivierung ausgewählt"
-msgstr ""
-
 #: apps/remix/app/routes/_authenticated+/vorlagen+/gobd+/_index.tsx
 msgid "Für signierte Dokumente startet die Aufbewahrung mit <0>completedAt</0>. Für gefundene Belege startet sie mit <1>acceptedAt</1>, also in dem Moment, in dem Sie den Beleg als relevant übernehmen. Der Retention-Check meldet Belege, die auf die 10-Jahres-Frist zulaufen oder sie überschritten haben; er löscht nichts automatisch."
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
 msgid "Geben Sie Ihre Adresse ein — wir erkennen den Anbieter und übernehmen die Adresse direkt in den nächsten Schritt, damit Sie sie nicht erneut tippen müssen."
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "gemerkt"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
@@ -6835,10 +6793,6 @@ msgstr ""
 msgid "Hier sehen Sie auf einen Blick, was noch geprüft, unterschrieben, abgelegt oder bereits endgültig archiviert ist."
 msgstr ""
 
-#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
-msgid "Hinweis zum Steuerrecht:"
-msgstr ""
-
 #. placeholder {0}: successState.archiveSkipped + successState.ignoreSkipped
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Hinweis: {0} Belege waren schon verarbeitet und wurden nicht doppelt abgelegt."
@@ -6973,6 +6927,7 @@ msgid "If your authenticator app does not support QR codes, you can use the foll
 msgstr "Als je authenticator‑app geen QR‑codes ondersteunt, kun je in plaats daarvan de volgende code gebruiken:"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.review.tsx
 msgid "Ignorieren"
@@ -7063,10 +7018,6 @@ msgstr "Belangrijk: wat dit betekent"
 msgid "In ca. {0} Min durchgegangen."
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "In der Liste suchen — Absender, Betreff, Rechnungs-Nr."
-msgstr ""
-
 #: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
 msgid "In dieses Team werden gefundene Belege einsortiert. Sie können das später nicht ändern — bei Bedarf eine neue Quelle anlegen."
 msgstr ""
@@ -7136,14 +7087,6 @@ msgstr "Informatie"
 msgid "Inhalt des Export-Pakets"
 msgstr ""
 
-#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
-msgid "Inhalte zurückgesetzt"
-msgstr ""
-
-#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
-msgid "Inhalte zurücksetzen"
-msgstr ""
-
 #: packages/ui/components/recipient/recipient-action-auth-select.tsx
 msgid "Inherit authentication method"
 msgstr "Authenticatiemethode overnemen"
@@ -7199,6 +7142,7 @@ msgstr "Initialen zijn verplicht"
 msgid "Initials Settings"
 msgstr "Initialen-instellingen"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
@@ -7375,10 +7319,6 @@ msgstr "Het is momenteel niet jouw beurt om te ondertekenen. Je ontvangt een e�
 msgid "Italian"
 msgstr "Italiaans"
 
-#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
-msgid "Ja, alles löschen"
-msgstr ""
-
 #: apps/remix/app/components/dialogs/accept-discovery-document-button.tsx
 msgid "Ja, endgültig archivieren"
 msgstr ""
@@ -7394,10 +7334,6 @@ msgstr ""
 #: packages/lib/constants/i18n.ts
 msgid "Japanese"
 msgstr "Japans"
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Jede Zeile sagt Ihnen, warum NexaFile sie übernehmen oder ignorieren würde."
-msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/aufgaben._index.tsx
 msgid "Jetzt durchgehen"
@@ -7604,6 +7540,14 @@ msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Lauf läuft… ({activeRunsCount})"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Lauf vorzeitig beendet: Datenmenge-Limit erreicht. Bitte einen Folgelauf für den älteren Teil starten."
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Lauf vorzeitig beendet: Mail-Anzahl-Limit erreicht. Bitte einen Folgelauf mit kürzerem Zeitraum starten."
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
@@ -8260,6 +8204,7 @@ msgstr ""
 msgid "Nächster Beleg"
 msgstr ""
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.hub.tsx
 msgid "Nächster Schritt"
 msgstr ""
@@ -8376,7 +8321,7 @@ msgid "NexaFile durchsucht jetzt das Postfach <0>{0}</0> nach Rechnungen und Bel
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "NexaFile erkennt ähnliche Absender und schlägt dieselbe Entscheidung vor, die Sie früher meist gewählt haben. Dauerhaft übernommen wird erst, wenn Sie bestätigen."
+msgid "NexaFile erkennt ähnliche Absender und schlägt dieselbe Entscheidung vor, die Sie früher meist gewählt haben."
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/vorlagen+/gobd+/_index.tsx
@@ -8422,6 +8367,10 @@ msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Nicht vorschlagen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Niedrige Sicherheit oder mögliche Dubletten. Prüfen Sie diese zuerst."
 msgstr ""
 
 #: apps/remix/app/components/forms/branding-preferences-form.tsx
@@ -8622,10 +8571,6 @@ msgstr ""
 msgid "Noch keine Sync-Läufe. Starten Sie oben einen Lauf."
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Noch keine wiederkehrenden Entscheidungen erkannt."
-msgstr ""
-
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
 msgid "Noch korrigierbar"
 msgstr ""
@@ -8634,7 +8579,6 @@ msgstr ""
 msgid "Noch nicht entscheiden"
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Noch zu entscheiden"
@@ -8718,6 +8662,10 @@ msgstr "Aantal toegestane teams. 0 = onbeperkt"
 msgid "Number Settings"
 msgstr "Nummer-instellingen"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "nur öffnen, wenn Sie die Herkunft der Treffer prüfen möchten"
+msgstr ""
+
 #: apps/remix/app/components/discovery/correspondent-summary-card.tsx
 msgid "Nur Portal"
 msgstr ""
@@ -8737,6 +8685,10 @@ msgstr ""
 #: apps/remix/app/components/general/admin-global-settings-section.tsx
 msgid "Off"
 msgstr "Uit"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Offen"
+msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Offene Zeilen anzeigen →"
@@ -9529,7 +9481,6 @@ msgstr ""
 
 #: apps/remix/app/components/discovery/first-run-checklist.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
@@ -9639,6 +9590,14 @@ msgstr "Provider"
 msgid "Provider has been updated successfully"
 msgstr "Provider is succesvol bijgewerkt"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Prüfen"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Prüfen Sie die Trefferliste. Wenn ein Vorschlag passt, müssen Sie nichts ändern. Erst mit <0>Bestätigen</0> wird etwas übernommen."
+msgstr ""
+
 #: apps/remix/app/components/general/template/template-type.tsx
 #: apps/remix/app/components/tables/templates-table.tsx
 #: packages/ui/components/template/template-type-select.tsx
@@ -9664,6 +9623,10 @@ msgstr "Publieke sjabloon"
 #: apps/remix/app/components/tables/templates-table.tsx
 msgid "Public templates are connected to your public profile. Any modifications to public templates will also appear in your public profile."
 msgstr "Openbare sjablonen zijn gekoppeld aan je openbare profiel. Alle wijzigingen aan openbare sjablonen worden ook zichtbaar in je openbare profiel."
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Qualität und Suchläufe"
+msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources.$id._index.tsx
 msgid "Quelle"
@@ -10270,10 +10233,6 @@ msgstr "2FA resetten"
 msgid "Reset email sent"
 msgstr "Resetmail verzonden"
 
-#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
-msgid "Reset fehlgeschlagen"
-msgstr ""
-
 #: apps/remix/app/components/forms/forgot-password.tsx
 #: apps/remix/app/components/forms/reset-password.tsx
 #: apps/remix/app/routes/_unauthenticated+/reset-password._index.tsx
@@ -10572,6 +10531,10 @@ msgstr "Documentatie bekijken"
 #: apps/remix/app/routes/_authenticated+/admin+/documents.$id.tsx
 msgid "See the background jobs tab for the status"
 msgstr "Zie het tabblad Achtergrondtaken voor de status"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Sehr sicher"
+msgstr ""
 
 #. placeholder {0}: formatDate(doc.archivedAt, locale)
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/archiv._index.tsx
@@ -10915,10 +10878,6 @@ msgstr "Instellingen"
 #: apps/remix/app/components/general/document-signing/document-signing-auth-passkey.tsx
 msgid "Setup"
 msgstr "Instellen"
-
-#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
-msgid "Setzt Ihren Account auf den Anfang zurück: alle gefundenen Belege, verbundenen Postfächer und versendeten Verträge werden gelöscht. Ihr Account, Ihr Name und Ihre Anmeldedaten bleiben."
-msgstr ""
 
 #: apps/remix/app/components/general/document/document-page-view-dropdown.tsx
 #: apps/remix/app/components/tables/documents-table-action-dropdown.tsx
@@ -11317,16 +11276,8 @@ msgstr "Overslaan"
 msgid "So finden Sie Ihr App-Passwort bei {0}"
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "So funktioniert es: Sie verbinden Ihr Postfach und wählen einen Zeitraum. Anschließend durchsucht NexaFile die Mails in diesem Zeitraum und schlägt Ihnen Rechnungs- und Beleg-Kandidaten vor. Sie prüfen die Treffer und entscheiden pro Zeile zwischen <0>Ins Archiv übernehmen</0> und <1>Ignorieren</1>. Erst mit <2>Bestätigen</2> werden Ihre Entscheidungen übernommen."
-msgstr ""
-
 #: apps/remix/app/components/general/user-profile-timur.tsx
 msgid "So könnte Ihr öffentliches NexaFile-Profil aussehen."
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "So sehen Sie sofort, aus welchen Zeiträumen die aktuellen Treffer stammen und wann zuletzt erneut gesucht wurde."
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/settings+/sources._index.tsx
@@ -11505,6 +11456,10 @@ msgstr ""
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings._layout.tsx
 msgid "SSO"
 msgstr "SSO"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Stapel bereit zum Bestätigen"
+msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "Startet die GoBD-10-Jahres-Frist und sperrt das Dokument unwiderruflich. Vorher können Sie noch Felder korrigieren."
@@ -11717,6 +11672,10 @@ msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
 msgid "Suche wird gestartet…"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Suchen: Absender, Betreff, Rechnungs-Nr."
 msgstr ""
 
 #: packages/email/templates/bulk-send-complete.tsx
@@ -11988,6 +11947,10 @@ msgstr "Teams waarvan deze gebruiker lid is en hun rollen."
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "Technische Details (für Admins)"
+msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
+msgid "Technische Details dazu, aus welchen Zeiträumen die aktuellen Treffer stammen."
 msgstr ""
 
 #: apps/remix/app/components/dialogs/organisation-member-invite-dialog.tsx
@@ -12901,10 +12864,6 @@ msgstr ""
 msgid "Tipp: Wenn Sie noch nicht wissen, womit anfangen — „Dokumente im Postfach finden\" ist der häufigste erste Schritt."
 msgstr ""
 
-#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
-msgid "Tippen Sie zur Bestätigung <0>{CONFIRM_PHRASE}</0> ein:"
-msgstr ""
-
 #: apps/remix/app/components/dialogs/envelope-rename-dialog.tsx
 #: apps/remix/app/components/embed/authoring/configure-document-view.tsx
 #: apps/remix/app/components/general/template/template-page-view-documents-table.tsx
@@ -13150,10 +13109,6 @@ msgstr "Totaal aantal gebruikers"
 msgid "Transfer documents to a different team"
 msgstr "Documenten overdragen naar een ander team"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Trefferqualität"
-msgstr ""
-
 #: apps/remix/app/components/dialogs/webhook-create-dialog.tsx
 #: apps/remix/app/components/dialogs/webhook-edit-dialog.tsx
 msgid "Triggers"
@@ -13330,10 +13285,6 @@ msgstr "Kan niet inloggen"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.tokens.tsx
 msgid "Unauthorized"
 msgstr "Niet gemachtigd"
-
-#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
-msgid "Unbekannter Fehler"
-msgstr ""
 
 #: apps/remix/app/components/general/stack-avatars-with-tooltip.tsx
 msgid "Uncompleted"
@@ -14109,14 +14060,6 @@ msgstr ""
 msgid "von {totalCount} Dokumenten"
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Vor dem Bestätigen passiert nichts dauerhaft. Übernommene Belege bleiben im Archiv noch korrigierbar."
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "vorgeschlagen"
-msgstr ""
-
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
 msgid "Voriger Beleg"
 msgstr ""
@@ -14691,10 +14634,6 @@ msgstr ""
 msgid "Well-known URL is required"
 msgstr "Well-known URL is verplicht"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Wenn der Vorschlag passt, müssen Sie nichts tun. Korrigieren Sie nur die Zeilen, die falsch einsortiert sind."
-msgstr ""
-
 #: apps/remix/app/components/dialogs/accept-discovery-document-button.tsx
 msgid "Wenn Sie jetzt endgültig archivieren, wird der Beleg <0>10 Jahre lang schreibgeschützt aufbewahrt</0> — wie es das Finanzamt verlangt (§ 147 AO)."
 msgstr ""
@@ -14798,18 +14737,6 @@ msgstr ""
 #. placeholder {0}: counts.archive
 #. placeholder {1}: counts.ignore
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Wir haben unsere Vorschläge bereits gesetzt: <0>{0} ins Archiv</0>, <1>{1} ignorieren</1>. <2>{ruleAppliedCount}</2> davon basieren auf Ihren bisherigen Entscheidungen."
-msgstr ""
-
-#. placeholder {0}: counts.archive
-#. placeholder {1}: counts.ignore
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Wir haben unsere Vorschläge bereits gesetzt: <0>{0} ins Archiv</0>, <1>{1} ignorieren</1>. Wenn Sie das anders sehen, klicken Sie pro Zeile rechts."
-msgstr ""
-
-#. placeholder {0}: counts.archive
-#. placeholder {1}: counts.ignore
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Wir übernehmen jetzt <0>{0} Belege</0> in den korrigierbaren Archiv-Stapel und markieren <1>{1} Mails</1> als kein Beleg."
 msgstr ""
 
@@ -14827,10 +14754,6 @@ msgstr ""
 
 #: apps/remix/app/components/sources/folder-diagnostics-card.tsx
 msgid "Wird nicht gescannt"
-msgstr ""
-
-#: apps/remix/app/components/dialogs/account-reset-dialog.tsx
-msgid "Wirklich alle Inhalte löschen?"
 msgstr ""
 
 #: apps/remix/app/routes/_unauthenticated+/articles.signature-disclosure.tsx
@@ -15952,7 +15875,6 @@ msgstr "your-domain.com another-domain.com"
 msgid "Zeitraum prüfen"
 msgstr ""
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.connect._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.range._index.tsx
@@ -15976,10 +15898,6 @@ msgid "Zu prüfen"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Zu prüfende Treffer anzeigen"
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Zu prüfende Treffer anzeigen →"
 msgstr ""
 
@@ -15990,10 +15908,6 @@ msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
 msgid "Zum Ignorieren"
-msgstr ""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents._index.tsx
-msgid "Zum Ignorieren ausgewählt"
 msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/find-documents.$id._index.tsx
