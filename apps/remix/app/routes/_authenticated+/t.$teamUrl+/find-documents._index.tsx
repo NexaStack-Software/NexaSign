@@ -65,6 +65,7 @@ export function meta() {
 type Document = TFindDiscoveryDocumentsResponse['documents'][number];
 type Decision = 'archive' | 'ignore' | 'undecided';
 type FilterChip = 'all' | 'archive' | 'ignore' | 'undecided' | 'needs-check';
+type WorkspaceTab = 'focus' | 'list' | 'senders' | 'runs' | 'memory';
 
 const formatDate = (date: Date | null, locale: string): string => {
   if (!date) return '–';
@@ -470,6 +471,7 @@ export default function FindDocumentsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [reviewQueueOpen, setReviewQueueOpen] = useState(false);
   const [reviewQueueIndex, setReviewQueueIndex] = useState(0);
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>('focus');
   // Erfolgs-Seite nach Bestätigen — zeigt Klartext-Confirmation statt Toast.
   // archive/ignore: tatsaechlich vom Server akzeptiert (acceptedCount).
   // archiveSkipped/ignoreSkipped: bereits frueher verarbeitet, Server hat sie
@@ -729,6 +731,14 @@ export default function FindDocumentsPage() {
     setReviewQueueIndex((prev) =>
       pendingReviewDocs.length <= 1 ? 0 : (prev + 1) % pendingReviewDocs.length,
     );
+  };
+
+  const openList = (nextFilter: FilterChip) => {
+    setFilter(nextFilter);
+    setActiveTab('list');
+    if (nextFilter === 'needs-check') {
+      setReviewQueueOpen(true);
+    }
   };
 
   const clearLocalDocumentState = (ids: string[]) => {
@@ -1005,11 +1015,11 @@ export default function FindDocumentsPage() {
               {counts.total > 0 ? (
                 latestCompletedRangeLabel ? (
                   <Trans>
-                    Wir haben {totalHits} mögliche Belege im Zeitraum {latestCompletedRangeLabel}{' '}
+                    Wir haben {totalHits} Beleg-Vorschläge im Zeitraum {latestCompletedRangeLabel}{' '}
                     gefunden
                   </Trans>
                 ) : (
-                  <Trans>Wir haben {totalHits} mögliche Belege gefunden</Trans>
+                  <Trans>Wir haben {totalHits} Beleg-Vorschläge gefunden</Trans>
                 )
               ) : (
                 <Trans>Belege aus dem Postfach</Trans>
@@ -1017,8 +1027,8 @@ export default function FindDocumentsPage() {
             </h1>
             <p className="mt-1 text-sm text-neutral-600">
               <Trans>
-                Wenn ein Vorschlag passt, müssen Sie nichts ändern. Erst mit{' '}
-                <strong>Bestätigen</strong> wird etwas übernommen.
+                NexaFile zeigt zuerst, was Ihre Aufmerksamkeit braucht. Übernommen wird erst, wenn
+                Sie unten bestätigen.
               </Trans>
             </p>
           </div>
@@ -1032,7 +1042,7 @@ export default function FindDocumentsPage() {
                 <MailSearchIcon className="mr-2 h-4 w-4" aria-hidden />
               )}
               {activeRunsCount > 0 ? (
-                <Trans>Lauf läuft… ({activeRunsCount})</Trans>
+                <Trans>Suche läuft… ({activeRunsCount})</Trans>
               ) : (
                 <Trans>E-Mails erneut durchsuchen</Trans>
               )}
@@ -1066,166 +1076,179 @@ export default function FindDocumentsPage() {
       <GmailAllMailBanner sources={queueMeta?.sources ?? []} />
 
       {counts.total > 0 && (
-        <Card className="overflow-hidden border-neutral-200 bg-white text-sm shadow-sm">
-          <div className="border-b border-neutral-100 bg-neutral-50/70 px-4 py-3">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                  <Trans>Arbeitsablauf</Trans>
-                </div>
-                <h2 className="mt-1 text-base font-semibold text-neutral-950">
-                  <Trans>
-                    Erst Unsicheres prüfen, dann Sicheres übernehmen, am Ende speichern.
-                  </Trans>
-                </h2>
-              </div>
-              <div className="flex flex-wrap gap-2 text-xs">
-                <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-medium text-emerald-800 ring-1 ring-emerald-200">
-                  <Trans>{counts.archive} ins Archiv</Trans>
-                </span>
-                <span className="rounded-full bg-neutral-100 px-2.5 py-1 font-medium text-neutral-700 ring-1 ring-neutral-200">
-                  <Trans>{counts.ignore} ignorieren</Trans>
-                </span>
-                {counts.undecided > 0 && (
-                  <span className="rounded-full bg-amber-50 px-2.5 py-1 font-medium text-amber-900 ring-1 ring-amber-200">
-                    <Trans>{counts.undecided} offen</Trans>
-                  </span>
-                )}
-              </div>
-            </div>
+        <Card className="border-neutral-200 bg-white p-2 shadow-sm">
+          <div className="grid gap-2 md:grid-cols-5">
+            <WorkspaceTabButton
+              active={activeTab === 'focus'}
+              onClick={() => setActiveTab('focus')}
+              title={<Trans>Heute wichtig</Trans>}
+              subtitle={<Trans>Der nächste sinnvolle Schritt</Trans>}
+              count={pendingReviewDocs.length > 0 ? pendingReviewDocs.length : counts.archive}
+              tone={pendingReviewDocs.length > 0 ? 'amber' : 'emerald'}
+            />
+            <WorkspaceTabButton
+              active={activeTab === 'list'}
+              onClick={() => setActiveTab('list')}
+              title={<Trans>Alle Vorschläge</Trans>}
+              subtitle={<Trans>Suchen, filtern, gesammelt ändern</Trans>}
+              count={counts.total}
+            />
+            <WorkspaceTabButton
+              active={activeTab === 'senders'}
+              onClick={() => setActiveTab('senders')}
+              title={<Trans>Absender</Trans>}
+              subtitle={<Trans>Wer Belege geschickt hat</Trans>}
+            />
+            <WorkspaceTabButton
+              active={activeTab === 'runs'}
+              onClick={() => setActiveTab('runs')}
+              title={<Trans>Durchsuchte Zeiträume</Trans>}
+              subtitle={<Trans>Wann welches Postfach geprüft wurde</Trans>}
+              count={activeRunsCount > 0 ? activeRunsCount : (recentSyncRuns?.length ?? 0)}
+              tone={activeRunsCount > 0 ? 'amber' : 'neutral'}
+            />
+            <WorkspaceTabButton
+              active={activeTab === 'memory'}
+              onClick={() => setActiveTab('memory')}
+              title={<Trans>Merken</Trans>}
+              subtitle={<Trans>Wiederkehrende Absender</Trans>}
+              count={activeRules.length + suggestedRules.length}
+              tone={suggestedRules.length > 0 ? 'emerald' : 'neutral'}
+            />
           </div>
+        </Card>
+      )}
 
-          <div className="grid gap-3 p-4 md:grid-cols-3">
-            <div
-              className={`rounded-lg border p-3 ${
-                pendingReviewDocs.length > 0
-                  ? 'border-amber-200 bg-amber-50'
-                  : 'border-neutral-200 bg-white'
-              }`}
-            >
+      {isLoading && (
+        <Card className="flex items-center justify-center py-12 text-neutral-500">
+          <Loader2Icon className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+          <Trans>Belege werden geladen…</Trans>
+        </Card>
+      )}
+
+      {!isLoading && counts.total === 0 && (
+        <EmptyState hasSources={(queueMeta?.sources.length ?? 0) > 0} />
+      )}
+
+      {counts.total > 0 && activeTab === 'focus' && (
+        <Card
+          className={`overflow-hidden text-sm shadow-sm ${
+            pendingReviewDocs.length > 0
+              ? 'border-amber-200 bg-amber-50/60'
+              : 'border-neutral-200 bg-white'
+          }`}
+        >
+          <div className="grid gap-4 p-4 md:grid-cols-[1fr_18rem]">
+            <div>
               <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                <Trans>1. Prüfen</Trans>
+                <Trans>Heute wichtig</Trans>
               </div>
-              <div className="mt-1 font-semibold text-neutral-950">
+              <h2 className="mt-1 text-lg font-semibold tracking-tight text-neutral-950">
                 {pendingReviewDocs.length > 0 ? (
-                  <Trans>{pendingReviewDocs.length} Belege brauchen Ihre Entscheidung</Trans>
-                ) : (
-                  <Trans>Nichts Kritisches offen</Trans>
-                )}
-              </div>
-              <p className="mt-1 min-h-10 text-xs text-neutral-600">
-                <Trans>
-                  Unsichere Belege werden einzeln gezeigt, damit Sie nicht in der langen Liste
-                  suchen müssen.
-                </Trans>
-              </p>
-              <Button
-                size="sm"
-                variant={pendingReviewDocs.length > 0 ? 'default' : 'outline'}
-                className="mt-3"
-                disabled={pendingReviewDocs.length === 0}
-                onClick={() => {
-                  setReviewQueueOpen(true);
-                  setFilter('needs-check');
-                }}
-              >
-                <Trans>Jetzt prüfen</Trans>
-              </Button>
-            </div>
-
-            <div
-              className={`rounded-lg border p-3 ${
-                safeArchiveDocs.length > 0
-                  ? 'border-emerald-200 bg-emerald-50'
-                  : 'border-neutral-200 bg-white'
-              }`}
-            >
-              <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                <Trans>2. Sicheres</Trans>
-              </div>
-              <div className="mt-1 font-semibold text-neutral-950">
-                {safeArchiveDocs.length > 0 ? (
+                  <Trans>{pendingReviewDocs.length} Belege brauchen kurz Ihre Entscheidung</Trans>
+                ) : counts.undecided > 0 ? (
+                  <Trans>{counts.undecided} Vorschläge sind noch offen</Trans>
+                ) : safeArchiveDocs.length > 0 ? (
                   <Trans>{safeArchiveDocs.length} sichere Belege können direkt ins Archiv</Trans>
-                ) : (
-                  <Trans>Keine sicheren Belege offen</Trans>
-                )}
-              </div>
-              <p className="mt-1 min-h-10 text-xs text-neutral-600">
-                <Trans>
-                  Nur sehr sichere Belege ohne Warnhinweise werden gesammelt übernommen.
-                </Trans>
-              </p>
-              <Button
-                size="sm"
-                className="mt-3"
-                onClick={() => void handleAcceptSafeArchive()}
-                disabled={safeArchiveDocs.length === 0 || isCommitting}
-              >
-                {isCommitting ? (
-                  <Loader2Icon className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
-                ) : (
-                  <CheckCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-                )}
-                <Trans>Sichere übernehmen</Trans>
-              </Button>
-            </div>
-
-            <div
-              className={`rounded-lg border p-3 ${
-                counts.undecided > 0 || pendingReviewDocs.length > 0
-                  ? 'border-neutral-200 bg-white'
-                  : 'border-emerald-200 bg-emerald-50'
-              }`}
-            >
-              <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                <Trans>3. Speichern</Trans>
-              </div>
-              <div className="mt-1 font-semibold text-neutral-950">
-                {counts.undecided > 0 ? (
-                  <Trans>{counts.undecided} Belege sind noch offen</Trans>
-                ) : pendingReviewDocs.length > 0 ? (
-                  <Trans>Erst die Prüfung abschließen</Trans>
                 ) : (
                   <Trans>Bereit zum Übernehmen</Trans>
                 )}
-              </div>
-              <p className="mt-1 min-h-10 text-xs text-neutral-600">
-                <Trans>
-                  Gespeichert wird erst über den Button unten. Bis dahin bleibt alles änderbar.
-                </Trans>
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm text-neutral-700">
+                {pendingReviewDocs.length > 0 ? (
+                  <Trans>
+                    Wir zeigen die unklaren Belege einzeln. Sie müssen nicht durch die komplette
+                    Liste scrollen.
+                  </Trans>
+                ) : counts.undecided > 0 ? (
+                  <Trans>
+                    Öffnen Sie nur die offenen Vorschläge. Alles andere ist bereits eingeordnet.
+                  </Trans>
+                ) : safeArchiveDocs.length > 0 ? (
+                  <Trans>
+                    Diese Belege haben keine Warnhinweise. Sie können sie gesammelt übernehmen.
+                  </Trans>
+                ) : (
+                  <Trans>
+                    Unten bestätigen Sie die Auswahl. Vorher wird nichts dauerhaft übernommen.
+                  </Trans>
+                )}
               </p>
-              {counts.undecided > 0 ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="mt-3"
-                  onClick={() => setFilter('undecided')}
-                >
-                  <Trans>Offene anzeigen</Trans>
+
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                {pendingReviewDocs.length > 0 ? (
+                  <Button
+                    onClick={() => {
+                      setReviewQueueOpen(true);
+                      setFilter('needs-check');
+                    }}
+                  >
+                    <TriangleAlertIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                    <Trans>Unklare Belege prüfen</Trans>
+                  </Button>
+                ) : counts.undecided > 0 ? (
+                  <Button variant="outline" onClick={() => openList('undecided')}>
+                    <Trans>Offene Vorschläge anzeigen</Trans>
+                  </Button>
+                ) : safeArchiveDocs.length > 0 ? (
+                  <Button
+                    onClick={() => void handleAcceptSafeArchive()}
+                    disabled={safeArchiveDocs.length === 0 || isCommitting}
+                  >
+                    {isCommitting ? (
+                      <Loader2Icon className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
+                    ) : (
+                      <CheckCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                    )}
+                    <Trans>Sichere Belege übernehmen</Trans>
+                  </Button>
+                ) : (
+                  <div className="rounded-md bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 ring-1 ring-emerald-200">
+                    <Trans>Unten bestätigen</Trans>
+                  </div>
+                )}
+                <Button variant="ghost" onClick={() => openList('all')}>
+                  <Trans>Alle Vorschläge öffnen</Trans>
                 </Button>
-              ) : pendingReviewDocs.length > 0 ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="mt-3"
-                  onClick={() => {
-                    setReviewQueueOpen(true);
-                    setFilter('needs-check');
-                  }}
-                >
-                  <Trans>Prüfung fortsetzen</Trans>
-                </Button>
-              ) : (
-                <div className="mt-3 rounded-md bg-white/70 px-3 py-2 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200">
-                  <Trans>Unten bestätigen</Trans>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-white/70 bg-white/80 p-3 shadow-sm">
+              <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                <Trans>Stand</Trans>
+              </div>
+              <div className="mt-3 space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-neutral-600">
+                    <Trans>Fürs Archiv</Trans>
+                  </span>
+                  <span className="font-semibold text-emerald-700">{counts.archive}</span>
                 </div>
-              )}
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-neutral-600">
+                    <Trans>Nicht übernehmen</Trans>
+                  </span>
+                  <span className="font-semibold text-neutral-700">{counts.ignore}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-neutral-600">
+                    <Trans>Noch offen</Trans>
+                  </span>
+                  <span className="font-semibold text-amber-700">{counts.undecided}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3 border-t border-neutral-100 pt-2">
+                  <span className="text-neutral-600">
+                    <Trans>Kurz prüfen</Trans>
+                  </span>
+                  <span className="font-semibold text-amber-700">{pendingReviewDocs.length}</span>
+                </div>
+              </div>
             </div>
           </div>
         </Card>
       )}
 
-      {reviewQueueOpen && currentReviewDoc && (
+      {activeTab === 'focus' && reviewQueueOpen && currentReviewDoc && (
         <Card className="border-amber-200 bg-amber-50/80 p-4 text-sm shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
@@ -1317,7 +1340,7 @@ export default function FindDocumentsPage() {
         </Card>
       )}
 
-      {counts.total > 0 && (
+      {counts.total > 0 && activeTab === 'list' && (
         <Card className="border-neutral-200 bg-white p-3 shadow-sm">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
@@ -1385,7 +1408,7 @@ export default function FindDocumentsPage() {
       )}
 
       {/* MULTI-SELECT-BULK-BAR — sticky oben, sichtbar sobald >=1 markiert. */}
-      {selectedIds.size > 0 && (
+      {activeTab === 'list' && selectedIds.size > 0 && (
         <div className="sticky top-2 z-10 flex flex-wrap items-center justify-between gap-3 rounded-md border border-neutral-900 bg-neutral-900 px-4 py-2.5 text-sm text-white shadow-md">
           <div className="flex items-center gap-3">
             <Checkbox
@@ -1440,107 +1463,84 @@ export default function FindDocumentsPage() {
       )}
 
       {/* MASTER-CHECKBOX um alle sichtbaren auszuwählen. */}
-      {counts.total > 0 && visibleDocs.length > 0 && selectedIds.size === 0 && (
-        <label className="flex w-fit cursor-pointer items-center gap-2 rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50">
-          <Checkbox
-            checked={false}
-            onCheckedChange={() => setSelectedIds(new Set(visibleDocs.map((d) => d.id)))}
-            aria-label="Alle markieren"
-            className="h-5 w-5"
-          />
-          <Trans>Alle {visibleDocs.length} markieren</Trans>
-        </label>
-      )}
+      {activeTab === 'list' &&
+        counts.total > 0 &&
+        visibleDocs.length > 0 &&
+        selectedIds.size === 0 && (
+          <label className="flex w-fit cursor-pointer items-center gap-2 rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50">
+            <Checkbox
+              checked={false}
+              onCheckedChange={() => setSelectedIds(new Set(visibleDocs.map((d) => d.id)))}
+              aria-label="Alle markieren"
+              className="h-5 w-5"
+            />
+            <Trans>Alle {visibleDocs.length} markieren</Trans>
+          </label>
+        )}
 
-      {/* LISTE */}
-      {isLoading ? (
-        <Card className="flex items-center justify-center py-12 text-neutral-500">
-          <Loader2Icon className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-          <Trans>Belege werden geladen…</Trans>
-        </Card>
-      ) : counts.total === 0 ? (
-        <EmptyState hasSources={(queueMeta?.sources.length ?? 0) > 0} />
-      ) : visibleDocs.length === 0 ? (
-        <Card className="px-6 py-12 text-center text-sm text-neutral-500">
-          <Trans>Keine Belege in dieser Sicht.</Trans>
-        </Card>
-      ) : (
-        <>
-          <ul className="space-y-2">
-            {visibleDocs.map((doc) => (
-              <DocumentRow
-                key={doc.id}
-                doc={doc}
-                locale={i18n.locale}
-                decision={decisions.get(doc.id) ?? 'undecided'}
-                isManual={manualDecisionIds.has(doc.id)}
-                isReviewed={reviewedIds.has(doc.id)}
-                isSelected={selectedIds.has(doc.id)}
-                isPending={isCommitting}
-                onChange={(next) => handleDecision(doc.id, next)}
-                onMarkReviewed={() => handleMarkReviewed(doc.id)}
-                onOpenReview={() => handleMarkReviewed(doc.id)}
-                onToggleSelect={() => handleToggleSelect(doc.id)}
-              />
-            ))}
-          </ul>
-          <div className="text-center text-xs text-neutral-500">
-            <Trans>
-              {visibleDocs.length} von {totalHits} geladen
-            </Trans>
-          </div>
-          {reviewQueue.hasNextPage && (
-            <div className="flex justify-center pt-2">
-              <Button
-                variant="outline"
-                onClick={() => void reviewQueue.fetchNextPage()}
-                disabled={reviewQueue.isFetchingNextPage}
-              >
-                {reviewQueue.isFetchingNextPage ? (
-                  <Loader2Icon className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-                ) : null}
-                <Trans>Weitere Belege laden</Trans>
-              </Button>
+      {activeTab === 'list' &&
+        counts.total > 0 &&
+        (visibleDocs.length === 0 ? (
+          <Card className="px-6 py-12 text-center text-sm text-neutral-500">
+            <Trans>Keine Belege in dieser Sicht.</Trans>
+          </Card>
+        ) : (
+          <>
+            <ul className="space-y-2">
+              {visibleDocs.map((doc) => (
+                <DocumentRow
+                  key={doc.id}
+                  doc={doc}
+                  locale={i18n.locale}
+                  decision={decisions.get(doc.id) ?? 'undecided'}
+                  isManual={manualDecisionIds.has(doc.id)}
+                  isReviewed={reviewedIds.has(doc.id)}
+                  isSelected={selectedIds.has(doc.id)}
+                  isPending={isCommitting}
+                  onChange={(next) => handleDecision(doc.id, next)}
+                  onMarkReviewed={() => handleMarkReviewed(doc.id)}
+                  onOpenReview={() => handleMarkReviewed(doc.id)}
+                  onToggleSelect={() => handleToggleSelect(doc.id)}
+                />
+              ))}
+            </ul>
+            <div className="text-center text-xs text-neutral-500">
+              <Trans>
+                {visibleDocs.length} von {totalHits} geladen
+              </Trans>
             </div>
-          )}
-        </>
-      )}
-
-      {counts.total > 0 && (
-        <section className="pt-2">
-          <details className="group rounded-xl border border-neutral-200 bg-white shadow-sm">
-            <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 px-4 py-3">
-              <div>
-                <div className="text-sm font-semibold text-neutral-900">
-                  <Trans>Details zur Suche</Trans>
-                </div>
-                <p className="text-xs text-neutral-500">
-                  <Trans>
-                    Absender, Qualität, Suchläufe und gemerkte Entscheidungen bleiben hier
-                    ausgeblendet, bis Sie sie brauchen.
-                  </Trans>
-                </p>
+            {reviewQueue.hasNextPage && (
+              <div className="flex justify-center pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => void reviewQueue.fetchNextPage()}
+                  disabled={reviewQueue.isFetchingNextPage}
+                >
+                  {reviewQueue.isFetchingNextPage ? (
+                    <Loader2Icon className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                  ) : null}
+                  <Trans>Weitere Belege laden</Trans>
+                </Button>
               </div>
-              <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-700 group-open:hidden">
-                <Trans>Öffnen</Trans>
-              </span>
-              <span className="hidden rounded-full bg-neutral-900 px-3 py-1 text-xs font-medium text-white group-open:inline-flex">
-                <Trans>Schließen</Trans>
-              </span>
-            </summary>
+            )}
+          </>
+        ))}
 
-            <div className="space-y-6 border-t border-neutral-100 p-4">
-              {ruleSuggestions.length > 0 && (
+      {counts.total > 0 &&
+        (activeTab === 'senders' || activeTab === 'runs' || activeTab === 'memory') && (
+          <section className="pt-2">
+            <Card className="space-y-6 border-neutral-200 bg-white p-4 shadow-sm">
+              {activeTab === 'memory' && ruleSuggestions.length > 0 && (
                 <section className="rounded-lg border border-emerald-100 bg-emerald-50/60 p-3">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h2 className="text-sm font-semibold text-emerald-950">
-                        <Trans>Gemerkte Entscheidungen</Trans>
+                        <Trans>Wiederkehrende Absender</Trans>
                       </h2>
                       <p className="mt-1 text-xs text-emerald-900">
                         <Trans>
-                          Wenn Sie ähnliche Absender gleich behandeln, kann NexaFile diese Auswahl
-                          beim nächsten Mal vorbereiten.
+                          Wenn Sie denselben Absender mehrfach gleich behandeln, kann NexaFile sich
+                          das merken. Sie entscheiden, was gespeichert wird.
                         </Trans>
                       </p>
                     </div>
@@ -1554,7 +1554,7 @@ export default function FindDocumentsPage() {
                   {activeRules.length > 0 && (
                     <div className="mt-3 space-y-2">
                       <div className="text-xs font-semibold uppercase tracking-wide text-emerald-900">
-                        <Trans>Bereits gemerkt</Trans>
+                        <Trans>Schon gemerkt</Trans>
                       </div>
                       <ul className="space-y-2">
                         {activeRules.map((rule) => {
@@ -1577,8 +1577,8 @@ export default function FindDocumentsPage() {
                                 </div>
                                 <div className="mt-0.5 text-xs text-neutral-500">
                                   <Trans>
-                                    Grundlage: {rule.evidenceCount} gleiche Entscheidungen ·
-                                    Sicherheit {rule.confidence}%
+                                    Bisher: {rule.evidenceCount} gleiche Entscheidungen · Sicherheit{' '}
+                                    {rule.confidence}%
                                   </Trans>
                                   {rule.lastMatchedAt && (
                                     <>
@@ -1614,7 +1614,7 @@ export default function FindDocumentsPage() {
                   {suggestedRules.length > 0 && (
                     <div className="mt-3 space-y-2">
                       <div className="text-xs font-semibold uppercase tracking-wide text-emerald-900">
-                        <Trans>Neue Vorschläge</Trans>
+                        <Trans>Kann NexaFile sich merken</Trans>
                       </div>
                       <ul className="space-y-2">
                         {suggestedRules.map((rule) => {
@@ -1633,8 +1633,8 @@ export default function FindDocumentsPage() {
                                 </div>
                                 <div className="mt-0.5 text-xs text-neutral-500">
                                   <Trans>
-                                    Grundlage: {rule.evidenceCount} gleiche Entscheidungen ·
-                                    Sicherheit {rule.confidence}%
+                                    Bisher: {rule.evidenceCount} gleiche Entscheidungen · Sicherheit{' '}
+                                    {rule.confidence}%
                                   </Trans>
                                   {rule.oppositeCount > 0 && (
                                     <>
@@ -1657,7 +1657,7 @@ export default function FindDocumentsPage() {
                                   }
                                 >
                                   <ShieldCheckIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-                                  <Trans>Für ähnliche Fälle merken</Trans>
+                                  <Trans>Merken</Trans>
                                 </Button>
                                 <Button
                                   size="sm"
@@ -1670,7 +1670,7 @@ export default function FindDocumentsPage() {
                                     })
                                   }
                                 >
-                                  <Trans>Nicht anzeigen</Trans>
+                                  <Trans>Nicht vorschlagen</Trans>
                                 </Button>
                               </div>
                             </li>
@@ -1682,72 +1682,102 @@ export default function FindDocumentsPage() {
                 </section>
               )}
 
-              <section>
-                <div className="mb-3">
+              {activeTab === 'memory' && ruleSuggestions.length === 0 && (
+                <section className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 text-sm">
+                  <h2 className="font-semibold text-neutral-950">
+                    <Trans>Noch nichts gemerkt</Trans>
+                  </h2>
+                  <p className="mt-1 text-neutral-600">
+                    <Trans>
+                      Sobald Sie denselben Absender wiederholt gleich behandeln, schlägt NexaFile
+                      vor, sich diese Entscheidung zu merken.
+                    </Trans>
+                  </p>
+                </section>
+              )}
+
+              {activeTab === 'senders' && (
+                <section>
+                  <div className="mb-3">
+                    <h2 className="text-sm font-semibold text-neutral-900">
+                      <Trans>Wer hat Belege geschickt?</Trans>
+                    </h2>
+                    <p className="mt-0.5 text-xs text-neutral-500">
+                      <Trans>
+                        Öffnen Sie einen Absender, wenn Sie nur dessen Belege prüfen möchten.
+                      </Trans>
+                    </p>
+                  </div>
+                  <CorrespondentSummaryCard teamUrl={teamUrl} />
+                </section>
+              )}
+
+              {activeTab === 'memory' && (
+                <section>
                   <h2 className="text-sm font-semibold text-neutral-900">
-                    <Trans>Absender und Quellen</Trans>
+                    <Trans>Hinweise in dieser Liste</Trans>
                   </h2>
                   <p className="mt-0.5 text-xs text-neutral-500">
                     <Trans>
-                      Nur relevant, wenn Sie nachvollziehen möchten, woher Belege kommen.
+                      Diese Zahlen erklären, warum einzelne Belege geprüft werden sollten.
                     </Trans>
                   </p>
-                </div>
-                <CorrespondentSummaryCard teamUrl={teamUrl} />
-              </section>
+                  <div className="mt-3 grid gap-3 text-sm md:grid-cols-4">
+                    <div className="rounded-md border border-emerald-100 bg-emerald-50 p-3">
+                      <div className="text-xs font-medium uppercase tracking-wide text-emerald-800">
+                        <Trans>Direkt verwendbar</Trans>
+                      </div>
+                      <div className="mt-1 font-semibold text-neutral-900">
+                        {qualityCounts.high}
+                      </div>
+                    </div>
+                    <div className="rounded-md border border-sky-100 bg-sky-50 p-3">
+                      <div className="text-xs font-medium uppercase tracking-wide text-sky-800">
+                        <Trans>Plausibel</Trans>
+                      </div>
+                      <div className="mt-1 font-semibold text-neutral-900">
+                        {qualityCounts.medium}
+                      </div>
+                    </div>
+                    <div className="rounded-md border border-amber-100 bg-amber-50 p-3">
+                      <div className="text-xs font-medium uppercase tracking-wide text-amber-800">
+                        <Trans>Bitte prüfen</Trans>
+                      </div>
+                      <div className="mt-1 font-semibold text-neutral-900">
+                        {qualityCounts.needsCheck}
+                      </div>
+                    </div>
+                    <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
+                      <div className="text-xs font-medium uppercase tracking-wide text-neutral-600">
+                        <Trans>Hinweise</Trans>
+                      </div>
+                      <div className="mt-1 font-semibold text-neutral-900">
+                        <Trans>
+                          {qualityCounts.risks} Warnhinweise · {qualityCounts.duplicates} mögliche
+                          Dubletten
+                        </Trans>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              )}
 
-              <section>
-                <h2 className="text-sm font-semibold text-neutral-900">
-                  <Trans>Erkennungsqualität</Trans>
-                </h2>
-                <div className="mt-3 grid gap-3 text-sm md:grid-cols-4">
-                  <div className="rounded-md border border-emerald-100 bg-emerald-50 p-3">
-                    <div className="text-xs font-medium uppercase tracking-wide text-emerald-800">
-                      <Trans>Sehr sicher</Trans>
-                    </div>
-                    <div className="mt-1 font-semibold text-neutral-900">{qualityCounts.high}</div>
-                  </div>
-                  <div className="rounded-md border border-sky-100 bg-sky-50 p-3">
-                    <div className="text-xs font-medium uppercase tracking-wide text-sky-800">
-                      <Trans>Plausibel</Trans>
-                    </div>
-                    <div className="mt-1 font-semibold text-neutral-900">
-                      {qualityCounts.medium}
-                    </div>
-                  </div>
-                  <div className="rounded-md border border-amber-100 bg-amber-50 p-3">
-                    <div className="text-xs font-medium uppercase tracking-wide text-amber-800">
-                      <Trans>Unsicher</Trans>
-                    </div>
-                    <div className="mt-1 font-semibold text-neutral-900">{qualityCounts.low}</div>
-                  </div>
-                  <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
-                    <div className="text-xs font-medium uppercase tracking-wide text-neutral-600">
-                      <Trans>Hinweise</Trans>
-                    </div>
-                    <div className="mt-1 font-semibold text-neutral-900">
-                      <Trans>
-                        {qualityCounts.risks} Risiken · {qualityCounts.duplicates} Dubletten
-                      </Trans>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {recentSyncRuns && recentSyncRuns.length > 0 && (
+              {activeTab === 'runs' && recentSyncRuns && recentSyncRuns.length > 0 && (
                 <section className="space-y-3">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h2 className="text-sm font-semibold text-neutral-900">
-                        <Trans>Letzte Suchläufe</Trans>
+                        <Trans>Durchsuchte Zeiträume</Trans>
                       </h2>
                       <p className="mt-0.5 text-xs text-neutral-500">
-                        <Trans>Technische Herkunft der aktuellen Belege.</Trans>
+                        <Trans>
+                          Zur Nachvollziehbarkeit: welche Postfächer wann geprüft wurden.
+                        </Trans>
                       </p>
                     </div>
                     <Button asChild variant="ghost" size="sm">
                       <Link to="/settings/sources">
-                        <Trans>Quellen öffnen</Trans>
+                        <Trans>Postfächer verwalten</Trans>
                       </Link>
                     </Button>
                   </div>
@@ -1757,7 +1787,7 @@ export default function FindDocumentsPage() {
                       const importedCount = run.documentsAuto + run.documentsManual;
                       const statusLabel =
                         run.status === 'RUNNING' || run.status === 'PENDING'
-                          ? _(msg`läuft`)
+                          ? _(msg`wird geprüft`)
                           : run.status === 'SUCCESS'
                             ? _(msg`fertig`)
                             : run.status === 'FAILED'
@@ -1783,7 +1813,7 @@ export default function FindDocumentsPage() {
                             </div>
                             <div className="mt-0.5 text-xs text-neutral-500">
                               <Trans>
-                                {importedCount} mögliche Belege, {run.documentsIgnored} ignoriert,{' '}
+                                {importedCount} Beleg-Vorschläge, {run.documentsIgnored} ignoriert,{' '}
                                 {run.documentsFailed} fehlgeschlagen, {run.mailsChecked} Mails
                                 geprüft
                               </Trans>
@@ -1802,13 +1832,13 @@ export default function FindDocumentsPage() {
                               <div className="mt-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-900">
                                 {run.truncationReason === 'BYTES_CAP' ? (
                                   <Trans>
-                                    Lauf vorzeitig beendet: Datenmenge-Limit erreicht. Bitte einen
-                                    Folgelauf für den älteren Teil starten.
+                                    Suche vorzeitig beendet: Datenmenge-Limit erreicht. Bitte einen
+                                    weitere Suche für den älteren Teil starten.
                                   </Trans>
                                 ) : (
                                   <Trans>
-                                    Lauf vorzeitig beendet: Mail-Anzahl-Limit erreicht. Bitte einen
-                                    Folgelauf mit kürzerem Zeitraum starten.
+                                    Suche vorzeitig beendet: Mail-Anzahl-Limit erreicht. Bitte einen
+                                    weitere Suche mit kürzerem Zeitraum starten.
                                   </Trans>
                                 )}
                               </div>
@@ -1820,10 +1850,22 @@ export default function FindDocumentsPage() {
                   </ul>
                 </section>
               )}
-            </div>
-          </details>
-        </section>
-      )}
+              {activeTab === 'runs' && (!recentSyncRuns || recentSyncRuns.length === 0) && (
+                <section className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 text-sm">
+                  <h2 className="font-semibold text-neutral-950">
+                    <Trans>Noch keine Suche abgeschlossen</Trans>
+                  </h2>
+                  <p className="mt-1 text-neutral-600">
+                    <Trans>
+                      Sobald ein Postfach durchsucht wurde, sehen Sie hier den Zeitraum und das
+                      Ergebnis.
+                    </Trans>
+                  </p>
+                </section>
+              )}
+            </Card>
+          </section>
+        )}
 
       {/* BESTÄTIGEN-BAR — sticky bottom, immer sichtbar wenn Treffer da sind. */}
       {counts.total > 0 && (
@@ -1855,7 +1897,7 @@ export default function FindDocumentsPage() {
                       Bitte erst die offenen Zeilen entscheiden — sonst geht uns ein Beleg verloren.
                     </Trans>{' '}
                     <button
-                      onClick={() => setFilter('undecided')}
+                      onClick={() => openList('undecided')}
                       className="font-medium text-amber-700 underline-offset-2 hover:underline"
                     >
                       <Trans>Offene Zeilen anzeigen →</Trans>
@@ -1871,6 +1913,7 @@ export default function FindDocumentsPage() {
                       onClick={() => {
                         setFilter('needs-check');
                         setReviewQueueOpen(true);
+                        setActiveTab('focus');
                       }}
                       className="font-medium text-amber-700 underline-offset-2 hover:underline"
                     >
@@ -1984,6 +2027,54 @@ export default function FindDocumentsPage() {
   );
 }
 
+const WorkspaceTabButton = ({
+  active,
+  onClick,
+  title,
+  subtitle,
+  count,
+  tone = 'neutral',
+}: {
+  active: boolean;
+  onClick: () => void;
+  title: React.ReactNode;
+  subtitle: React.ReactNode;
+  count?: React.ReactNode;
+  tone?: 'amber' | 'emerald' | 'neutral';
+}) => {
+  const badgeClass = active
+    ? 'bg-white/15 text-white ring-white/20'
+    : tone === 'emerald'
+      ? 'bg-emerald-50 text-emerald-800 ring-emerald-200'
+      : tone === 'amber'
+        ? 'bg-amber-50 text-amber-900 ring-amber-200'
+        : 'bg-neutral-100 text-neutral-700 ring-neutral-200';
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-lg border p-3 text-left transition-colors ${
+        active
+          ? 'border-neutral-950 bg-neutral-950 text-white shadow-sm'
+          : 'border-neutral-200 bg-white text-neutral-900 hover:border-neutral-300 hover:bg-neutral-50'
+      }`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <span className="text-sm font-semibold">{title}</span>
+        {count !== undefined && (
+          <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ${badgeClass}`}>
+            {count}
+          </span>
+        )}
+      </div>
+      <div className={`mt-1 text-xs ${active ? 'text-neutral-300' : 'text-neutral-500'}`}>
+        {subtitle}
+      </div>
+    </button>
+  );
+};
+
 const FilterPill = ({
   active,
   onClick,
@@ -2066,7 +2157,7 @@ const EmptyState = ({ hasSources }: { hasSources: boolean }) => {
       <Button asChild variant="outline">
         <Link to="connect">
           <MailSearchIcon className="mr-2 h-4 w-4" aria-hidden />
-          <Trans>Neuen Lauf starten</Trans>
+          <Trans>Postfach erneut durchsuchen</Trans>
         </Link>
       </Button>
     </Card>
