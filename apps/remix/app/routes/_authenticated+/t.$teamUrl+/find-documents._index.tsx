@@ -449,6 +449,8 @@ export default function FindDocumentsPage() {
   // Multi-Select für Bulk-Aktionen (z.B. mehrere Zeilen gleichzeitig von
   // "Für Archivierung ausgewählt" auf "Zum Ignorieren ausgewählt" umstellen).
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [reviewQueueOpen, setReviewQueueOpen] = useState(false);
+  const [reviewQueueIndex, setReviewQueueIndex] = useState(0);
   // Erfolgs-Seite nach Bestätigen — zeigt Klartext-Confirmation statt Toast.
   // archive/ignore: tatsaechlich vom Server akzeptiert (acceptedCount).
   // archiveSkipped/ignoreSkipped: bereits frueher verarbeitet, Server hat sie
@@ -663,14 +665,92 @@ export default function FindDocumentsPage() {
     });
   }, [allInboxDocs, decisions, filter]);
 
-  const unreviewedRiskyArchiveCount = useMemo(
+  const safeArchiveDocs = useMemo(
+    () =>
+      allInboxDocs.filter(
+        (doc) =>
+          decisions.get(doc.id) === 'archive' &&
+          doc.confidenceLabel === 'high' &&
+          !needsHumanCheck(doc) &&
+          (doc.riskFlags?.length ?? 0) === 0,
+      ),
+    [allInboxDocs, decisions],
+  );
+
+  const pendingReviewDocs = useMemo(
     () =>
       allInboxDocs.filter(
         (doc) =>
           decisions.get(doc.id) === 'archive' && needsHumanCheck(doc) && !reviewedIds.has(doc.id),
-      ).length,
+      ),
     [allInboxDocs, decisions, reviewedIds],
   );
+
+  useEffect(() => {
+    setReviewQueueIndex((prev) => {
+      if (pendingReviewDocs.length === 0) return 0;
+      return Math.min(prev, pendingReviewDocs.length - 1);
+    });
+  }, [pendingReviewDocs.length]);
+
+  const currentReviewDoc = pendingReviewDocs[reviewQueueIndex] ?? null;
+
+  const unreviewedRiskyArchiveCount = useMemo(
+    () => pendingReviewDocs.length,
+    [pendingReviewDocs.length],
+  );
+
+  const goToNextPendingReview = () => {
+    setReviewQueueOpen(true);
+    setReviewQueueIndex((prev) =>
+      pendingReviewDocs.length <= 1 ? 0 : (prev + 1) % pendingReviewDocs.length,
+    );
+  };
+
+  const handleAcceptSafeArchive = async () => {
+    const ids = safeArchiveDocs.map((doc) => doc.id);
+    if (ids.length === 0) return;
+
+    try {
+      const result = await bulkAcceptMutation.mutateAsync({ ids });
+
+      setSelectedIds(new Set());
+      setDecisions((prev) => {
+        const next = new Map(prev);
+        for (const id of ids) next.delete(id);
+        return next;
+      });
+      setManualDecisionIds((prev) => {
+        const next = new Set(prev);
+        for (const id of ids) next.delete(id);
+        return next;
+      });
+      setReviewedIds((prev) => {
+        const next = new Set(prev);
+        for (const id of ids) next.delete(id);
+        return next;
+      });
+
+      await Promise.all([
+        utils.discovery.findDocuments.invalidate(),
+        utils.discovery.getOverview.invalidate(),
+      ]);
+      await reviewQueue.refetch();
+
+      toast({
+        title: _(msg`Sichere Vorschläge übernommen`),
+        description: _(
+          msg`${result.acceptedCount} Belege liegen jetzt im Archiv. Unsichere Treffer bleiben in der Liste.`,
+        ),
+      });
+    } catch (err) {
+      toast({
+        title: _(msg`Sichere Vorschläge konnten nicht übernommen werden`),
+        description: err instanceof Error ? err.message : 'Unbekannter Fehler',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const handleConfirm = async () => {
     const archiveIds = allInboxDocs
@@ -889,8 +969,10 @@ export default function FindDocumentsPage() {
               <Trans>Nächster Schritt</Trans>
             </div>
             <div className="mt-1 font-semibold text-neutral-900">
-              {qualityCounts.needsCheck > 0 ? (
-                <Trans>{qualityCounts.needsCheck} unsichere Treffer zuerst prüfen</Trans>
+              {pendingReviewDocs.length > 0 ? (
+                <Trans>{pendingReviewDocs.length} Prüffälle fokussiert durchgehen</Trans>
+              ) : safeArchiveDocs.length > 0 ? (
+                <Trans>{safeArchiveDocs.length} sichere Vorschläge übernehmen</Trans>
               ) : counts.undecided > 0 ? (
                 <Trans>{counts.undecided} offene Treffer entscheiden</Trans>
               ) : (
@@ -911,9 +993,14 @@ export default function FindDocumentsPage() {
             <span className="rounded-full bg-neutral-100 px-2.5 py-1 font-medium text-neutral-700 ring-1 ring-neutral-200">
               <Trans>{counts.ignore} ignorieren</Trans>
             </span>
-            {qualityCounts.needsCheck > 0 && (
+            {pendingReviewDocs.length > 0 && (
               <span className="rounded-full bg-amber-50 px-2.5 py-1 font-medium text-amber-900 ring-1 ring-amber-200">
-                <Trans>{qualityCounts.needsCheck} prüfen</Trans>
+                <Trans>{pendingReviewDocs.length} prüfen</Trans>
+              </span>
+            )}
+            {safeArchiveDocs.length > 0 && (
+              <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-medium text-emerald-800 ring-1 ring-emerald-200">
+                <Trans>{safeArchiveDocs.length} sicher</Trans>
               </span>
             )}
             {ruleAppliedCount > 0 && (
@@ -923,9 +1010,30 @@ export default function FindDocumentsPage() {
             )}
           </div>
           <div className="flex flex-wrap gap-2 md:justify-end">
-            {qualityCounts.needsCheck > 0 && (
-              <Button size="sm" variant="outline" onClick={() => setFilter('needs-check')}>
-                <Trans>Prüfen</Trans>
+            {safeArchiveDocs.length > 0 && (
+              <Button
+                size="sm"
+                onClick={() => void handleAcceptSafeArchive()}
+                disabled={isCommitting}
+              >
+                {isCommitting ? (
+                  <Loader2Icon className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
+                ) : (
+                  <CheckCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                )}
+                <Trans>Sichere übernehmen</Trans>
+              </Button>
+            )}
+            {pendingReviewDocs.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setReviewQueueOpen(true);
+                  setFilter('needs-check');
+                }}
+              >
+                <Trans>Prüfmodus starten</Trans>
               </Button>
             )}
             {ruleAppliedCount > 0 && (
@@ -944,6 +1052,79 @@ export default function FindDocumentsPage() {
                 <Trans>Ähnliche Fälle</Trans>
               </Button>
             )}
+          </div>
+        </Card>
+      )}
+
+      {reviewQueueOpen && currentReviewDoc && (
+        <Card className="border-amber-200 bg-amber-50/80 p-4 text-sm shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-semibold uppercase tracking-wide text-amber-900">
+                <Trans>
+                  Prüffall {reviewQueueIndex + 1} von {pendingReviewDocs.length}
+                </Trans>
+              </div>
+              <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <h2 className="truncate text-base font-semibold text-neutral-950">
+                  {currentReviewDoc.correspondent ?? currentReviewDoc.title}
+                </h2>
+                {currentReviewDoc.detectedAmount && (
+                  <span className="font-semibold tabular-nums text-neutral-950">
+                    {currentReviewDoc.detectedAmount}
+                  </span>
+                )}
+                <span className="text-xs tabular-nums text-neutral-600">
+                  {formatDate(
+                    currentReviewDoc.documentDate ?? currentReviewDoc.capturedAt,
+                    i18n.locale,
+                  )}
+                </span>
+              </div>
+              <p className="mt-1 truncate text-neutral-700">{currentReviewDoc.title}</p>
+              <p className="mt-1 text-xs text-amber-900">
+                {decisionReason(
+                  currentReviewDoc,
+                  decisions.get(currentReviewDoc.id) ?? 'undecided',
+                )}
+              </p>
+            </div>
+            <Button size="sm" variant="ghost" onClick={() => setReviewQueueOpen(false)}>
+              <Trans>Schließen</Trans>
+            </Button>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Button onClick={() => handleDecision(currentReviewDoc.id, 'archive')}>
+              <CheckCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+              <Trans>Übernehmen</Trans>
+            </Button>
+            <Button variant="outline" onClick={() => handleDecision(currentReviewDoc.id, 'ignore')}>
+              <XCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+              <Trans>Ignorieren</Trans>
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => handleDecision(currentReviewDoc.id, 'undecided')}
+            >
+              <ClockIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+              <Trans>Später</Trans>
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={goToNextPendingReview}
+              disabled={pendingReviewDocs.length <= 1}
+            >
+              <Trans>Nächster</Trans>
+            </Button>
+            <Button asChild variant="link" className="px-1">
+              <Link
+                to={currentReviewDoc.id}
+                onClick={() => handleMarkReviewed(currentReviewDoc.id)}
+              >
+                <Trans>Details öffnen</Trans>
+              </Link>
+            </Button>
           </div>
         </Card>
       )}
@@ -1147,19 +1328,26 @@ export default function FindDocumentsPage() {
         </Card>
       )}
 
-      {counts.total > 0 && qualityCounts.needsCheck > 0 && filter !== 'needs-check' && (
+      {counts.total > 0 && pendingReviewDocs.length > 0 && filter !== 'needs-check' && (
         <Card className="flex flex-wrap items-start justify-between gap-3 border-amber-200 bg-amber-50 p-3 text-sm">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 font-semibold text-amber-950">
               <TriangleAlertIcon className="h-4 w-4" aria-hidden />
-              <Trans>{qualityCounts.needsCheck} Treffer brauchen Ihre Prüfung</Trans>
+              <Trans>{pendingReviewDocs.length} Treffer brauchen Ihre Prüfung</Trans>
             </div>
             <p className="mt-1 text-neutral-600">
               <Trans>Niedrige Sicherheit oder mögliche Dubletten. Prüfen Sie diese zuerst.</Trans>
             </p>
           </div>
-          <Button size="sm" variant="outline" onClick={() => setFilter('needs-check')}>
-            <Trans>Anzeigen</Trans>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setFilter('needs-check');
+              setReviewQueueOpen(true);
+            }}
+          >
+            <Trans>Prüfmodus starten</Trans>
           </Button>
         </Card>
       )}
