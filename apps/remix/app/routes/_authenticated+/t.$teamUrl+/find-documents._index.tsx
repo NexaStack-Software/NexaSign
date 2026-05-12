@@ -95,8 +95,8 @@ const stripeColor = (decision: Decision): string => {
   return 'bg-amber-400';
 };
 
-const decisionLabel = (decision: Decision, isManual: boolean): string => {
-  const prefix = isManual ? 'Von Ihnen gewählt' : 'Vorschlag';
+const decisionLabel = (decision: Decision, isManual: boolean, isReviewed = false): string => {
+  const prefix = isManual ? 'Von Ihnen gewählt' : isReviewed ? 'Geprüft' : 'Vorschlag';
   if (decision === 'archive') return `${prefix}: ins Archiv`;
   if (decision === 'ignore') return `${prefix}: ignorieren`;
   return isManual ? 'Von Ihnen offen gelassen' : 'Noch offen';
@@ -206,32 +206,42 @@ const DocumentRow = ({
   locale,
   decision,
   isManual,
+  isReviewed,
   isSelected,
   isPending,
   onChange,
+  onMarkReviewed,
+  onOpenReview,
   onToggleSelect,
 }: {
   doc: Document;
   locale: string;
   decision: Decision;
   isManual: boolean;
+  isReviewed: boolean;
   isSelected: boolean;
   isPending: boolean;
   onChange: (next: Decision) => void;
+  onMarkReviewed: () => void;
+  onOpenReview: () => void;
   onToggleSelect: () => void;
 }) => {
   const hint = decisionReason(doc, decision);
   const dimmed = decision === 'ignore';
+  const needsReview = needsHumanCheck(doc);
+  const reviewOpen = needsReview && decision === 'archive' && !isReviewed;
 
   return (
     <li
       data-rule-match={doc.ruleMatch ? 'true' : undefined}
-      className={`group relative flex items-stretch overflow-hidden rounded-md border shadow-sm transition-all hover:shadow-md ${
+      className={`group relative flex items-stretch overflow-hidden rounded-lg border shadow-sm transition-all hover:shadow-md ${
         isSelected
           ? 'border-primary ring-2 ring-primary/30'
-          : dimmed
-            ? 'border-neutral-200 bg-neutral-50/60'
-            : 'border-neutral-200 bg-white'
+          : reviewOpen
+            ? 'border-amber-300 bg-amber-50/40'
+            : dimmed
+              ? 'border-neutral-200 bg-neutral-50/60'
+              : 'border-neutral-200 bg-white'
       }`}
     >
       <span className={`w-1 shrink-0 ${stripeColor(decision)}`} aria-hidden />
@@ -246,45 +256,72 @@ const DocumentRow = ({
         </label>
         <Link
           to={doc.id}
+          onClick={onOpenReview}
           className="flex min-w-0 flex-1 items-start gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <FileTextIcon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-              <span className={`font-medium ${dimmed ? 'text-neutral-500' : 'text-foreground'}`}>
-                {doc.correspondent ?? doc.title}
-              </span>
-              {doc.detectedAmount && (
-                <span
-                  className={`text-sm tabular-nums ${dimmed ? 'text-neutral-400' : 'text-foreground'}`}
+            <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+              <div className="min-w-0">
+                <div
+                  className={`truncate font-medium ${dimmed ? 'text-neutral-500' : 'text-foreground'}`}
                 >
-                  {doc.detectedAmount}
-                </span>
-              )}
-              <span className="text-xs tabular-nums text-neutral-500">
-                {formatDate(doc.documentDate ?? doc.capturedAt, locale)}
-              </span>
-              {doc.hasArchive && doc.attachmentCount > 0 && (
-                <span
-                  className="inline-flex items-center gap-0.5 text-xs text-neutral-500"
-                  title="Anhang vorhanden"
+                  {doc.correspondent ?? doc.title}
+                </div>
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                  {doc.detectedAmount && (
+                    <span
+                      className={`font-semibold tabular-nums ${dimmed ? 'text-neutral-400' : 'text-foreground'}`}
+                    >
+                      {doc.detectedAmount}
+                    </span>
+                  )}
+                  <span className="tabular-nums text-neutral-500">
+                    {formatDate(doc.documentDate ?? doc.capturedAt, locale)}
+                  </span>
+                  {doc.hasArchive && doc.attachmentCount > 0 && (
+                    <span
+                      className="inline-flex items-center gap-0.5 text-neutral-500"
+                      title="Anhang vorhanden"
+                    >
+                      <PaperclipIcon className="h-3 w-3" aria-hidden />
+                      {doc.attachmentCount}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {reviewOpen && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-950 ring-1 ring-amber-200">
+                    <TriangleAlertIcon className="h-3 w-3" aria-hidden />
+                    <Trans>Bitte prüfen</Trans>
+                  </span>
+                )}
+                <Badge
+                  variant={
+                    isManual || isReviewed
+                      ? 'secondary'
+                      : decision === 'undecided'
+                        ? 'warning'
+                        : 'neutral'
+                  }
+                  size="small"
+                  className={`rounded-full ${decisionPillClass(decision)}`}
                 >
-                  <PaperclipIcon className="h-3 w-3" aria-hidden />
-                  {doc.attachmentCount}
-                </span>
-              )}
-              {decision === 'undecided' && (
-                <span className="ml-1 rounded-sm bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-900">
-                  <Trans>Noch zu entscheiden</Trans>
-                </span>
-              )}
-              <Badge
-                variant={isManual ? 'secondary' : decision === 'undecided' ? 'warning' : 'neutral'}
-                size="small"
-                className={`ml-1 rounded-full ${decisionPillClass(decision)}`}
-              >
-                {decisionLabel(decision, isManual)}
-              </Badge>
+                  {decisionLabel(decision, isManual, isReviewed)}
+                </Badge>
+              </div>
+            </div>
+
+            <div
+              className={`mt-1 truncate text-sm group-hover:underline ${
+                dimmed ? 'text-neutral-500' : 'text-neutral-700'
+              }`}
+            >
+              {doc.title}
+            </div>
+
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
               {typeof doc.confidence === 'number' && (
                 <span
                   className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${confidenceClass(doc)}`}
@@ -304,14 +341,7 @@ const DocumentRow = ({
                 </span>
               )}
             </div>
-            <div
-              className={`mt-0.5 truncate text-sm group-hover:underline ${
-                dimmed ? 'text-neutral-500' : 'text-neutral-700'
-              }`}
-            >
-              {doc.title}
-            </div>
-            <div className="mt-0.5 text-xs text-neutral-500">{hint}</div>
+            <div className="mt-1 text-xs text-neutral-500">{hint}</div>
             {((doc.riskFlags?.length ?? 0) > 0 || (doc.duplicateCount ?? 0) > 0) && (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {(doc.duplicateCount ?? 0) > 0 && (
@@ -336,7 +366,7 @@ const DocumentRow = ({
           </div>
         </Link>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 flex-col items-end gap-2">
           <div
             role="group"
             aria-label="Entscheidung"
@@ -386,6 +416,11 @@ const DocumentRow = ({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          {reviewOpen && (
+            <Button size="sm" variant="outline" disabled={isPending} onClick={onMarkReviewed}>
+              <Trans>Geprüft</Trans>
+            </Button>
+          )}
         </div>
       </div>
     </li>
@@ -407,6 +442,9 @@ export default function FindDocumentsPage() {
   // Sichtbar machen, was der Nutzer aktiv geaendert hat. Das reduziert
   // Unsicherheit vor dem finalen Batch-Klick: Vorschlag vs. eigene Wahl.
   const [manualDecisionIds, setManualDecisionIds] = useState<Set<string>>(new Set());
+  // Separat von "geaendert": Ein Treffer gilt als geprueft, sobald der Nutzer
+  // ihn oeffnet, aktiv bestaetigt oder ausdruecklich als geprueft markiert.
+  const [reviewedIds, setReviewedIds] = useState<Set<string>>(new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
   // Multi-Select für Bulk-Aktionen (z.B. mehrere Zeilen gleichzeitig von
   // "Für Archivierung ausgewählt" auf "Zum Ignorieren ausgewählt" umstellen).
@@ -514,6 +552,11 @@ export default function FindDocumentsPage() {
       const next = new Set([...prev].filter((id) => validIds.has(id)));
       return next.size === prev.size ? prev : next;
     });
+    setReviewedIds((prev) => {
+      const validIds = new Set(allInboxDocs.map((doc) => doc.id));
+      const next = new Set([...prev].filter((id) => validIds.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
   }, [allInboxDocs]);
 
   const bulkAcceptMutation = trpc.discovery.bulkAccept.useMutation();
@@ -527,6 +570,11 @@ export default function FindDocumentsPage() {
       return map;
     });
     setManualDecisionIds((prev) => new Set(prev).add(id));
+    setReviewedIds((prev) => new Set(prev).add(id));
+  };
+
+  const handleMarkReviewed = (id: string) => {
+    setReviewedIds((prev) => new Set(prev).add(id));
   };
 
   const handleToggleSelect = (id: string) =>
@@ -544,6 +592,11 @@ export default function FindDocumentsPage() {
       return map;
     });
     setManualDecisionIds((prev) => {
+      const nextIds = new Set(prev);
+      for (const id of selectedIds) nextIds.add(id);
+      return nextIds;
+    });
+    setReviewedIds((prev) => {
       const nextIds = new Set(prev);
       for (const id of selectedIds) nextIds.add(id);
       return nextIds;
@@ -614,11 +667,9 @@ export default function FindDocumentsPage() {
     () =>
       allInboxDocs.filter(
         (doc) =>
-          decisions.get(doc.id) === 'archive' &&
-          needsHumanCheck(doc) &&
-          !manualDecisionIds.has(doc.id),
+          decisions.get(doc.id) === 'archive' && needsHumanCheck(doc) && !reviewedIds.has(doc.id),
       ).length,
-    [allInboxDocs, decisions, manualDecisionIds],
+    [allInboxDocs, decisions, reviewedIds],
   );
 
   const handleConfirm = async () => {
@@ -647,6 +698,7 @@ export default function FindDocumentsPage() {
 
       setDecisions(new Map());
       setManualDecisionIds(new Set());
+      setReviewedIds(new Set());
       // Erst Cache invalidieren (await), dann Erfolgs-View. Sonst zeigt der
       // „Weitere Belege durchgehen"-Klick kurz die alte Liste.
       await Promise.all([
@@ -1202,9 +1254,12 @@ export default function FindDocumentsPage() {
                 locale={i18n.locale}
                 decision={decisions.get(doc.id) ?? 'undecided'}
                 isManual={manualDecisionIds.has(doc.id)}
+                isReviewed={reviewedIds.has(doc.id)}
                 isSelected={selectedIds.has(doc.id)}
                 isPending={isCommitting}
                 onChange={(next) => handleDecision(doc.id, next)}
+                onMarkReviewed={() => handleMarkReviewed(doc.id)}
+                onOpenReview={() => handleMarkReviewed(doc.id)}
                 onToggleSelect={() => handleToggleSelect(doc.id)}
               />
             ))}
