@@ -1229,14 +1229,15 @@ export const discoveryRouter = router({
 
           await tx.discoveryAuditLog.createMany({
             data: chunk.map((d) => ({
-              event: 'DISCOVERY_DOCUMENT_ARCHIVED' as const,
+              event: 'DISCOVERY_DOCUMENT_ACCEPTED' as const,
               discoveryDocumentId: d.id,
               userId: user.id,
               teamId,
               metadata: {
-                action: 'bulk-smart-accept',
+                action: 'bulk-accept',
                 providerSource: d.providerSource,
-                retentionStarted: true,
+                acceptedSet: true,
+                archivedSet: false,
               },
             })),
           });
@@ -1363,7 +1364,7 @@ export const discoveryRouter = router({
 
           await tx.discoveryAuditLog.createMany({
             data: chunk.map((d) => ({
-              event: 'DISCOVERY_DOCUMENT_ACCEPTED' as const,
+              event: 'DISCOVERY_DOCUMENT_ARCHIVED' as const,
               discoveryDocumentId: d.id,
               userId: user.id,
               teamId,
