@@ -62,6 +62,7 @@ import {
 } from '@nexasign/ui/primitives/dropdown-menu';
 import { Input } from '@nexasign/ui/primitives/input';
 import { Tabs, TabsList, TabsTrigger } from '@nexasign/ui/primitives/tabs';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@nexasign/ui/primitives/tooltip';
 import { useToast } from '@nexasign/ui/primitives/use-toast';
 
 import { AcceptDiscoveryDocumentButton } from '~/components/dialogs/accept-discovery-document-button';
@@ -601,12 +602,15 @@ export default function ArchivPage() {
       </section>
 
       <Card className="overflow-hidden rounded-2xl border-neutral-200 bg-white shadow-sm">
-        <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-          <div>
+        <div className="grid gap-3 p-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,1fr)]">
+          <section className="rounded-2xl border border-neutral-200 bg-neutral-50/70 p-4">
             <label className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-              <Trans>Archiv durchsuchen</Trans>
+              <Trans>Suchen</Trans>
             </label>
-            <div className="relative mt-2 max-w-xl">
+            <p className="mt-1 text-sm text-neutral-600">
+              <Trans>Nach Titel, Absender oder Rechnungsnummer filtern.</Trans>
+            </p>
+            <div className="relative mt-3">
               <SearchIcon
                 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400"
                 aria-hidden
@@ -616,81 +620,178 @@ export default function ArchivPage() {
                 placeholder={_(msg`Titel, Absender oder Rechnungs-Nr.`)}
                 value={query}
                 onChange={(e) => handleQueryChange(e.target.value)}
-                className="h-11 rounded-xl border-neutral-300 bg-neutral-50 pl-10 focus-visible:bg-white"
+                className="h-11 rounded-xl border-neutral-300 bg-white pl-10"
               />
             </div>
-          </div>
+          </section>
 
-          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-            {tab === 'pending' && pendingCount > 0 && (
-              <>
-                <Button
-                  variant={selectedCount > 0 ? 'default' : 'outline'}
-                  size="sm"
-                  disabled={mutationBusy}
-                  onClick={() => setBulkArchiveDialogOpen(true)}
-                  className={selectedCount === 0 ? 'border-amber-300 text-amber-950' : undefined}
-                >
-                  {mutationBusy ? (
-                    <Loader2Icon className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
-                  ) : (
-                    <CheckCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-                  )}
+          <section className="rounded-2xl border border-neutral-200 bg-white p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  <Trans>Aktionen</Trans>
+                </label>
+                <p className="mt-1 text-sm text-neutral-600">
                   {selectedCount > 0 ? (
-                    <Trans>{selectedCount} archivieren</Trans>
+                    <Trans>Gelten nur für Ihre aktuelle Auswahl.</Trans>
                   ) : (
-                    <Trans>Alle {pendingCount} archivieren</Trans>
+                    <Trans>Gelten für die aktuell sichtbaren passenden Belege.</Trans>
                   )}
-                </Button>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={mutationBusy || selectedCount === 0}
-                  onClick={() => {
-                    if (selectedDocumentIds.length === 0) return;
-                    bulkUnaccept.mutate({ ids: selectedDocumentIds });
-                  }}
-                  className="border-red-200 text-red-700 hover:bg-red-50"
-                >
-                  {bulkUnaccept.isPending ? (
-                    <Loader2Icon className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
-                  ) : (
-                    <Trash2Icon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-                  )}
-                  {selectedCount > 0 ? (
-                    <Trans>{selectedCount} entfernen</Trans>
-                  ) : (
-                    <Trans>Entfernen</Trans>
-                  )}
-                </Button>
-              </>
-            )}
-            <Button asChild variant="outline" size="sm">
-              <a href={downloadHref}>
-                <DownloadIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-                <Trans>ZIP</Trans>
-              </a>
-            </Button>
-            <Button asChild variant="outline" size="sm">
-              <a href={taxPackageHref}>
-                <ReceiptTextIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-                <Trans>Steuerpaket</Trans>
-              </a>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled
-              title="Connectoren zu Accountable/sevDesk/Lexware Office — Phase 4"
-            >
-              <SendIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-              <Trans>Buchhaltung</Trans>
-              <span className="ml-1.5 rounded bg-neutral-100 px-1 py-0.5 text-[10px] text-neutral-600">
-                <Trans>bald</Trans>
+                </p>
+              </div>
+              <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-semibold text-neutral-700">
+                {selectedCount > 0 ? (
+                  <Trans>{selectedCount} markiert</Trans>
+                ) : (
+                  <Trans>ohne Auswahl</Trans>
+                )}
               </span>
-            </Button>
-          </div>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {tab === 'pending' && pendingCount > 0 && (
+                <Tooltip delayDuration={200}>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Button
+                        variant={selectedCount > 0 ? 'default' : 'outline'}
+                        size="sm"
+                        disabled={mutationBusy}
+                        onClick={() => setBulkArchiveDialogOpen(true)}
+                        className={
+                          selectedCount === 0 ? 'border-amber-300 text-amber-950' : undefined
+                        }
+                      >
+                        {mutationBusy ? (
+                          <Loader2Icon className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
+                        ) : (
+                          <CheckCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                        )}
+                        {selectedCount > 0 ? (
+                          <Trans>{selectedCount} archivieren</Trans>
+                        ) : (
+                          <Trans>Alle {pendingCount} archivieren</Trans>
+                        )}
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    {selectedCount > 0 ? (
+                      <Trans>Archiviert nur die markierten Belege.</Trans>
+                    ) : query.trim() ? (
+                      <Trans>
+                        Archiviert alle offenen Belege, die zu Ihrer aktuellen Suche passen.
+                      </Trans>
+                    ) : (
+                      <Trans>Archiviert alle aktuell offenen Belege in dieser Ansicht.</Trans>
+                    )}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+
+              {tab === 'pending' && (
+                <Tooltip delayDuration={200}>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={mutationBusy || selectedCount === 0}
+                        onClick={() => {
+                          if (selectedDocumentIds.length === 0) return;
+                          bulkUnaccept.mutate({ ids: selectedDocumentIds });
+                        }}
+                        className="border-red-200 text-red-700 hover:bg-red-50"
+                      >
+                        {bulkUnaccept.isPending ? (
+                          <Loader2Icon className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
+                        ) : (
+                          <Trash2Icon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                        )}
+                        {selectedCount > 0 ? (
+                          <Trans>{selectedCount} entfernen</Trans>
+                        ) : (
+                          <Trans>Entfernen</Trans>
+                        )}
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <Trans>
+                      Entfernt nur markierte offene Belege wieder aus dem Archiv-Arbeitsvorrat.
+                    </Trans>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-neutral-200 bg-white p-4">
+            <label className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              <Trans>Export & Weitergabe</Trans>
+            </label>
+            <p className="mt-1 text-sm text-neutral-600">
+              <Trans>Für Steuer, Download oder spätere Buchhaltungsübergabe.</Trans>
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Tooltip delayDuration={200}>
+                <TooltipTrigger asChild>
+                  <Button asChild variant="outline" size="sm">
+                    <a href={downloadHref}>
+                      <DownloadIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                      <Trans>ZIP</Trans>
+                    </a>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <Trans>
+                    Lädt die Originaldateien der Auswahl oder der aktuell gefilterten Ansicht
+                    gesammelt herunter.
+                  </Trans>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip delayDuration={200}>
+                <TooltipTrigger asChild>
+                  <Button asChild variant="outline" size="sm">
+                    <a href={taxPackageHref}>
+                      <ReceiptTextIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                      <Trans>Steuerpaket</Trans>
+                    </a>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <Trans>
+                    Exportiert Belege samt Steuerdaten für die Weiterverarbeitung in der
+                    Buchhaltung.
+                  </Trans>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip delayDuration={200}>
+                <TooltipTrigger asChild>
+                  <div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled
+                      title="Connectoren zu Accountable/sevDesk/Lexware Office — Phase 4"
+                    >
+                      <SendIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                      <Trans>Buchhaltung</Trans>
+                      <span className="ml-1.5 rounded bg-neutral-100 px-1 py-0.5 text-[10px] text-neutral-600">
+                        <Trans>bald</Trans>
+                      </span>
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <Trans>
+                    Direkte Übergabe an Buchhaltungssysteme folgt in einer späteren Ausbaustufe.
+                  </Trans>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </section>
         </div>
 
         <div className="border-t border-neutral-100 bg-slate-50 px-4 py-3">
