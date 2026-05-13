@@ -66,6 +66,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@nexasign/ui/primitives
 import { useToast } from '@nexasign/ui/primitives/use-toast';
 
 import { AcceptDiscoveryDocumentButton } from '~/components/dialogs/accept-discovery-document-button';
+import { ContextHelp } from '~/components/general/context-help';
 import { Illustration } from '~/components/general/illustration';
 import { appMetaTags } from '~/utils/meta';
 
@@ -604,9 +605,19 @@ export default function ArchivPage() {
       <Card className="overflow-hidden rounded-2xl border-neutral-200 bg-white shadow-sm">
         <div className="grid gap-3 p-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,1fr)]">
           <section className="rounded-2xl border border-neutral-200 bg-neutral-50/70 p-4">
-            <label className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-              <Trans>Suchen</Trans>
-            </label>
+            <div className="flex items-center gap-1.5">
+              <label className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                <Trans>Suchen</Trans>
+              </label>
+              <ContextHelp
+                content={
+                  <Trans>
+                    Die Suche filtert nur die aktuell geöffnete Archiv-Ansicht und wirkt auch auf
+                    Sammelaktionen ohne Auswahl.
+                  </Trans>
+                }
+              />
+            </div>
             <p className="mt-1 text-sm text-neutral-600">
               <Trans>Nach Titel, Absender oder Rechnungsnummer filtern.</Trans>
             </p>
@@ -628,9 +639,19 @@ export default function ArchivPage() {
           <section className="rounded-2xl border border-neutral-200 bg-white p-4">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                  <Trans>Aktionen</Trans>
-                </label>
+                <div className="flex items-center gap-1.5">
+                  <label className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                    <Trans>Aktionen</Trans>
+                  </label>
+                  <ContextHelp
+                    content={
+                      <Trans>
+                        Ohne Auswahl gelten Aktionen für alle sichtbaren passenden Belege. Mit
+                        Auswahl nur für die markierten.
+                      </Trans>
+                    }
+                  />
+                </div>
                 <p className="mt-1 text-sm text-neutral-600">
                   {selectedCount > 0 ? (
                     <Trans>Gelten nur für Ihre aktuelle Auswahl.</Trans>
@@ -726,9 +747,19 @@ export default function ArchivPage() {
           </section>
 
           <section className="rounded-2xl border border-neutral-200 bg-white p-4">
-            <label className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-              <Trans>Export & Weitergabe</Trans>
-            </label>
+            <div className="flex items-center gap-1.5">
+              <label className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                <Trans>Export & Weitergabe</Trans>
+              </label>
+              <ContextHelp
+                content={
+                  <Trans>
+                    Exporte berücksichtigen entweder Ihre Auswahl oder, falls nichts markiert ist,
+                    die aktuell sichtbaren Treffer.
+                  </Trans>
+                }
+              />
+            </div>
             <p className="mt-1 text-sm text-neutral-600">
               <Trans>Für Steuer, Download oder spätere Buchhaltungsübergabe.</Trans>
             </p>
@@ -913,9 +944,20 @@ export default function ArchivPage() {
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-amber-950">
-                    <Trans>Bitte zuerst ergänzen</Trans>
-                  </h3>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-sm font-semibold text-amber-950">
+                      <Trans>Bitte zuerst ergänzen</Trans>
+                    </h3>
+                    <ContextHelp
+                      className="inline-flex h-5 w-5 items-center justify-center rounded-full text-amber-700 transition hover:text-amber-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      content={
+                        <Trans>
+                          Diese Belege haben noch fehlende Pflichtangaben und sollten vor der
+                          Archivierung vervollständigt werden.
+                        </Trans>
+                      }
+                    />
+                  </div>
                   <p className="mt-1 text-sm text-amber-900/80">
                     <Trans>
                       Diese Belege brauchen noch Pflichtangaben, bevor sie sauber archiviert werden
@@ -957,9 +999,20 @@ export default function ArchivPage() {
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-emerald-950">
-                    <Trans>Bereit zum Archivieren</Trans>
-                  </h3>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-sm font-semibold text-emerald-950">
+                      <Trans>Bereit zum Archivieren</Trans>
+                    </h3>
+                    <ContextHelp
+                      className="inline-flex h-5 w-5 items-center justify-center rounded-full text-emerald-700 transition hover:text-emerald-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      content={
+                        <Trans>
+                          Diese Belege sind vollständig und können einzeln oder gesammelt ins
+                          rechtssichere Archiv überführt werden.
+                        </Trans>
+                      }
+                    />
+                  </div>
                   <p className="mt-1 text-sm text-emerald-900/80">
                     <Trans>
                       Diese Belege sind vollständig und koennen direkt ins rechtssichere Archiv.
