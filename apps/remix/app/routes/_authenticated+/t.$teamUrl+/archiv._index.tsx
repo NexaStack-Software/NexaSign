@@ -19,6 +19,7 @@ import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
 import {
   AlertCircleIcon,
+  BookOpenIcon,
   CheckCircleIcon,
   DownloadIcon,
   FileTextIcon,
@@ -284,13 +285,21 @@ export default function ArchivPage() {
             </Trans>
           </p>
         </div>
-        <Illustration
-          name="archive-shelf"
-          alt="Archiv"
-          tone="emerald"
-          className="hidden h-28 w-40 shrink-0 md:block"
-          hideOnError
-        />
+        <div className="flex w-full flex-col items-start gap-3 md:w-auto md:items-end">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/vorlagen/gobd">
+              <BookOpenIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+              <Trans>Was bedeutet GoBD?</Trans>
+            </Link>
+          </Button>
+          <Illustration
+            name="archive-shelf"
+            alt="Archiv"
+            tone="emerald"
+            className="hidden h-28 w-40 shrink-0 md:block"
+            hideOnError
+          />
+        </div>
       </header>
 
       {/* SUB-TABS */}
