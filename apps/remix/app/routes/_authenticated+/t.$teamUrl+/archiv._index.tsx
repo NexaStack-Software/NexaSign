@@ -233,8 +233,8 @@ export default function ArchivPage() {
         ? true
         : window.confirm(
             selectedCount > 0
-              ? `Möchten Sie ${count} ausgewählte Belege fest ablegen? Danach sind sie 10 Jahre lang schreibgeschützt.`
-              : `Möchten Sie alle ${count} Belege in dieser Sicht fest ablegen? Danach sind sie 10 Jahre lang schreibgeschützt.`,
+              ? `Möchten Sie ${count} ausgewählte Belege jetzt archivieren? Danach sind sie 10 Jahre lang schreibgeschützt.`
+              : `Möchten Sie alle ${count} Belege in dieser Sicht jetzt archivieren? Danach sind sie 10 Jahre lang schreibgeschützt.`,
           );
     if (!confirmed) return;
 
@@ -252,23 +252,30 @@ export default function ArchivPage() {
   const downloadHref = useMemo(() => {
     const ids = [...selectedIds];
     if (ids.length === 0) {
-      // Wenn keine Auswahl: nimm den aktuellen Tab als Filter.
-      return `/t/${teamUrl}/find-documents/zip-attachments?status=${
-        tab === 'pending' ? 'accepted' : 'archived'
-      }`;
+      const params = new URLSearchParams({
+        status: tab === 'pending' ? 'accepted' : 'archived',
+      });
+      const term = query.trim();
+      if (term) params.set('query', term);
+
+      return `/t/${teamUrl}/find-documents/zip-attachments?${params.toString()}`;
     }
     return `/t/${teamUrl}/find-documents/zip-attachments?ids=${ids.join(',')}`;
-  }, [selectedIds, teamUrl, tab]);
+  }, [query, selectedIds, teamUrl, tab]);
 
   const taxPackageHref = useMemo(() => {
     const ids = [...selectedIds];
     if (ids.length === 0) {
-      return `/t/${teamUrl}/find-documents/tax-package?status=${
-        tab === 'pending' ? 'accepted' : 'archived'
-      }`;
+      const params = new URLSearchParams({
+        status: tab === 'pending' ? 'accepted' : 'archived',
+      });
+      const term = query.trim();
+      if (term) params.set('query', term);
+
+      return `/t/${teamUrl}/find-documents/tax-package?${params.toString()}`;
     }
     return `/t/${teamUrl}/find-documents/tax-package?ids=${ids.join(',')}`;
-  }, [selectedIds, teamUrl, tab]);
+  }, [query, selectedIds, teamUrl, tab]);
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 md:px-6">
@@ -286,7 +293,7 @@ export default function ArchivPage() {
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-200 md:text-base">
               <Trans>
                 Belege wiederfinden, prüfen und sauber abschließen. Offene Belege bleiben
-                korrigierbar, endgültige Belege sind fest abgelegt und direkt exportierbar.
+                korrigierbar, archivierte Belege sind schreibgeschützt und direkt exportierbar.
               </Trans>
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
@@ -318,7 +325,7 @@ export default function ArchivPage() {
               hideOnError
             />
             <p className="mt-3 text-center text-xs leading-5 text-slate-200">
-              <Trans>Erst prüfen. Dann fest ablegen. Danach nur noch lesen und exportieren.</Trans>
+              <Trans>Erst prüfen. Dann archivieren. Danach nur noch lesen und exportieren.</Trans>
             </p>
           </div>
         </div>
@@ -330,7 +337,7 @@ export default function ArchivPage() {
           icon={<AlertCircleIcon className="h-4 w-4" aria-hidden />}
           label={<Trans>Noch korrigierbar</Trans>}
           value={pendingCount}
-          description={<Trans>prüfen, ergänzen, dann fest ablegen</Trans>}
+          description={<Trans>prüfen, ergänzen, dann archivieren</Trans>}
         />
         <ArchiveMetricCard
           tone="emerald"
@@ -360,7 +367,7 @@ export default function ArchivPage() {
                   <Trans>Noch korrigierbar</Trans>
                 </span>
                 <span className="block text-xs font-normal opacity-80">
-                  <Trans>Prüfen und endgültig ablegen</Trans>
+                  <Trans>Prüfen und archivieren</Trans>
                 </span>
               </span>
               <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">
@@ -414,16 +421,16 @@ export default function ArchivPage() {
             <div>
               <h2 className="text-base font-semibold text-neutral-950">
                 {tab === 'pending' ? (
-                  <Trans>Offen: noch bearbeitbar</Trans>
+                  <Trans>Zur Prüfung: noch bearbeitbar</Trans>
                 ) : (
-                  <Trans>Fest abgelegt: nicht mehr änderbar</Trans>
+                  <Trans>Archiviert: nicht mehr änderbar</Trans>
                 )}
               </h2>
               <p className="mt-1 max-w-2xl text-sm leading-6 text-neutral-700">
                 {tab === 'pending' ? (
                   <Trans>
-                    Diese Belege sind noch nicht fixiert. Prüfen, korrigieren oder entfernen Sie
-                    sie, bevor sie endgültig ins Archiv gehen.
+                    Diese Belege sind noch nicht endgültig archiviert. Prüfen, korrigieren oder
+                    entfernen Sie sie, bevor sie schreibgeschützt werden.
                   </Trans>
                 ) : (
                   <Trans>
@@ -439,7 +446,7 @@ export default function ArchivPage() {
               ? [
                   <Trans key="check">1. Prüfen</Trans>,
                   <Trans key="fix">2. Korrigieren</Trans>,
-                  <Trans key="archive">3. Fest ablegen</Trans>,
+                  <Trans key="archive">3. Archivieren</Trans>,
                 ]
               : [
                   <Trans key="locked">Schreibgeschützt</Trans>,
@@ -499,9 +506,9 @@ export default function ArchivPage() {
                     <CheckCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
                   )}
                   {selectedCount > 0 ? (
-                    <Trans>{selectedCount} fest ablegen</Trans>
+                    <Trans>{selectedCount} archivieren</Trans>
                   ) : (
-                    <Trans>Alle {pendingCount} fest ablegen</Trans>
+                    <Trans>Alle {pendingCount} archivieren</Trans>
                   )}
                 </Button>
 
@@ -553,6 +560,65 @@ export default function ArchivPage() {
                 <Trans>bald</Trans>
               </span>
             </Button>
+          </div>
+        </div>
+
+        <div className="border-t border-neutral-100 bg-slate-50 px-4 py-3">
+          <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span
+                className={`mt-0.5 rounded-full p-1.5 ${
+                  selectedCount > 0
+                    ? 'bg-sky-100 text-sky-900'
+                    : tab === 'pending'
+                      ? 'bg-amber-100 text-amber-900'
+                      : 'bg-emerald-100 text-emerald-900'
+                }`}
+              >
+                {selectedCount > 0 ? (
+                  <CheckCircleIcon className="h-4 w-4" aria-hidden />
+                ) : tab === 'pending' ? (
+                  <AlertCircleIcon className="h-4 w-4" aria-hidden />
+                ) : (
+                  <LockIcon className="h-4 w-4" aria-hidden />
+                )}
+              </span>
+              <div>
+                <p className="font-semibold text-neutral-950">
+                  {selectedCount > 0 ? (
+                    <Trans>Aktionen gelten für Ihre Auswahl</Trans>
+                  ) : tab === 'pending' ? (
+                    <Trans>Archivieren und Export gelten für alle passenden offenen Belege</Trans>
+                  ) : (
+                    <Trans>Export gilt für alle passenden archivierten Belege</Trans>
+                  )}
+                </p>
+                <p className="mt-0.5 text-neutral-600">
+                  {selectedCount > 0 ? (
+                    <Trans>
+                      Markierte Belege können gemeinsam archiviert oder exportiert werden.
+                    </Trans>
+                  ) : tab === 'pending' ? (
+                    <Trans>
+                      Nutzen Sie die Suche oder markieren Sie einzelne Belege, wenn es enger sein
+                      soll.
+                    </Trans>
+                  ) : (
+                    <Trans>
+                      Nutzen Sie die Suche oder markieren Sie einzelne Belege, wenn es enger sein
+                      soll.
+                    </Trans>
+                  )}
+                </p>
+              </div>
+            </div>
+            <span className="shrink-0 rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-700">
+              {selectedCount > 0 ? (
+                <Trans>{selectedCount} markiert</Trans>
+              ) : (
+                <Trans>Keine Auswahl</Trans>
+              )}
+            </span>
           </div>
         </div>
 
@@ -799,7 +865,7 @@ const ArchivRow = ({
               variant="default"
               disabled={isPending}
               onConfirm={() => onArchive(doc.id)}
-              label={<Trans>Fest ablegen</Trans>}
+              label={<Trans>Archivieren</Trans>}
             />
           )}
           {doc.hasArchive && (
