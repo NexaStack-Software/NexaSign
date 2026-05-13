@@ -1001,6 +1001,8 @@ const ArchivRow = ({
   onUnaccept: (id: string) => void;
 }) => {
   const needsCompletion = tab === 'pending' && needsDocumentCompletion(doc);
+  const primaryLabel = doc.correspondent ?? doc.title;
+  const secondaryLabel = doc.correspondent ? doc.title : null;
 
   return (
     <li
@@ -1037,7 +1039,7 @@ const ArchivRow = ({
         </label>
         <Link
           to={`/t/${teamUrl}/find-documents/${doc.id}`}
-          className="flex min-w-0 flex-1 items-start gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="flex min-w-0 flex-1 items-start gap-3 rounded-xl px-1 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <span
             className={`mt-0.5 rounded-2xl p-2 ${
@@ -1050,53 +1052,86 @@ const ArchivRow = ({
           >
             <FileTextIcon className="h-4 w-4 shrink-0" aria-hidden />
           </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-              {needsCompletion ? (
-                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900">
-                  <Trans>Bitte ergänzen</Trans>
-                </span>
-              ) : null}
-              <span className="font-semibold text-neutral-950">
-                {doc.correspondent ?? doc.title}
-              </span>
-              {doc.detectedAmount && (
-                <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-neutral-800">
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  {needsCompletion ? (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900">
+                      <Trans>Bitte ergänzen</Trans>
+                    </span>
+                  ) : null}
+                  {tab === 'sealed' && doc.archivedAt && (
+                    <Badge variant="secondary" className="gap-1.5 text-xs">
+                      <LockIcon className="h-3 w-3" aria-hidden />
+                      <Trans>Seit {formatDate(doc.archivedAt, locale)}</Trans>
+                    </Badge>
+                  )}
+                </div>
+                <div className="mt-2 truncate text-base font-semibold text-neutral-950">
+                  {primaryLabel}
+                </div>
+                {secondaryLabel ? (
+                  <div className="mt-1 truncate text-sm text-neutral-600">{secondaryLabel}</div>
+                ) : null}
+              </div>
+              {doc.detectedAmount ? (
+                <div className="rounded-2xl bg-neutral-950 px-3 py-2 text-right text-sm font-semibold tabular-nums text-white shadow-sm">
                   {doc.detectedAmount}
-                </span>
-              )}
-              <span className="rounded-full bg-white px-2 py-0.5 text-xs tabular-nums text-neutral-500 ring-1 ring-neutral-200">
+                </div>
+              ) : null}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-600">
+              <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-neutral-200">
                 {formatDate(doc.documentDate ?? doc.capturedAt, locale)}
               </span>
+              {doc.documentType ? (
+                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
+                  {doc.documentType}
+                </span>
+              ) : null}
+              {doc.detectedInvoiceNumber ? (
+                <span className="rounded-full bg-sky-50 px-2.5 py-1 text-sky-800 ring-1 ring-sky-100">
+                  <Trans>Rechnung</Trans> #{doc.detectedInvoiceNumber}
+                </span>
+              ) : null}
               {doc.hasArchive && doc.attachmentCount > 0 && (
                 <span
-                  className="inline-flex items-center gap-0.5 text-xs text-neutral-500"
+                  className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2.5 py-1 text-neutral-700"
                   title="Anhang"
                 >
                   <PaperclipIcon className="h-3 w-3" aria-hidden />
-                  {doc.attachmentCount}
+                  {doc.attachmentCount} <Trans>Anhänge</Trans>
                 </span>
               )}
-              {tab === 'sealed' && doc.archivedAt && (
-                <Badge variant="secondary" className="gap-1.5 text-xs">
-                  <LockIcon className="h-3 w-3" aria-hidden />
-                  <Trans>Seit {formatDate(doc.archivedAt, locale)}</Trans>
-                </Badge>
+            </div>
+
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              {needsCompletion ? (
+                <span className="text-sm text-amber-800">
+                  <Trans>Bitte erst vervollständigen, dann archivieren.</Trans>
+                </span>
+              ) : tab === 'sealed' ? (
+                <span className="text-sm text-emerald-800">
+                  <Trans>Rechtssicher archiviert und nur noch lesbar.</Trans>
+                </span>
+              ) : (
+                <span className="text-sm text-neutral-600">
+                  <Trans>Vollständig und bereit für die Archivierung.</Trans>
+                </span>
               )}
             </div>
-            <div className="mt-0.5 truncate text-sm text-neutral-700 hover:underline">
-              {doc.title}
-            </div>
             {needsCompletion && (
-              <div className="mt-0.5 flex flex-wrap gap-x-2 text-xs text-amber-800">
+              <div className="flex flex-wrap gap-2 text-xs text-amber-800">
                 {!doc.documentType && (
-                  <span className="inline-flex items-center gap-1">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1">
                     <AlertCircleIcon className="h-3 w-3" aria-hidden />
                     <Trans>Beleg-Typ fehlt</Trans>
                   </span>
                 )}
                 {!doc.correspondent && (
-                  <span className="inline-flex items-center gap-1">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1">
                     <AlertCircleIcon className="h-3 w-3" aria-hidden />
                     <Trans>Korrespondent fehlt</Trans>
                   </span>
@@ -1125,7 +1160,7 @@ const ArchivRow = ({
               variant="default"
               disabled={isPending}
               onConfirm={() => onArchive(doc.id)}
-              label={<Trans>Archivieren</Trans>}
+              label={<Trans>Jetzt archivieren</Trans>}
             />
           )}
           {doc.hasArchive && (
