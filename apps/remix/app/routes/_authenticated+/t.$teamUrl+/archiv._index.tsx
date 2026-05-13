@@ -33,6 +33,7 @@ import {
   SearchIcon,
   SendIcon,
   Trash2Icon,
+  XIcon,
 } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 
@@ -722,6 +723,83 @@ export default function ArchivPage() {
             </div>
           )}
         </>
+      )}
+
+      {selectedCount > 0 && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-4 z-40 px-4">
+          <div className="pointer-events-auto mx-auto flex max-w-5xl flex-col gap-3 rounded-2xl border border-slate-700 bg-slate-950/95 p-3 text-white shadow-2xl backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="rounded-2xl bg-sky-400/15 p-2 text-sky-200 ring-1 ring-sky-300/20">
+                <CheckCircleIcon className="h-4 w-4" aria-hidden />
+              </span>
+              <div>
+                <p className="text-sm font-semibold">
+                  <Trans>{selectedCount} Belege ausgewählt</Trans>
+                </p>
+                <p className="text-xs text-slate-300">
+                  <Trans>Die Aktionen gelten nur für diese Auswahl.</Trans>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {tab === 'pending' && (
+                <Button
+                  size="sm"
+                  disabled={mutationBusy}
+                  onClick={() => setBulkArchiveDialogOpen(true)}
+                  className="bg-emerald-500 text-emerald-950 hover:bg-emerald-400"
+                >
+                  <ArchiveIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                  <Trans>Archivieren</Trans>
+                </Button>
+              )}
+              <Button
+                asChild
+                size="sm"
+                variant="outline"
+                className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+              >
+                <a href={downloadHref}>
+                  <DownloadIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                  <Trans>ZIP</Trans>
+                </a>
+              </Button>
+              <Button
+                asChild
+                size="sm"
+                variant="outline"
+                className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+              >
+                <a href={taxPackageHref}>
+                  <ReceiptTextIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                  <Trans>Steuerpaket</Trans>
+                </a>
+              </Button>
+              {tab === 'pending' && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={mutationBusy}
+                  onClick={() => bulkUnaccept.mutate({ ids: selectedDocumentIds })}
+                  className="border-red-300/40 bg-red-500/10 text-red-100 hover:bg-red-500/20 hover:text-red-50"
+                >
+                  <Trash2Icon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                  <Trans>Entfernen</Trans>
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setSelectedIds(new Set())}
+                className="text-slate-200 hover:bg-white/10 hover:text-white"
+              >
+                <XIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                <Trans>Auswahl leeren</Trans>
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
       <AlertDialog open={bulkArchiveDialogOpen} onOpenChange={setBulkArchiveDialogOpen}>
