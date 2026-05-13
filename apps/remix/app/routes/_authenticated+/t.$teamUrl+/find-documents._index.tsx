@@ -53,6 +53,7 @@ import { Input } from '@nexasign/ui/primitives/input';
 import { useToast } from '@nexasign/ui/primitives/use-toast';
 
 import { CorrespondentSummaryCard } from '~/components/discovery/correspondent-summary-card';
+import { ContextHelp } from '~/components/general/context-help';
 import { Illustration } from '~/components/general/illustration';
 import { GmailAllMailBanner } from '~/components/sources/gmail-allmail-banner';
 import { appMetaTags } from '~/utils/meta';
@@ -1052,6 +1053,14 @@ export default function FindDocumentsPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <ContextHelp
+            content={
+              <Trans>
+                Hier entscheiden Sie zuerst nur, was ein relevanter Beleg ist. Endgültig archiviert
+                wird erst im Archivbereich nach Ihrer Bestätigung.
+              </Trans>
+            }
+          />
           <Button asChild>
             <Link to={hasConnectedSource ? 'range' : 'connect'}>
               {activeRunsCount > 0 ? (
@@ -1101,6 +1110,12 @@ export default function FindDocumentsPage() {
               onClick={() => setActiveTab('focus')}
               title={<Trans>Heute wichtig</Trans>}
               subtitle={<Trans>Der nächste sinnvolle Schritt</Trans>}
+              help={
+                <Trans>
+                  Zeigt nur das, was jetzt wirklich Ihre Aufmerksamkeit braucht: unklare Belege,
+                  offene Vorschläge oder sichere Übernahmen.
+                </Trans>
+              }
               count={pendingReviewDocs.length > 0 ? pendingReviewDocs.length : counts.archive}
               tone={pendingReviewDocs.length > 0 ? 'amber' : 'emerald'}
             />
@@ -1109,6 +1124,12 @@ export default function FindDocumentsPage() {
               onClick={() => setActiveTab('list')}
               title={<Trans>Alle Vorschläge</Trans>}
               subtitle={<Trans>Suchen, filtern, gesammelt ändern</Trans>}
+              help={
+                <Trans>
+                  Die vollständige Trefferliste. Hier können Sie mehrere Vorschläge zusammen
+                  anpassen, statt jeden einzeln zu öffnen.
+                </Trans>
+              }
               count={counts.total}
             />
             <WorkspaceTabButton
@@ -1122,6 +1143,12 @@ export default function FindDocumentsPage() {
               onClick={() => setActiveTab('runs')}
               title={<Trans>Durchsuchte Zeiträume</Trans>}
               subtitle={<Trans>Wann welches Postfach geprüft wurde</Trans>}
+              help={
+                <Trans>
+                  Zeigt nachvollziehbar, welche Postfächer und Zeiträume schon geprüft wurden und wo
+                  eventuell noch Lücken bestehen.
+                </Trans>
+              }
               count={activeRunsCount > 0 ? activeRunsCount : (recentSyncRuns?.length ?? 0)}
               tone={activeRunsCount > 0 ? 'amber' : 'neutral'}
             />
@@ -1130,6 +1157,12 @@ export default function FindDocumentsPage() {
               onClick={() => setActiveTab('memory')}
               title={<Trans>Merken</Trans>}
               subtitle={<Trans>Wiederkehrende Absender</Trans>}
+              help={
+                <Trans>
+                  NexaFile kann sich wiederkehrende Entscheidungen für bekannte Absender merken. Sie
+                  entscheiden selbst, was gespeichert wird.
+                </Trans>
+              }
               count={activeRules.length + suggestedRules.length}
               tone={suggestedRules.length > 0 ? 'emerald' : 'neutral'}
             />
@@ -1403,8 +1436,18 @@ export default function FindDocumentsPage() {
         <Card className="border-neutral-200 bg-white p-3 shadow-sm">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <div className="text-sm font-semibold text-neutral-950">
-                <Trans>Alle Vorschläge</Trans>
+              <div className="flex items-center gap-1.5 text-sm font-semibold text-neutral-950">
+                <span>
+                  <Trans>Alle Vorschläge</Trans>
+                </span>
+                <ContextHelp
+                  content={
+                    <Trans>
+                      Vorschläge sind noch nicht übernommen. Erst mit „Bestätigen“ werden Belege in
+                      den Archivbereich verschoben oder aus dieser Liste entfernt.
+                    </Trans>
+                  }
+                />
               </div>
               <p className="text-xs text-neutral-500">
                 <Trans>Suchen, filtern oder mehrere Belege auf einmal ändern.</Trans>
@@ -1593,9 +1636,21 @@ export default function FindDocumentsPage() {
                 <section className="rounded-lg border border-emerald-100 bg-emerald-50/60 p-3">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <h2 className="text-sm font-semibold text-emerald-950">
-                        <Trans>Wiederkehrende Absender</Trans>
-                      </h2>
+                      <div className="flex items-center gap-1.5">
+                        <h2 className="text-sm font-semibold text-emerald-950">
+                          <Trans>Wiederkehrende Absender</Trans>
+                        </h2>
+                        <ContextHelp
+                          content={
+                            <Trans>
+                              Wenn Sie denselben Absender mehrfach gleich behandeln, kann NexaFile
+                              diese Richtung vorschlagen. Automatisch passiert nichts ohne Ihre
+                              Freigabe.
+                            </Trans>
+                          }
+                          className="inline-flex h-5 w-5 items-center justify-center rounded-full text-emerald-700/70 transition hover:text-emerald-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        />
+                      </div>
                       <p className="mt-1 text-xs text-emerald-900">
                         <Trans>
                           Wenn Sie denselben Absender mehrfach gleich behandeln, kann NexaFile sich
@@ -1773,9 +1828,19 @@ export default function FindDocumentsPage() {
 
               {activeTab === 'memory' && (
                 <section>
-                  <h2 className="text-sm font-semibold text-neutral-900">
-                    <Trans>Warum Belege geprüft werden</Trans>
-                  </h2>
+                  <div className="flex items-center gap-1.5">
+                    <h2 className="text-sm font-semibold text-neutral-900">
+                      <Trans>Warum Belege geprüft werden</Trans>
+                    </h2>
+                    <ContextHelp
+                      content={
+                        <Trans>
+                          Diese Übersicht erklärt nicht, was richtig ist, sondern wie viel Vertrauen
+                          NexaFile in einen Vorschlag hat und wo sich kurzes Gegenprüfen lohnt.
+                        </Trans>
+                      }
+                    />
+                  </div>
                   <p className="mt-0.5 text-xs text-neutral-500">
                     <Trans>
                       Kurzüberblick über sichere Treffer, offene Punkte und mögliche Dubletten.
@@ -1931,23 +1996,31 @@ export default function FindDocumentsPage() {
         <div className="fixed inset-x-0 bottom-0 z-20 border-t border-neutral-200 bg-white shadow-lg">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
             <div className="text-sm">
-              <div className="font-medium text-neutral-900">
+              <div className="flex flex-wrap items-center gap-2 font-medium text-neutral-900">
                 <span className="text-emerald-700">
                   <Trans>{counts.archive} ins Archiv</Trans>
-                </span>{' '}
-                ·{' '}
+                </span>
+                <span className="text-neutral-300">·</span>
                 <span className="text-neutral-600">
                   <Trans>{counts.ignore} ignorieren</Trans>
                 </span>
                 {counts.undecided > 0 && (
                   <>
-                    {' '}
-                    ·{' '}
+                    <span className="text-neutral-300">·</span>
                     <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-900">
                       <Trans>{counts.undecided} noch zu entscheiden</Trans>
                     </span>
                   </>
                 )}
+                <ContextHelp
+                  content={
+                    <Trans>
+                      Mit „Bestätigen“ übernehmen Sie Ihre Entscheidungen gesammelt. Belege landen
+                      dann zuerst im Archivbereich und werden erst dort endgültig archiviert.
+                    </Trans>
+                  }
+                  className="inline-flex h-5 w-5 items-center justify-center rounded-full text-neutral-400 transition hover:text-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
               </div>
               <div className="mt-0.5 text-xs text-neutral-500">
                 {counts.undecided > 0 ? (
@@ -2091,6 +2164,7 @@ const WorkspaceTabButton = ({
   onClick,
   title,
   subtitle,
+  help,
   count,
   tone = 'neutral',
 }: {
@@ -2098,6 +2172,7 @@ const WorkspaceTabButton = ({
   onClick: () => void;
   title: React.ReactNode;
   subtitle: React.ReactNode;
+  help?: React.ReactNode;
   count?: React.ReactNode;
   tone?: 'amber' | 'emerald' | 'neutral';
 }) => {
@@ -2120,7 +2195,19 @@ const WorkspaceTabButton = ({
       }`}
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="text-sm font-semibold">{title}</span>
+        <span className="flex items-center gap-1.5 text-sm font-semibold">
+          <span>{title}</span>
+          {help ? (
+            <ContextHelp
+              content={help}
+              className={`inline-flex h-5 w-5 items-center justify-center rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                active
+                  ? 'text-white/70 hover:text-white'
+                  : 'text-neutral-400 hover:text-neutral-700'
+              }`}
+            />
+          ) : null}
+        </span>
         {count !== undefined && (
           <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ${badgeClass}`}>
             {count}
