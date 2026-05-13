@@ -12,13 +12,14 @@
 //   - "Alle N rechtssicher archivieren" (auf Zur-Ablage-bereit-Liste)
 //   - "Als ZIP herunterladen" → /find-documents/zip-attachments
 //   - "Steuerpaket exportieren (DATEV-CSV)" → /find-documents/tax-package
-import { useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
 import {
   AlertCircleIcon,
+  ArchiveIcon,
   BookOpenIcon,
   CheckCircleIcon,
   DownloadIcon,
@@ -28,6 +29,7 @@ import {
   MoreHorizontalIcon,
   PaperclipIcon,
   ReceiptTextIcon,
+  SearchIcon,
   SendIcon,
   Trash2Icon,
 } from 'lucide-react';
@@ -231,8 +233,8 @@ export default function ArchivPage() {
         ? true
         : window.confirm(
             selectedCount > 0
-              ? `Möchten Sie ${count} ausgewählte Belege endgültig archivieren? Danach sind sie 10 Jahre lang schreibgeschützt.`
-              : `Möchten Sie alle ${count} Belege in dieser Sicht endgültig archivieren? Danach sind sie 10 Jahre lang schreibgeschützt.`,
+              ? `Möchten Sie ${count} ausgewählte Belege fest ablegen? Danach sind sie 10 Jahre lang schreibgeschützt.`
+              : `Möchten Sie alle ${count} Belege in dieser Sicht fest ablegen? Danach sind sie 10 Jahre lang schreibgeschützt.`,
           );
     if (!confirmed) return;
 
@@ -269,206 +271,324 @@ export default function ArchivPage() {
   }, [selectedIds, teamUrl, tab]);
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-5 px-4 py-6 md:px-6">
-      {/* HEADER */}
-      <header className="flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-            <Trans>Archiv</Trans>
-          </h1>
-          <p className="mt-1 max-w-3xl text-sm text-neutral-600">
-            <Trans>
-              Hier liegen alle Belege, die Sie übernommen haben. Solange Sie sie noch nicht
-              endgültig archiviert haben, können Sie Felder korrigieren. Mit einem Klick auf
-              „Endgültig archivieren" sind sie 10 Jahre lang sicher abgelegt — wie es das Finanzamt
-              verlangt.
-            </Trans>
-          </p>
+    <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 md:px-6">
+      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-slate-950 shadow-sm">
+        <div className="relative grid gap-6 px-5 py-6 text-white md:px-7 md:py-8 lg:grid-cols-[1fr_18rem] lg:items-center">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.35),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(245,158,11,0.3),transparent_30%)]" />
+          <div className="relative">
+            <div className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-medium text-emerald-100">
+              <ArchiveIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+              <Trans>Ihr Beleg-Archiv</Trans>
+            </div>
+            <h1 className="mt-4 text-3xl font-semibold tracking-tight md:text-4xl">
+              <Trans>Archiv</Trans>
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-200 md:text-base">
+              <Trans>
+                Belege wiederfinden, prüfen und sauber abschließen. Offene Belege bleiben
+                korrigierbar, endgültige Belege sind fest abgelegt und direkt exportierbar.
+              </Trans>
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Button asChild variant="secondary" size="sm">
+                <Link to="/vorlagen/gobd">
+                  <BookOpenIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                  <Trans>GoBD einfach erklärt</Trans>
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="border-white/25 bg-white/5 text-white hover:bg-white/15 hover:text-white"
+              >
+                <Link to={`/t/${teamUrl}/find-documents`}>
+                  <SearchIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                  <Trans>Neue Belege finden</Trans>
+                </Link>
+              </Button>
+            </div>
+          </div>
+          <div className="relative hidden rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur lg:block">
+            <Illustration
+              name="archive-shelf"
+              alt="Archiv"
+              tone="emerald"
+              className="mx-auto h-32 w-full"
+              hideOnError
+            />
+            <p className="mt-3 text-center text-xs leading-5 text-slate-200">
+              <Trans>Erst prüfen. Dann fest ablegen. Danach nur noch lesen und exportieren.</Trans>
+            </p>
+          </div>
         </div>
-        <div className="flex w-full flex-col items-start gap-3 md:w-auto md:items-end">
-          <Button asChild variant="outline" size="sm">
-            <Link to="/vorlagen/gobd">
-              <BookOpenIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-              <Trans>Was bedeutet GoBD?</Trans>
-            </Link>
-          </Button>
-          <Illustration
-            name="archive-shelf"
-            alt="Archiv"
-            tone="emerald"
-            className="hidden h-28 w-40 shrink-0 md:block"
-            hideOnError
-          />
-        </div>
-      </header>
+      </section>
 
-      {/* SUB-TABS */}
+      <section className="grid gap-3 md:grid-cols-3">
+        <ArchiveMetricCard
+          tone="amber"
+          icon={<AlertCircleIcon className="h-4 w-4" aria-hidden />}
+          label={<Trans>Noch korrigierbar</Trans>}
+          value={pendingCount}
+          description={<Trans>prüfen, ergänzen, dann fest ablegen</Trans>}
+        />
+        <ArchiveMetricCard
+          tone="emerald"
+          icon={<LockIcon className="h-4 w-4" aria-hidden />}
+          label={<Trans>Endgültig archiviert</Trans>}
+          value={sealedCount}
+          description={<Trans>schreibgeschützt und exportierbar</Trans>}
+        />
+        <ArchiveMetricCard
+          tone="sky"
+          icon={<CheckCircleIcon className="h-4 w-4" aria-hidden />}
+          label={<Trans>Aktuelle Auswahl</Trans>}
+          value={selectedCount}
+          description={<Trans>für Sammelaktionen markiert</Trans>}
+        />
+      </section>
+
       <Tabs value={tab} onValueChange={(v) => handleToggleTab(v as ArchivTab)} className="w-full">
-        <TabsList className="flex h-auto w-full justify-start gap-1 border-b bg-transparent p-0">
+        <TabsList className="grid h-auto w-full grid-cols-1 gap-2 rounded-2xl border border-neutral-200 bg-white p-2 shadow-sm sm:grid-cols-2">
           <TabsTrigger
             value="pending"
-            className="rounded-none border-b-2 border-transparent px-3 py-2 data-[state=active]:border-neutral-900 data-[state=active]:bg-transparent"
+            className="justify-start rounded-xl border border-transparent px-4 py-3 text-left text-neutral-700 data-[state=active]:border-amber-200 data-[state=active]:bg-amber-50 data-[state=active]:text-amber-950 data-[state=active]:shadow-none"
           >
-            <Trans>Noch korrigierbar</Trans>
-            {pendingCount > 0 && (
-              <span className="ml-1.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-900">
+            <span className="flex w-full items-center justify-between gap-3">
+              <span>
+                <span className="block text-sm font-semibold">
+                  <Trans>Noch korrigierbar</Trans>
+                </span>
+                <span className="block text-xs font-normal opacity-80">
+                  <Trans>Prüfen und endgültig ablegen</Trans>
+                </span>
+              </span>
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">
                 {pendingCount}
               </span>
-            )}
+            </span>
           </TabsTrigger>
           <TabsTrigger
             value="sealed"
-            className="rounded-none border-b-2 border-transparent px-3 py-2 data-[state=active]:border-neutral-900 data-[state=active]:bg-transparent"
+            className="justify-start rounded-xl border border-transparent px-4 py-3 text-left text-neutral-700 data-[state=active]:border-emerald-200 data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-950 data-[state=active]:shadow-none"
           >
-            <Trans>Endgültig archiviert</Trans>
-            {sealedCount > 0 && (
-              <span className="ml-1.5 text-xs text-neutral-400">{sealedCount}</span>
-            )}
+            <span className="flex w-full items-center justify-between gap-3">
+              <span>
+                <span className="block text-sm font-semibold">
+                  <Trans>Endgültig archiviert</Trans>
+                </span>
+                <span className="block text-xs font-normal opacity-80">
+                  <Trans>Suchen, lesen, exportieren</Trans>
+                </span>
+              </span>
+              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-900">
+                {sealedCount}
+              </span>
+            </span>
           </TabsTrigger>
         </TabsList>
       </Tabs>
 
-      {/* INFO-STREIFEN je nach Tab */}
-      {tab === 'pending' && (
-        <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <p>
-            <Trans>
-              <strong>
-                {pendingCount} Belege liegen im Archiv, sind aber noch nicht endgültig.
-              </strong>{' '}
-              Sie können Felder korrigieren oder einen Beleg wieder entfernen.
-            </Trans>
-          </p>
-          <p className="mt-1">
-            <Trans>
-              Klick auf <strong>„Endgültig archivieren"</strong> legt den Beleg für 10 Jahre fest —
-              dann können Sie ihn nur noch lesen oder herunterladen, nicht mehr ändern.
-            </Trans>
-          </p>
-        </div>
-      )}
-      {tab === 'sealed' && (
-        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-          <Trans>
-            {sealedCount} Belege sind endgültig archiviert. Sie können sie noch lesen, suchen und
-            herunterladen — aber nicht mehr ändern. So verlangt es das Finanzamt (10 Jahre
-            Aufbewahrung, § 147 AO).
-          </Trans>
-        </div>
-      )}
-
-      {/* SUCHE */}
-      <Input
-        type="search"
-        placeholder={_(msg`Im Archiv suchen — Titel, Korrespondent, Rechnungs-Nr.`)}
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        className="md:max-w-md"
-      />
-
-      {/* BULK-AKTIONEN — wirkt auf Auswahl, sonst auf den ganzen Tab. */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-1 text-xs text-neutral-500">
-          {selectedCount > 0 ? (
-            <Trans>{selectedCount} ausgewählt:</Trans>
-          ) : (
-            <Trans>Aktionen für alle in dieser Sicht:</Trans>
-          )}
-        </span>
-        {tab === 'pending' && pendingCount > 0 && (
-          <>
-            <Button
-              variant={selectedCount > 0 ? 'default' : 'outline'}
-              size="sm"
-              disabled={mutationBusy}
-              onClick={handleArchiveAction}
+      <section
+        className={`rounded-2xl border p-4 shadow-sm ${
+          tab === 'pending'
+            ? 'border-amber-200 bg-gradient-to-r from-amber-50 via-white to-white'
+            : 'border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-white'
+        }`}
+      >
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-start gap-3">
+            <div
+              className={`mt-0.5 rounded-2xl p-2 ${
+                tab === 'pending'
+                  ? 'bg-amber-100 text-amber-900'
+                  : 'bg-emerald-100 text-emerald-900'
+              }`}
             >
-              {mutationBusy ? (
-                <Loader2Icon className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
+              {tab === 'pending' ? (
+                <AlertCircleIcon className="h-5 w-5" aria-hidden />
               ) : (
-                <CheckCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                <LockIcon className="h-5 w-5" aria-hidden />
               )}
-              {selectedCount > 0 ? (
-                <Trans>{selectedCount} endgültig archivieren</Trans>
-              ) : (
-                <Trans>Alle {pendingCount} endgültig archivieren</Trans>
-              )}
-            </Button>
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-neutral-950">
+                {tab === 'pending' ? (
+                  <Trans>Offen: noch bearbeitbar</Trans>
+                ) : (
+                  <Trans>Fest abgelegt: nicht mehr änderbar</Trans>
+                )}
+              </h2>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-neutral-700">
+                {tab === 'pending' ? (
+                  <Trans>
+                    Diese Belege sind noch nicht fixiert. Prüfen, korrigieren oder entfernen Sie
+                    sie, bevor sie endgültig ins Archiv gehen.
+                  </Trans>
+                ) : (
+                  <Trans>
+                    Diese Belege sind abgeschlossen. Sie bleiben auffindbar, lesbar und
+                    exportierbar, können aber nicht mehr verändert werden.
+                  </Trans>
+                )}
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-3 md:min-w-[24rem]">
+            {(tab === 'pending'
+              ? [
+                  <Trans key="check">1. Prüfen</Trans>,
+                  <Trans key="fix">2. Korrigieren</Trans>,
+                  <Trans key="archive">3. Fest ablegen</Trans>,
+                ]
+              : [
+                  <Trans key="locked">Schreibgeschützt</Trans>,
+                  <Trans key="retention">10 Jahre</Trans>,
+                  <Trans key="export">Export bereit</Trans>,
+                ]
+            ).map((item) => (
+              <div
+                key={String(item.key)}
+                className={`rounded-xl border px-3 py-2 text-center text-xs font-semibold ${
+                  tab === 'pending'
+                    ? 'border-amber-200 bg-amber-100/70 text-amber-950'
+                    : 'border-emerald-200 bg-emerald-100/70 text-emerald-950'
+                }`}
+              >
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
+      <Card className="overflow-hidden rounded-2xl border-neutral-200 bg-white shadow-sm">
+        <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              <Trans>Archiv durchsuchen</Trans>
+            </label>
+            <div className="relative mt-2 max-w-xl">
+              <SearchIcon
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400"
+                aria-hidden
+              />
+              <Input
+                type="search"
+                placeholder={_(msg`Titel, Absender oder Rechnungs-Nr.`)}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="h-11 rounded-xl border-neutral-300 bg-neutral-50 pl-10 focus-visible:bg-white"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            {tab === 'pending' && pendingCount > 0 && (
+              <>
+                <Button
+                  variant={selectedCount > 0 ? 'default' : 'outline'}
+                  size="sm"
+                  disabled={mutationBusy}
+                  onClick={handleArchiveAction}
+                  className={selectedCount === 0 ? 'border-amber-300 text-amber-950' : undefined}
+                >
+                  {mutationBusy ? (
+                    <Loader2Icon className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
+                  ) : (
+                    <CheckCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                  )}
+                  {selectedCount > 0 ? (
+                    <Trans>{selectedCount} fest ablegen</Trans>
+                  ) : (
+                    <Trans>Alle {pendingCount} fest ablegen</Trans>
+                  )}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={mutationBusy || selectedCount === 0}
+                  onClick={() => {
+                    const ids = docs.filter((d) => selectedIds.has(d.id)).map((d) => d.id);
+                    if (ids.length === 0) return;
+                    bulkUnaccept.mutate({ ids });
+                  }}
+                  className="border-red-200 text-red-700 hover:bg-red-50"
+                >
+                  {bulkUnaccept.isPending ? (
+                    <Loader2Icon className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
+                  ) : (
+                    <Trash2Icon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                  )}
+                  {selectedCount > 0 ? (
+                    <Trans>{selectedCount} entfernen</Trans>
+                  ) : (
+                    <Trans>Entfernen</Trans>
+                  )}
+                </Button>
+              </>
+            )}
+            <Button asChild variant="outline" size="sm">
+              <a href={downloadHref}>
+                <DownloadIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                <Trans>ZIP</Trans>
+              </a>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <a href={taxPackageHref}>
+                <ReceiptTextIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                <Trans>Steuerpaket</Trans>
+              </a>
+            </Button>
             <Button
               variant="outline"
               size="sm"
-              disabled={mutationBusy || selectedCount === 0}
-              onClick={() => {
-                const ids = docs.filter((d) => selectedIds.has(d.id)).map((d) => d.id);
-                if (ids.length === 0) return;
-                bulkUnaccept.mutate({ ids });
-              }}
-              className="border-red-200 text-red-700 hover:bg-red-50"
+              disabled
+              title="Connectoren zu Accountable/sevDesk/Lexware Office — Phase 4"
             >
-              {bulkUnaccept.isPending ? (
-                <Loader2Icon className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
-              ) : (
-                <Trash2Icon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-              )}
-              {selectedCount > 0 ? (
-                <Trans>{selectedCount} aus Archiv entfernen</Trans>
-              ) : (
-                <Trans>Aus Archiv entfernen</Trans>
-              )}
+              <SendIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+              <Trans>Buchhaltung</Trans>
+              <span className="ml-1.5 rounded bg-neutral-100 px-1 py-0.5 text-[10px] text-neutral-600">
+                <Trans>bald</Trans>
+              </span>
             </Button>
-          </>
-        )}
-        <Button asChild variant="outline" size="sm">
-          <a href={downloadHref}>
-            <DownloadIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-            <Trans>Als ZIP herunterladen</Trans>
-          </a>
-        </Button>
-        <Button asChild variant="outline" size="sm">
-          <a href={taxPackageHref}>
-            <ReceiptTextIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-            <Trans>Steuerpaket exportieren (DATEV-CSV)</Trans>
-          </a>
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled
-          title="Connectoren zu Accountable/sevDesk/Lexware Office — Phase 4"
-        >
-          <SendIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-          <Trans>An Buchhaltung senden</Trans>
-          <span className="ml-1.5 rounded bg-neutral-100 px-1 py-0.5 text-[10px] text-neutral-600">
-            <Trans>bald</Trans>
-          </span>
-        </Button>
-      </div>
+          </div>
+        </div>
 
-      {/* MASTER-CHECKBOX + LISTE */}
-      {docs.length > 0 && (
-        <label className="flex cursor-pointer items-center gap-2 px-1 text-sm text-neutral-700">
-          <Checkbox
-            checked={allSelected}
-            onCheckedChange={handleToggleAll}
-            aria-label="Alle auswählen"
-            className="h-5 w-5"
-          />
-          {allSelected ? (
-            <Trans>Auswahl aufheben</Trans>
-          ) : (
-            <Trans>Alle geladenen {docs.length} markieren</Trans>
-          )}
-        </label>
-      )}
+        {docs.length > 0 && (
+          <div className="flex flex-col gap-3 border-t border-neutral-100 bg-neutral-50/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-neutral-800">
+              <Checkbox
+                checked={allSelected}
+                onCheckedChange={handleToggleAll}
+                aria-label="Alle auswählen"
+                className="h-5 w-5"
+              />
+              {allSelected ? (
+                <Trans>Auswahl aufheben</Trans>
+              ) : (
+                <Trans>Alle geladenen {docs.length} Belege markieren</Trans>
+              )}
+            </label>
+            <span className="text-xs text-neutral-500">
+              {selectedCount > 0 ? (
+                <Trans>{selectedCount} Belege ausgewählt</Trans>
+              ) : (
+                <Trans>Keine Auswahl</Trans>
+              )}
+            </span>
+          </div>
+        )}
+      </Card>
 
       {isLoading ? (
-        <Card className="flex items-center justify-center py-12 text-neutral-500">
+        <Card className="flex items-center justify-center rounded-2xl border-neutral-200 py-12 text-neutral-500 shadow-sm">
           <Loader2Icon className="mr-2 h-4 w-4 animate-spin" aria-hidden />
           <Trans>Lädt…</Trans>
         </Card>
       ) : docs.length === 0 ? (
-        <Card className="flex flex-col items-center gap-4 px-6 py-12 text-center">
+        <Card className="flex flex-col items-center gap-4 rounded-2xl border-dashed border-neutral-300 bg-neutral-50/70 px-6 py-12 text-center shadow-sm">
           <Illustration
             name={tab === 'pending' ? 'empty-shelf' : 'archive-empty'}
             alt={
@@ -489,7 +609,7 @@ export default function ArchivPage() {
         </Card>
       ) : (
         <>
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {docs.map((doc) => (
               <ArchivRow
                 key={doc.id}
@@ -558,22 +678,30 @@ const ArchivRow = ({
 
   return (
     <li
-      className={`flex items-stretch overflow-hidden rounded-md border shadow-sm transition-all hover:shadow-md ${
+      className={`group flex items-stretch overflow-hidden rounded-2xl border shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg ${
         isSelected
-          ? 'border-primary bg-white ring-2 ring-primary/30'
+          ? 'border-sky-300 bg-sky-50/70 ring-2 ring-sky-200'
           : needsCompletion
-            ? 'border-amber-300 bg-amber-50/40'
-            : 'border-neutral-200 bg-white'
+            ? 'border-amber-200 bg-gradient-to-r from-amber-50 via-white to-white'
+            : tab === 'sealed'
+              ? 'border-emerald-200 bg-gradient-to-r from-emerald-50/70 via-white to-white'
+              : 'border-neutral-200 bg-white'
       }`}
     >
       <span
-        className={`w-1 shrink-0 ${
-          tab === 'sealed' ? 'bg-emerald-600' : needsCompletion ? 'bg-amber-500' : 'bg-amber-400'
+        className={`w-1.5 shrink-0 ${
+          isSelected
+            ? 'bg-sky-500'
+            : tab === 'sealed'
+              ? 'bg-emerald-600'
+              : needsCompletion
+                ? 'bg-amber-500'
+                : 'bg-slate-300'
         }`}
         aria-hidden
       />
-      <div className="flex flex-1 flex-wrap items-start gap-3 px-4 py-3">
-        <label className="flex cursor-pointer items-center pt-0.5">
+      <div className="flex flex-1 flex-wrap items-start gap-3 px-4 py-4">
+        <label className="flex cursor-pointer items-center rounded-xl bg-white/80 p-1 shadow-sm ring-1 ring-neutral-200">
           <Checkbox
             checked={isSelected}
             onCheckedChange={() => onToggleSelect(doc.id)}
@@ -585,19 +713,33 @@ const ArchivRow = ({
           to={`/t/${teamUrl}/find-documents/${doc.id}`}
           className="flex min-w-0 flex-1 items-start gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <FileTextIcon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+          <span
+            className={`mt-0.5 rounded-2xl p-2 ${
+              tab === 'sealed'
+                ? 'bg-emerald-100 text-emerald-900'
+                : needsCompletion
+                  ? 'bg-amber-100 text-amber-900'
+                  : 'bg-slate-100 text-slate-700'
+            }`}
+          >
+            <FileTextIcon className="h-4 w-4 shrink-0" aria-hidden />
+          </span>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
               {needsCompletion ? (
-                <span className="rounded-sm bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-900">
+                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900">
                   <Trans>Bitte ergänzen</Trans>
                 </span>
               ) : null}
-              <span className="font-medium text-foreground">{doc.correspondent ?? doc.title}</span>
+              <span className="font-semibold text-neutral-950">
+                {doc.correspondent ?? doc.title}
+              </span>
               {doc.detectedAmount && (
-                <span className="text-sm tabular-nums text-foreground">{doc.detectedAmount}</span>
+                <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-neutral-800">
+                  {doc.detectedAmount}
+                </span>
               )}
-              <span className="text-xs tabular-nums text-neutral-500">
+              <span className="rounded-full bg-white px-2 py-0.5 text-xs tabular-nums text-neutral-500 ring-1 ring-neutral-200">
                 {formatDate(doc.documentDate ?? doc.capturedAt, locale)}
               </span>
               {doc.hasArchive && doc.attachmentCount > 0 && (
@@ -638,9 +780,14 @@ const ArchivRow = ({
           </div>
         </Link>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex w-full shrink-0 flex-wrap items-center gap-2 border-t border-neutral-100 pt-3 sm:w-auto sm:border-t-0 sm:pt-0">
           {tab === 'pending' && needsCompletion && (
-            <Button asChild size="sm" variant="outline" className="border-amber-300 text-amber-900">
+            <Button
+              asChild
+              size="sm"
+              variant="outline"
+              className="border-amber-300 bg-white text-amber-900 hover:bg-amber-50"
+            >
               <Link to={`/t/${teamUrl}/find-documents/${doc.id}`}>
                 <Trans>Felder ergänzen</Trans>
               </Link>
@@ -652,7 +799,7 @@ const ArchivRow = ({
               variant="default"
               disabled={isPending}
               onConfirm={() => onArchive(doc.id)}
-              label={<Trans>Endgültig archivieren</Trans>}
+              label={<Trans>Fest ablegen</Trans>}
             />
           )}
           {doc.hasArchive && (
@@ -730,5 +877,45 @@ const ArchivRow = ({
         </div>
       </div>
     </li>
+  );
+};
+
+const ArchiveMetricCard = ({
+  tone,
+  icon,
+  label,
+  value,
+  description,
+}: {
+  tone: 'amber' | 'emerald' | 'sky';
+  icon: ReactNode;
+  label: ReactNode;
+  value: number;
+  description: ReactNode;
+}) => {
+  const toneClass =
+    tone === 'amber'
+      ? 'border-amber-200 bg-amber-50 text-amber-950'
+      : tone === 'emerald'
+        ? 'border-emerald-200 bg-emerald-50 text-emerald-950'
+        : 'border-sky-200 bg-sky-50 text-sky-950';
+  const iconClass =
+    tone === 'amber'
+      ? 'bg-amber-100 text-amber-900'
+      : tone === 'emerald'
+        ? 'bg-emerald-100 text-emerald-900'
+        : 'bg-sky-100 text-sky-900';
+
+  return (
+    <Card className={`rounded-2xl border p-4 shadow-sm ${toneClass}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide opacity-75">{label}</p>
+          <p className="mt-2 text-3xl font-semibold tabular-nums">{value}</p>
+          <p className="mt-1 text-sm opacity-80">{description}</p>
+        </div>
+        <span className={`rounded-2xl p-2 ${iconClass}`}>{icon}</span>
+      </div>
+    </Card>
   );
 };
