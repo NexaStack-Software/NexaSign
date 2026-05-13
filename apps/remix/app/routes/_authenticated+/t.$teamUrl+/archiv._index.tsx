@@ -80,6 +80,8 @@ const formatDate = (date: Date | null, locale: string): string => {
   return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(date);
 };
 
+const needsDocumentCompletion = (doc: Document) => !doc.correspondent || !doc.documentType;
+
 export default function ArchivPage() {
   const { _, i18n } = useLingui();
   const { toast } = useToast();
@@ -127,6 +129,14 @@ export default function ArchivPage() {
   const activeQuery = tab === 'pending' ? pendingQuery : sealedQuery;
   const totalCount = tab === 'pending' ? pendingCount : sealedCount;
   const isLoading = activeQuery.isLoading;
+  const needsCompletionDocs = useMemo(
+    () => pendingDocs.filter((doc) => needsDocumentCompletion(doc)),
+    [pendingDocs],
+  );
+  const readyToArchiveDocs = useMemo(
+    () => pendingDocs.filter((doc) => !needsDocumentCompletion(doc)),
+    [pendingDocs],
+  );
 
   const updateStatus = trpc.discovery.updateStatus.useMutation({
     onSuccess: () => {
@@ -683,6 +693,112 @@ export default function ArchivPage() {
             )}
           </p>
         </Card>
+      ) : tab === 'pending' ? (
+        <>
+          <div className="space-y-5">
+            <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 shadow-sm">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-amber-950">
+                    <Trans>Bitte zuerst ergänzen</Trans>
+                  </h3>
+                  <p className="mt-1 text-sm text-amber-900/80">
+                    <Trans>
+                      Diese Belege brauchen noch Pflichtangaben, bevor sie sauber archiviert werden
+                      können.
+                    </Trans>
+                  </p>
+                </div>
+                <span className="shrink-0 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">
+                  <Trans>{needsCompletionDocs.length} offen</Trans>
+                </span>
+              </div>
+              {needsCompletionDocs.length > 0 ? (
+                <ul className="mt-4 space-y-3">
+                  {needsCompletionDocs.map((doc) => (
+                    <ArchivRow
+                      key={doc.id}
+                      doc={doc}
+                      tab={tab}
+                      locale={i18n.locale}
+                      teamUrl={teamUrl}
+                      isSelected={selectedIds.has(doc.id)}
+                      isPending={mutationBusy}
+                      onToggleSelect={handleToggleSelect}
+                      onArchive={(id) => updateStatus.mutate({ id, action: 'archive' })}
+                      onUnaccept={(id) => bulkUnaccept.mutate({ ids: [id] })}
+                    />
+                  ))}
+                </ul>
+              ) : (
+                <div className="mt-4 rounded-2xl border border-emerald-200 bg-white px-4 py-4 text-sm text-emerald-900">
+                  <Trans>Hier ist alles komplett. Sie können direkt archivieren.</Trans>
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-sm">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-emerald-950">
+                    <Trans>Bereit zum Archivieren</Trans>
+                  </h3>
+                  <p className="mt-1 text-sm text-emerald-900/80">
+                    <Trans>
+                      Diese Belege sind vollständig und koennen direkt ins rechtssichere Archiv.
+                    </Trans>
+                  </p>
+                </div>
+                <span className="shrink-0 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900">
+                  <Trans>{readyToArchiveDocs.length} bereit</Trans>
+                </span>
+              </div>
+              {readyToArchiveDocs.length > 0 ? (
+                <ul className="mt-4 space-y-3">
+                  {readyToArchiveDocs.map((doc) => (
+                    <ArchivRow
+                      key={doc.id}
+                      doc={doc}
+                      tab={tab}
+                      locale={i18n.locale}
+                      teamUrl={teamUrl}
+                      isSelected={selectedIds.has(doc.id)}
+                      isPending={mutationBusy}
+                      onToggleSelect={handleToggleSelect}
+                      onArchive={(id) => updateStatus.mutate({ id, action: 'archive' })}
+                      onUnaccept={(id) => bulkUnaccept.mutate({ ids: [id] })}
+                    />
+                  ))}
+                </ul>
+              ) : (
+                <div className="mt-4 rounded-2xl border border-neutral-200 bg-white px-4 py-4 text-sm text-neutral-600">
+                  <Trans>Aktuell ist noch kein vollstaendiger Beleg zum Archivieren bereit.</Trans>
+                </div>
+              )}
+            </section>
+          </div>
+          {(activeQuery.hasNextPage || docs.length < totalCount) && (
+            <div className="flex flex-col items-center gap-3 pt-2">
+              <div className="text-xs text-neutral-500">
+                <Trans>
+                  {docs.length} von {totalCount} geladen
+                </Trans>
+              </div>
+              {activeQuery.hasNextPage && (
+                <Button
+                  variant="outline"
+                  onClick={() => void activeQuery.fetchNextPage()}
+                  disabled={activeQuery.isFetchingNextPage}
+                >
+                  {activeQuery.isFetchingNextPage ? (
+                    <Loader2Icon className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                  ) : null}
+                  <Trans>Weitere laden</Trans>
+                </Button>
+              )}
+            </div>
+          )}
+        </>
       ) : (
         <>
           <ul className="space-y-3">
@@ -884,8 +1000,7 @@ const ArchivRow = ({
   onArchive: (id: string) => void;
   onUnaccept: (id: string) => void;
 }) => {
-  // "Bitte ergänzen"-Zustand: Pending-Tab und mindestens ein Pflichtfeld leer.
-  const needsCompletion = tab === 'pending' && (!doc.correspondent || !doc.documentType);
+  const needsCompletion = tab === 'pending' && needsDocumentCompletion(doc);
 
   return (
     <li
