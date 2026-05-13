@@ -19,6 +19,7 @@ import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
 import {
   AlertCircleIcon,
+  AlertTriangleIcon,
   ArchiveIcon,
   BookOpenIcon,
   CheckCircleIcon,
@@ -37,6 +38,16 @@ import { Link, useParams } from 'react-router';
 
 import { trpc } from '@nexasign/trpc/react';
 import type { TFindDiscoveryDocumentsResponse } from '@nexasign/trpc/server/discovery-router/schema';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@nexasign/ui/primitives/alert-dialog';
 import { Badge } from '@nexasign/ui/primitives/badge';
 import { Button } from '@nexasign/ui/primitives/button';
 import { Card } from '@nexasign/ui/primitives/card';
@@ -78,6 +89,7 @@ export default function ArchivPage() {
   const [tab, setTab] = useState<ArchivTab>('pending');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState('');
+  const [bulkArchiveDialogOpen, setBulkArchiveDialogOpen] = useState(false);
 
   const pendingQuery = trpc.discovery.findDocuments.useInfiniteQuery(
     {
@@ -233,18 +245,10 @@ export default function ArchivPage() {
     bulkArchiveByFilter.isPending ||
     bulkUnaccept.isPending;
 
+  const archiveActionCount = selectedCount > 0 ? selectedCount : pendingCount;
+  const hasArchiveSearchFilter = query.trim().length > 0;
   const handleArchiveAction = () => {
-    const count = selectedCount > 0 ? selectedCount : pendingCount;
-    const confirmed =
-      typeof window === 'undefined'
-        ? true
-        : window.confirm(
-            selectedCount > 0
-              ? `Möchten Sie ${count} ausgewählte Belege jetzt archivieren? Danach sind sie 10 Jahre lang schreibgeschützt.`
-              : `Möchten Sie alle ${count} Belege in dieser Sicht jetzt archivieren? Danach sind sie 10 Jahre lang schreibgeschützt.`,
-          );
-    if (!confirmed) return;
-
+    setBulkArchiveDialogOpen(false);
     if (selectedCount > 0) {
       bulkArchive.mutate({ ids: selectedDocumentIds });
       return;
@@ -503,7 +507,7 @@ export default function ArchivPage() {
                   variant={selectedCount > 0 ? 'default' : 'outline'}
                   size="sm"
                   disabled={mutationBusy}
-                  onClick={handleArchiveAction}
+                  onClick={() => setBulkArchiveDialogOpen(true)}
                   className={selectedCount === 0 ? 'border-amber-300 text-amber-950' : undefined}
                 >
                   {mutationBusy ? (
@@ -719,6 +723,64 @@ export default function ArchivPage() {
           )}
         </>
       )}
+
+      <AlertDialog open={bulkArchiveDialogOpen} onOpenChange={setBulkArchiveDialogOpen}>
+        <AlertDialogContent className="max-w-xl overflow-hidden rounded-2xl border-amber-200 p-0">
+          <div className="border-b border-amber-100 bg-amber-50 px-6 py-5">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2 text-amber-950">
+                <AlertTriangleIcon className="h-5 w-5 text-amber-600" aria-hidden />
+                <Trans>Belege jetzt archivieren?</Trans>
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-amber-900">
+                {selectedCount > 0 ? (
+                  <Trans>
+                    Sie archivieren {archiveActionCount} markierte Belege. Danach sind sie
+                    schreibgeschützt.
+                  </Trans>
+                ) : hasArchiveSearchFilter ? (
+                  <Trans>
+                    Sie archivieren alle {archiveActionCount} passenden Belege aus Ihrer aktuellen
+                    Suche. Danach sind sie schreibgeschützt.
+                  </Trans>
+                ) : (
+                  <Trans>
+                    Sie archivieren alle {archiveActionCount} offenen Belege. Danach sind sie
+                    schreibgeschützt.
+                  </Trans>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+          </div>
+
+          <div className="space-y-3 px-6 py-5 text-sm text-neutral-700">
+            <p>
+              <Trans>
+                Archivierte Belege können Sie weiterhin suchen, lesen, herunterladen und
+                exportieren.
+              </Trans>
+            </p>
+            <p>
+              <Trans>
+                Sie können sie danach aber nicht mehr bearbeiten oder aus dem Archiv entfernen. Die
+                Aufbewahrung läuft für 10 Jahre.
+              </Trans>
+            </p>
+          </div>
+
+          <AlertDialogFooter className="border-t border-neutral-100 bg-neutral-50 px-6 py-4">
+            <AlertDialogCancel>
+              <Trans>Noch prüfen</Trans>
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleArchiveAction} disabled={mutationBusy}>
+              {mutationBusy ? (
+                <Loader2Icon className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+              ) : null}
+              <Trans>Ja, archivieren</Trans>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
