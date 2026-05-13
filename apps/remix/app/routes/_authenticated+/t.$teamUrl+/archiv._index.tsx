@@ -249,6 +249,22 @@ export default function ArchivPage() {
   );
 
   const selectedCount = useMemo(() => selectedDocumentIds.length, [selectedDocumentIds]);
+  const pendingFocusTitle =
+    needsCompletionDocs.length > 0
+      ? _(msg`${needsCompletionDocs.length} Belege blockieren gerade die Archivierung`)
+      : readyToArchiveDocs.length > 0
+        ? _(msg`${readyToArchiveDocs.length} Belege sind sofort bereit fürs Archiv`)
+        : _(msg`Im Archiv wartet gerade nichts auf Sie`);
+  const pendingFocusDescription =
+    needsCompletionDocs.length > 0
+      ? _(
+          msg`Ergänzen Sie zuerst die fehlenden Pflichtangaben. Danach können diese Belege ohne Umweg archiviert werden.`,
+        )
+      : readyToArchiveDocs.length > 0
+        ? _(
+            msg`Alle offenen Belege sind vollständig. Sie können jetzt direkt archivieren oder gesammelt exportieren.`,
+          )
+        : _(msg`Sobald neue Belege geprüft sind, erscheinen sie hier als nächster Arbeitsschritt.`);
 
   const mutationBusy =
     updateStatus.isPending ||
@@ -375,6 +391,100 @@ export default function ArchivPage() {
           description={<Trans>für Sammelaktionen markiert</Trans>}
         />
       </section>
+
+      {tab === 'pending' && (
+        <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div className="grid gap-4 px-5 py-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(18rem,1fr)] lg:px-6">
+            <div className="rounded-2xl bg-slate-950 px-5 py-5 text-white">
+              <div className="inline-flex items-center rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold text-slate-100">
+                <AlertCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                <Trans>Nächster Schritt</Trans>
+              </div>
+              <h2 className="mt-4 text-2xl font-semibold tracking-tight">{pendingFocusTitle}</h2>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-200">
+                {pendingFocusDescription}
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {needsCompletionDocs.length > 0 ? (
+                  <Button asChild variant="secondary" size="sm">
+                    <a href="#archiv-vorbereiten">
+                      <AlertCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                      <Trans>Fehlende Angaben prüfen</Trans>
+                    </a>
+                  </Button>
+                ) : readyToArchiveDocs.length > 0 ? (
+                  <Button
+                    size="sm"
+                    onClick={() => setBulkArchiveDialogOpen(true)}
+                    disabled={mutationBusy}
+                    className="bg-emerald-400 text-emerald-950 hover:bg-emerald-300"
+                  >
+                    <ArchiveIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                    <Trans>Bereite Belege archivieren</Trans>
+                  </Button>
+                ) : (
+                  <Button asChild variant="secondary" size="sm">
+                    <Link to={`/t/${teamUrl}/find-documents`}>
+                      <SearchIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                      <Trans>Neue Belege finden</Trans>
+                    </Link>
+                  </Button>
+                )}
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                >
+                  <a href="#archiv-bereit">
+                    <CheckCircleIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                    <Trans>Bereite Belege ansehen</Trans>
+                  </a>
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">
+                      <Trans>Blockiert</Trans>
+                    </p>
+                    <p className="mt-2 text-3xl font-semibold text-amber-950">
+                      {needsCompletionDocs.length}
+                    </p>
+                    <p className="mt-1 text-sm text-amber-900/80">
+                      <Trans>brauchen noch Pflichtangaben</Trans>
+                    </p>
+                  </div>
+                  <span className="rounded-2xl bg-amber-100 p-2 text-amber-900">
+                    <AlertCircleIcon className="h-4 w-4" aria-hidden />
+                  </span>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">
+                      <Trans>Sofort bereit</Trans>
+                    </p>
+                    <p className="mt-2 text-3xl font-semibold text-emerald-950">
+                      {readyToArchiveDocs.length}
+                    </p>
+                    <p className="mt-1 text-sm text-emerald-900/80">
+                      <Trans>können direkt archiviert werden</Trans>
+                    </p>
+                  </div>
+                  <span className="rounded-2xl bg-emerald-100 p-2 text-emerald-900">
+                    <ArchiveIcon className="h-4 w-4" aria-hidden />
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       <Tabs value={tab} onValueChange={(v) => handleToggleTab(v as ArchivTab)} className="w-full">
         <TabsList className="grid h-auto w-full grid-cols-1 gap-2 rounded-2xl border border-neutral-200 bg-white p-2 shadow-sm sm:grid-cols-2">
@@ -696,7 +806,10 @@ export default function ArchivPage() {
       ) : tab === 'pending' ? (
         <>
           <div className="space-y-5">
-            <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 shadow-sm">
+            <section
+              id="archiv-vorbereiten"
+              className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 shadow-sm"
+            >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="text-sm font-semibold text-amber-950">
@@ -737,7 +850,10 @@ export default function ArchivPage() {
               )}
             </section>
 
-            <section className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-sm">
+            <section
+              id="archiv-bereit"
+              className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-sm"
+            >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="text-sm font-semibold text-emerald-950">
