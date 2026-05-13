@@ -198,6 +198,11 @@ export default function ArchivPage() {
     setSelectedIds(new Set());
   };
 
+  const handleQueryChange = (value: string) => {
+    setQuery(value);
+    setSelectedIds(new Set());
+  };
+
   const handleToggleSelect = (id: string) =>
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -215,10 +220,12 @@ export default function ArchivPage() {
     }
   };
 
-  const selectedCount = useMemo(
-    () => docs.filter((d) => selectedIds.has(d.id)).length,
+  const selectedDocumentIds = useMemo(
+    () => docs.filter((d) => selectedIds.has(d.id)).map((d) => d.id),
     [docs, selectedIds],
   );
+
+  const selectedCount = useMemo(() => selectedDocumentIds.length, [selectedDocumentIds]);
 
   const mutationBusy =
     updateStatus.isPending ||
@@ -238,9 +245,8 @@ export default function ArchivPage() {
           );
     if (!confirmed) return;
 
-    const ids = docs.filter((d) => selectedIds.has(d.id)).map((d) => d.id);
     if (selectedCount > 0) {
-      bulkArchive.mutate({ ids });
+      bulkArchive.mutate({ ids: selectedDocumentIds });
       return;
     }
 
@@ -250,7 +256,7 @@ export default function ArchivPage() {
   };
 
   const downloadHref = useMemo(() => {
-    const ids = [...selectedIds];
+    const ids = selectedDocumentIds;
     if (ids.length === 0) {
       const params = new URLSearchParams({
         status: tab === 'pending' ? 'accepted' : 'archived',
@@ -261,10 +267,10 @@ export default function ArchivPage() {
       return `/t/${teamUrl}/find-documents/zip-attachments?${params.toString()}`;
     }
     return `/t/${teamUrl}/find-documents/zip-attachments?ids=${ids.join(',')}`;
-  }, [query, selectedIds, teamUrl, tab]);
+  }, [query, selectedDocumentIds, teamUrl, tab]);
 
   const taxPackageHref = useMemo(() => {
-    const ids = [...selectedIds];
+    const ids = selectedDocumentIds;
     if (ids.length === 0) {
       const params = new URLSearchParams({
         status: tab === 'pending' ? 'accepted' : 'archived',
@@ -275,7 +281,7 @@ export default function ArchivPage() {
       return `/t/${teamUrl}/find-documents/tax-package?${params.toString()}`;
     }
     return `/t/${teamUrl}/find-documents/tax-package?ids=${ids.join(',')}`;
-  }, [query, selectedIds, teamUrl, tab]);
+  }, [query, selectedDocumentIds, teamUrl, tab]);
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 md:px-6">
@@ -484,7 +490,7 @@ export default function ArchivPage() {
                 type="search"
                 placeholder={_(msg`Titel, Absender oder Rechnungs-Nr.`)}
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => handleQueryChange(e.target.value)}
                 className="h-11 rounded-xl border-neutral-300 bg-neutral-50 pl-10 focus-visible:bg-white"
               />
             </div>
@@ -517,9 +523,8 @@ export default function ArchivPage() {
                   size="sm"
                   disabled={mutationBusy || selectedCount === 0}
                   onClick={() => {
-                    const ids = docs.filter((d) => selectedIds.has(d.id)).map((d) => d.id);
-                    if (ids.length === 0) return;
-                    bulkUnaccept.mutate({ ids });
+                    if (selectedDocumentIds.length === 0) return;
+                    bulkUnaccept.mutate({ ids: selectedDocumentIds });
                   }}
                   className="border-red-200 text-red-700 hover:bg-red-50"
                 >
